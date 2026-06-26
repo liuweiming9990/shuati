@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>智能刷题</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         :root { --bg: #1a1a2e; --card: #16213e; --accent: #e94560; --text: #eee; --text2: #aaa; --border: #2a2a4a; --radius: 12px; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,7 +13,7 @@
         .nav-title { font-size: 18px; font-weight: 700; color: var(--accent); }
         .nav-btn { background: #0f3460; color: var(--text); border: none; padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; }
         .nav-btn.active { background: var(--accent); color: white; }
-        .main { padding: 12px; max-width: 600px; margin: 0 auto; }
+        .main { padding: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 40px; }
         .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
         .card-title { font-size: 14px; color: var(--text2); margin-bottom: 8px; }
         .bank-tag { padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1.5px solid var(--border); background: #1a1a30; color: var(--text2); display: inline-block; margin: 4px; }
@@ -38,16 +37,17 @@
         .mode-btn { padding: 12px; background: #1a1a30; border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 14px; cursor: pointer; text-align: center; }
         .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
         .import-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 30px; text-align: center; cursor: pointer; margin-bottom: 12px; }
-        .import-area input { display: none; }
-        .status-bar { background: var(--card); padding: 8px 16px; text-align: center; font-size: 12px; color: var(--text2); border-top: 1px solid var(--border); position: sticky; bottom: 0; }
+        .status-bar { background: var(--card); padding: 8px 16px; text-align: center; font-size: 12px; color: var(--text2); border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 0; right: 0; }
         select { width: 100%; padding: 12px; border-radius: var(--radius); background: #1a1a30; color: var(--text); border: 1px solid var(--border); font-size: 14px; margin-bottom: 8px; }
-        .cat-item { padding: 8px 12px; cursor: pointer; border-radius: 6px; font-size: 14px; margin-bottom: 2px; color: var(--text2); }
-        .cat-item.selected { background: var(--accent); color: white; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; justify-content: center; align-items: center; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; }
         .modal-overlay.show { display: flex; }
-        .modal-box { background: var(--card); border-radius: var(--radius); padding: 20px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-        .modal-box h3 { margin-bottom: 12px; color: var(--accent); }
-        .modal-box input { width: 100%; padding: 12px; border-radius: var(--radius); background: #1a1a30; color: var(--text); border: 1px solid var(--border); font-size: 16px; margin-bottom: 12px; }
+        .modal-box { background: var(--card); border-radius: var(--radius); padding: 20px; width: 92%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+        .modal-box h3 { margin-bottom: 12px; color: var(--accent); text-align: center; }
+        .modal-box input { width: 100%; padding: 12px; border-radius: var(--radius); background: #1a1a30; color: var(--text); border: 1px solid var(--border); font-size: 16px; margin-bottom: 12px; text-align: center; }
+        .preview-row { display: flex; border-bottom: 1px solid var(--border); padding: 6px 0; font-size: 12px; }
+        .preview-row .row-num { color: var(--accent); font-weight: bold; width: 40px; flex-shrink: 0; }
+        .preview-row .row-content { display: flex; overflow-x: auto; gap: 6px; }
+        .preview-row .row-content span { background: #1a1a30; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -60,12 +60,13 @@
 </div>
 <div class="main" id="mainContent"></div>
 <div class="status-bar" id="statusBar">就绪</div>
+
 <div class="modal-overlay" id="headerModal">
     <div class="modal-box">
-        <h3>请确认表头位置</h3>
-        <p style="color:#aaa;font-size:13px;margin-bottom:8px;">以下是文件前几行，表头在第几行？</p>
-        <table id="previewTable" style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;"></table>
-        <label style="color:#aaa;">表头行号：</label>
+        <h3>📋 确认表头位置</h3>
+        <p style="color:#aaa;font-size:13px;margin-bottom:10px;text-align:center;">以下是文件前几行预览<br>请选择哪一行是表头（列名）</p>
+        <div id="previewContainer" style="margin-bottom:12px;"></div>
+        <label style="color:#aaa;display:block;text-align:center;margin-bottom:6px;">表头在第几行？</label>
         <input type="number" id="headerRowNum" min="1" value="1" step="1">
         <div class="btn-row">
             <button class="btn btn-nav" onclick="closeModal()">取消</button>
@@ -77,9 +78,10 @@
 <script>
 var banks = {}, wrongSet = new Set(), favSet = new Set();
 var currentTab = 'practice', currentMode = null, currentQuestions = [], currentIndex = 0;
-var selectedBanks = [], selectedOptions = new Set(), selectedCat = null;
+var selectedBanks = [], selectedOptions = new Set();
 var pendingRows = null, pendingFileName = '';
 
+// ========== 数据存储 ==========
 function loadData() {
     try { var s = localStorage.getItem('quizBanks'); if (s) banks = JSON.parse(s); } catch(e) {}
     try { var w = localStorage.getItem('wrongSet'); if (w) wrongSet = new Set(JSON.parse(w)); } catch(e) {}
@@ -100,31 +102,47 @@ window.switchTab = function(tab) {
     render();
 };
 
-// ========== 文件导入 ==========
-window.importFiles = function(input) {
-    var files = input.files; input.value = '';
-    if (!files.length) return;
-    var file = files[0];
-    setStatus('读取中...');
+// ========== 文件导入（核心） ==========
+window.importFile = function(file) {
+    if (!file) return;
+    setStatus('正在读取 ' + file.name + '...');
     var reader = new FileReader();
     reader.onload = function(e) {
-        var data = new Uint8Array(e.target.result);
-        var wb = XLSX.read(data, {type:'array'});
-        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
-        if (rows.length < 2) { alert('文件内容太少'); setStatus('就绪'); return; }
-        pendingRows = rows;
-        pendingFileName = file.name;
-        // 显示预览
-        var t = document.getElementById('previewTable');
-        var h = '';
-        for (var r=0; r<Math.min(8,rows.length); r++) {
-            h += '<tr><td style="color:#e94560;">第'+(r+1)+'行</td>';
-            for (var c=0; c<Math.min(8,(rows[r]||[]).length); c++) h += '<td style="border:1px solid #2a2a4a;padding:4px;font-size:11px;">'+(rows[r][c]||'').toString().substring(0,20)+'</td>';
-            h += '</tr>';
+        try {
+            var data = new Uint8Array(e.target.result);
+            var wb = XLSX.read(data, {type:'array'});
+            var sheetName = wb.SheetNames[0];
+            var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1});
+            if (rows.length < 2) {
+                alert('文件内容太少（少于2行）');
+                setStatus('导入失败');
+                return;
+            }
+            pendingRows = rows;
+            pendingFileName = file.name;
+            // 渲染预览
+            var container = document.getElementById('previewContainer');
+            var html = '';
+            var maxRows = Math.min(10, rows.length);
+            for (var r = 0; r < maxRows; r++) {
+                var cells = rows[r] || [];
+                html += '<div class="preview-row"><div class="row-num">第'+(r+1)+'行</div><div class="row-content">';
+                var maxCols = Math.min(8, cells.length);
+                for (var c = 0; c < maxCols; c++) {
+                    var val = cells[c] !== undefined && cells[c] !== null ? String(cells[c]).substring(0, 25) : '';
+                    html += '<span>' + val + '</span>';
+                }
+                if (cells.length > 8) html += '<span>...</span>';
+                html += '</div></div>';
+            }
+            container.innerHTML = html;
+            document.getElementById('headerRowNum').value = '1';
+            document.getElementById('headerModal').classList.add('show');
+            setStatus('请选择表头所在行');
+        } catch(err) {
+            alert('读取失败：' + err.message);
+            setStatus('导入失败');
         }
-        t.innerHTML = h;
-        document.getElementById('headerRowNum').value = '1';
-        document.getElementById('headerModal').classList.add('show');
     };
     reader.readAsArrayBuffer(file);
 };
@@ -132,195 +150,315 @@ window.importFiles = function(input) {
 window.closeModal = function() {
     document.getElementById('headerModal').classList.remove('show');
     pendingRows = null;
-    setStatus('已取消');
+    pendingFileName = '';
+    setStatus('已取消导入');
 };
 
 window.confirmHeader = function() {
-    var n = parseInt(document.getElementById('headerRowNum').value);
-    if (isNaN(n) || n<1 || n>pendingRows.length) { alert('行号无效'); return; }
-    document.getElementById('headerModal').classList.remove('show');
-    var dataRows = pendingRows.slice(n-1);
-    var headers = dataRows[0].map(function(h){ return String(h||'').trim(); });
-    var cm = {};
-    for (var i=0; i<headers.length; i++) {
-        var h = headers[i].toLowerCase();
-        if (h.indexOf('知识')>=0||h.indexOf('类别')>=0||h.indexOf('章')>=0) cm['知识类型']=i;
-        else if (h.indexOf('题型')>=0||h.indexOf('类型')>=0) cm['题型']=i;
-        else if (h.indexOf('题干')>=0||h.indexOf('题目')>=0||h.indexOf('问题')>=0||h.indexOf('内容')>=0) cm['题干']=i;
-        else if (h.indexOf('答案')>=0||h.indexOf('正确')>=0) cm['答案']=i;
-        else if (h.indexOf('解析')>=0||h.indexOf('解释')>=0) cm['解析']=i;
-        else if (/^[a-g]$/i.test(headers[i])) cm['选项'+headers[i].toUpperCase()]=i;
+    var rowNum = parseInt(document.getElementById('headerRowNum').value);
+    if (isNaN(rowNum) || rowNum < 1 || rowNum > pendingRows.length) {
+        alert('请输入有效行号（1-' + pendingRows.length + '）');
+        return;
     }
-    if (!cm['题干']||!cm['答案']) { alert('找不到题干或答案列。表头：'+JSON.stringify(headers)); setStatus('导入失败'); return; }
-    var qs = [];
-    var maxId = 0;
-    for (var k in banks) { for (var j=0; j<banks[k].length; j++) { if (banks[k][j].id > maxId) maxId = banks[k][j].id; } }
-    for (var r=1; r<dataRows.length; r++) {
+    document.getElementById('headerModal').classList.remove('show');
+    setStatus('正在解析...');
+    
+    var dataRows = pendingRows.slice(rowNum - 1);
+    var headers = dataRows[0].map(function(h) { return String(h||'').trim(); });
+    
+    // 识别列
+    var colMap = {};
+    for (var i = 0; i < headers.length; i++) {
+        var h = headers[i].toLowerCase();
+        if (h.indexOf('知识')>=0 || h.indexOf('类别')>=0 || h.indexOf('章')>=0 || h.indexOf('节')>=0) colMap['知识类型'] = i;
+        else if (h.indexOf('题型')>=0 || h.indexOf('类型')>=0) colMap['题型'] = i;
+        else if (h.indexOf('题干')>=0 || h.indexOf('题目')>=0 || h.indexOf('问题')>=0 || h.indexOf('内容')>=0) colMap['题干'] = i;
+        else if (h.indexOf('答案')>=0 || h.indexOf('正确')>=0) colMap['答案'] = i;
+        else if (h.indexOf('解析')>=0 || h.indexOf('解释')>=0) colMap['解析'] = i;
+        else if (/^[a-g]$/i.test(headers[i].trim())) colMap['选项'+headers[i].trim().toUpperCase()] = i;
+    }
+    
+    if (!('题干' in colMap) || !('答案' in colMap)) {
+        alert('找不到题干或答案列。\n表头：' + JSON.stringify(headers) + '\n请重新选择表头行号。');
+        document.getElementById('headerModal').classList.add('show');
+        setStatus('请重新选择表头行号');
+        return;
+    }
+    
+    // 提取题目
+    var questions = [];
+    for (var r = 1; r < dataRows.length; r++) {
         var row = dataRows[r];
         if (!row) continue;
-        var qt = String(row[cm['题干']]||'').trim();
-        if (!qt) continue;
-        var ans = String(row[cm['答案']]||'').trim().toUpperCase().replace(/,/g,'').replace(/，/g,'').replace(/\s/g,'');
-        var tp = String(row[cm['题型']]||'').trim();
-        if (!tp || ['单选题','多选题','判断题'].indexOf(tp)<0) {
-            if (ans==='正确'||ans==='错误'||ans==='对'||ans==='错') tp='判断题';
-            else if (ans.length>1 && /^[A-G]+$/.test(ans)) tp='多选题';
-            else tp='单选题';
+        var qText = String(row[colMap['题干']] || '').trim();
+        if (!qText) continue;
+        
+        var answer = String(row[colMap['答案']] || '').trim().toUpperCase()
+            .replace(/,/g, '').replace(/，/g, '').replace(/\s/g, '');
+        var qtype = String(row[colMap['题型']] || '').trim();
+        
+        if (!qtype || ['单选题','多选题','判断题'].indexOf(qtype) < 0) {
+            if (answer==='正确' || answer==='错误' || answer==='对' || answer==='错') qtype = '判断题';
+            else if (answer.length > 1 && /^[A-G]+$/.test(answer)) qtype = '多选题';
+            else qtype = '单选题';
         }
-        if (tp==='判断题') {
-            if (ans==='A'||ans==='对') ans='正确';
-            else if (ans==='B'||ans==='错') ans='错误';
+        
+        if (qtype === '判断题') {
+            if (answer==='A' || answer==='对') answer = '正确';
+            else if (answer==='B' || answer==='错') answer = '错误';
         }
-        var opts = {};
-        for (var key in cm) {
-            if (key.indexOf('选项')===0) opts[key.slice(2)] = String(row[cm[key]]||'').trim();
+        
+        var options = {};
+        for (var key in colMap) {
+            if (key.indexOf('选项') === 0) {
+                options[key.slice(2)] = String(row[colMap[key]] || '').trim();
+            }
         }
-        maxId++;
-        qs.push({id:maxId,'知识类型':String(row[cm['知识类型']]||'').trim(),'题型':tp,'题干':qt,'答案':ans,'解析':String(row[cm['解析']]||'').trim(),'选项':opts,'来源文件':pendingFileName});
+        
+        questions.push({
+            id: 0,
+            '知识类型': String(row[colMap['知识类型']] || '').trim(),
+            '题型': qtype,
+            '题干': qText,
+            '答案': answer,
+            '解析': String(row[colMap['解析']] || '').trim(),
+            '选项': options,
+            '来源文件': pendingFileName
+        });
     }
-    var bn = pendingFileName.replace(/\.(xlsx|xls|docx)$/i, '');
-    banks[bn] = qs;
+    
+    // 分配ID
+    var maxId = 0;
+    for (var bn in banks) {
+        for (var j = 0; j < banks[bn].length; j++) {
+            if (banks[bn][j].id > maxId) maxId = banks[bn][j].id;
+        }
+    }
+    for (var q = 0; q < questions.length; q++) {
+        maxId++;
+        questions[q].id = maxId;
+    }
+    
+    var bankName = pendingFileName.replace(/\.(xlsx|xls|docx)$/i, '');
+    banks[bankName] = questions;
     saveAll();
-    setStatus('导入成功：'+qs.length+' 题');
+    
+    pendingRows = null;
+    pendingFileName = '';
+    setStatus('✓ 成功导入 ' + questions.length + ' 道题目到「' + bankName + '」');
     render();
 };
 
 // ========== 渲染 ==========
 function render() {
     var m = document.getElementById('mainContent');
-    if (currentTab==='practice') renderPractice(m);
+    if (currentTab === 'practice') renderPractice(m);
     else renderManage(m);
 }
 
 function renderPractice(m) {
     var names = Object.keys(banks);
     var h = '';
-    if (names.length===0) {
-        h += '<div class="import-area" onclick="document.getElementById(\'fileInput\').click()">📁<br>点击导入题库<br><small>支持 .xlsx .xls .docx</small><input type="file" id="fileInput" accept=".xlsx,.xls,.docx" onchange="importFiles(this)"></div>';
+    
+    if (names.length === 0) {
+        h += '<div class="card" style="text-align:center;padding:40px;">';
+        h += '<div style="font-size:48px;margin-bottom:12px;">📁</div>';
+        h += '<div style="font-size:16px;color:#aaa;margin-bottom:8px;">还没有题库</div>';
+        h += '<input type="file" id="mainFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+        h += '<button class="btn btn-submit" onclick="document.getElementById(\'mainFileInput\').click()" style="width:100%;">点击选择题库文件</button>';
+        h += '<div style="font-size:12px;color:#666;margin-top:8px;">支持 .xlsx / .xls 格式</div>';
+        h += '</div>';
     } else {
-        h += '<div class="card"><div class="card-title">选择题库</div>';
-        for (var i=0; i<names.length; i++) {
-            var sel = selectedBanks.indexOf(names[i])>=0 ? ' selected' : '';
-            h += '<span class="bank-tag'+sel+'" onclick="toggleBank(\''+names[i]+'\')">'+names[i]+'</span>';
+        // 题库选择
+        h += '<div class="card"><div class="card-title">选择题库（点击切换）</div>';
+        for (var i = 0; i < names.length; i++) {
+            var sel = selectedBanks.indexOf(names[i]) >= 0 ? ' selected' : '';
+            h += '<span class="bank-tag' + sel + '" onclick="toggleBank(\'' + names[i] + '\')">' + names[i] + '</span>';
         }
-        h += '<div class="card-title" style="margin-top:8px;">练习模式</div><div class="mode-grid">';
-        var modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
-        for (var j=0; j<modes.length; j++) {
-            h += '<div class="mode-btn'+(currentMode===modes[j].i?' active':'')+'" onclick="startMode(\''+modes[j].i+'\')">'+modes[j].l+'</div>';
+        h += '</div>';
+        
+        // 模式选择
+        h += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
+        var modes = [
+            {i:'sequence', l:'📖 顺序练习'},
+            {i:'random', l:'🔀 随机练习'},
+            {i:'exam', l:'📝 模拟考试'},
+            {i:'wrong', l:'❌ 错题重做'},
+            {i:'fav', l:'⭐ 收藏练习'}
+        ];
+        for (var j = 0; j < modes.length; j++) {
+            h += '<div class="mode-btn' + (currentMode===modes[j].i?' active':'') + '" onclick="startMode(\''+modes[j].i+'\')">' + modes[j].l + '</div>';
         }
         h += '</div></div>';
         
-        if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
+        // 题目显示
+        if (currentMode && currentQuestions.length > 0 && currentIndex < currentQuestions.length) {
             var q = currentQuestions[currentIndex];
-            h += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
+            h += '<div class="progress-text">' + (currentIndex+1) + ' / ' + currentQuestions.length + '</div>';
             h += '<div class="progress-bar"><div class="progress-fill" style="width:'+((currentIndex+1)/currentQuestions.length*100)+'%"></div></div>';
-            h += '<div class="card"><div class="question-text">'+q['题干']+'</div>';
-            if (q['题型']==='判断题') {
-                for (var o=0; o<['正确','错误'].length; o++) {
-                    var s = selectedOptions.has(['正确','错误'][o]) ? ' selected' : '';
-                    h += '<div class="option-item'+s+'" onclick="toggleOption(\''+['正确','错误'][o]+'\',\'single\')"><div class="letter">'+['正确','错误'][o][0]+'</div>'+['正确','错误'][o]+'</div>';
+            h += '<div class="card">';
+            h += '<div style="color:#aaa;font-size:12px;margin-bottom:8px;">' + (q['知识类型']||'') + ' | ' + q['题型'] + '</div>';
+            h += '<div class="question-text">' + q['题干'] + '</div>';
+            
+            if (q['题型'] === '判断题') {
+                for (var o = 0; o < 2; o++) {
+                    var opt = ['正确','错误'][o];
+                    var s = selectedOptions.has(opt) ? ' selected' : '';
+                    h += '<div class="option-item' + s + '" onclick="toggleOption(\''+opt+'\',\'single\')"><div class="letter">'+opt[0]+'</div>'+opt+'</div>';
                 }
-            } else if (q['题型']==='单选题') {
-                for (var k in q['选项']) {
-                    if (q['选项'][k]) {
-                        var s2 = selectedOptions.has(k) ? ' selected' : '';
-                        h += '<div class="option-item'+s2+'" onclick="toggleOption(\''+k+'\',\'single\')"><div class="letter">'+k+'</div>'+q['选项'][k]+'</div>';
+            } else if (q['题型'] === '单选题') {
+                for (var key in q['选项']) {
+                    if (q['选项'][key]) {
+                        var s2 = selectedOptions.has(key) ? ' selected' : '';
+                        h += '<div class="option-item' + s2 + '" onclick="toggleOption(\''+key+'\',\'single\')"><div class="letter">'+key+'</div>'+q['选项'][key]+'</div>';
                     }
                 }
-            } else if (q['题型']==='多选题') {
+            } else if (q['题型'] === '多选题') {
                 for (var k2 in q['选项']) {
                     if (q['选项'][k2]) {
                         var s3 = selectedOptions.has(k2) ? ' selected' : '';
-                        h += '<div class="option-item'+s3+'" onclick="toggleOption(\''+k2+'\',\'multi\')"><div class="letter">'+(s3?'✓':'')+'</div>'+k2+'. '+q['选项'][k2]+'</div>';
+                        h += '<div class="option-item' + s3 + '" onclick="toggleOption(\''+k2+'\',\'multi\')"><div class="letter">'+(s3?'✓':'')+'</div>'+k2+'. '+q['选项'][k2]+'</div>';
                     }
                 }
             }
-            h += '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()">◀</button><button class="btn btn-submit" onclick="submitAnswer()">提交</button><button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
-            h += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button></div>';
-            h += '<div class="analysis" id="analysisBox"></div></div>';
+            
+            h += '<div class="btn-row">';
+            h += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
+            h += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
+            h += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
+            h += '<button class="btn btn-nav" onclick="toggleFav()" style="flex:0.3;">'+(favSet.has(q.id)?'★':'☆')+'</button>';
+            h += '</div>';
+            h += '<div class="analysis" id="analysisBox"></div>';
+            h += '</div>';
         }
+        
+        // 底部导入按钮
+        h += '<div style="text-align:center;margin-top:12px;">';
+        h += '<input type="file" id="extraFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+        h += '<button class="btn btn-nav" onclick="document.getElementById(\'extraFileInput\').click()">📥 导入更多题库</button>';
+        h += '</div>';
     }
-    if (names.length>0) h += '<div style="text-align:center;margin-top:8px;"><button class="nav-btn" onclick="document.getElementById(\'fileInput2\').click()">📥 导入更多</button><input type="file" id="fileInput2" accept=".xlsx,.xls,.docx" onchange="importFiles(this)" style="display:none"></div>';
     m.innerHTML = h;
 }
 
 function renderManage(m) {
     var names = Object.keys(banks);
     var h = '';
-    if (names.length===0) {
-        h += '<div class="import-area" onclick="document.getElementById(\'fileInputM\').click()">📁<br>点击导入题库<input type="file" id="fileInputM" accept=".xlsx,.xls,.docx" onchange="importFiles(this)"></div>';
+    
+    if (names.length === 0) {
+        h += '<div class="card" style="text-align:center;padding:40px;">';
+        h += '<div style="font-size:48px;margin-bottom:12px;">📁</div>';
+        h += '<div style="font-size:16px;color:#aaa;margin-bottom:8px;">还没有题库</div>';
+        h += '<input type="file" id="manageFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+        h += '<button class="btn btn-submit" onclick="document.getElementById(\'manageFileInput\').click()" style="width:100%;">点击选择题库文件</button>';
+        h += '</div>';
     } else {
-        h += '<div class="card"><div class="card-title">题库管理</div><select id="bankSelect" onchange="onBankChange()">';
-        for (var i=0; i<names.length; i++) h += '<option>'+names[i]+'</option>';
-        h += '</select><div id="qList" style="max-height:300px;overflow-y:auto;"></div>';
-        h += '<div class="btn-row"><button class="btn btn-nav" onclick="document.getElementById(\'fileInputM2\').click()">📥 导入</button><button class="btn btn-nav" onclick="deleteBank()">🗑 删除</button></div>';
-        h += '<input type="file" id="fileInputM2" accept=".xlsx,.xls,.docx" onchange="importFiles(this)" style="display:none"></div>';
+        h += '<div class="card"><div class="card-title">题库管理</div>';
+        h += '<select id="bankSelect" onchange="onBankChange()">';
+        for (var i = 0; i < names.length; i++) {
+            h += '<option>' + names[i] + '</option>';
+        }
+        h += '</select>';
+        h += '<div id="qList" style="max-height:400px;overflow-y:auto;"></div>';
+        h += '<div class="btn-row">';
+        h += '<input type="file" id="manageFileInput2" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+        h += '<button class="btn btn-nav" onclick="document.getElementById(\'manageFileInput2\').click()">📥 导入</button>';
+        h += '<button class="btn btn-nav" onclick="deleteBank()" style="color:#e94560;">🗑 删除</button>';
+        h += '</div>';
+        h += '</div>';
     }
     m.innerHTML = h;
-    if (names.length>0) onBankChange();
+    if (names.length > 0) onBankChange();
 }
 
+// ========== 文件选择处理 ==========
+window.handleFileSelect = function(input) {
+    if (input.files && input.files.length > 0) {
+        importFile(input.files[0]);
+        input.value = ''; // 清空以便重复选择同一文件
+    }
+};
+
+// ========== 题库管理 ==========
 window.onBankChange = function() {
     var sel = document.getElementById('bankSelect');
     if (!sel) return;
     var qs = banks[sel.value] || [];
-    var d = document.getElementById('qList');
+    var list = document.getElementById('qList');
     var h = '';
-    for (var i=0; i<qs.length; i++) {
-        h += '<div style="padding:8px;border-bottom:1px solid #2a2a4a;font-size:13px;"><span style="color:#e94560;">['+qs[i]['题型']+']</span> '+qs[i]['题干'].substring(0,30)+'... <span style="color:#aaa;">'+qs[i]['答案']+'</span></div>';
+    for (var i = 0; i < qs.length; i++) {
+        h += '<div style="padding:10px;border-bottom:1px solid #2a2a4a;font-size:13px;">';
+        h += '<span style="color:#e94560;">['+qs[i]['题型']+']</span> ';
+        h += qs[i]['题干'].substring(0, 35) + '...';
+        h += ' <span style="color:#aaa;float:right;">答案:'+qs[i]['答案']+'</span>';
+        h += '</div>';
     }
-    d.innerHTML = h || '<div style="color:#aaa;text-align:center;padding:20px;">无题目</div>';
+    list.innerHTML = h || '<div style="color:#aaa;text-align:center;padding:30px;">该题库无题目</div>';
 };
 
 window.deleteBank = function() {
     var sel = document.getElementById('bankSelect');
     if (!sel) return;
-    if (confirm('删除「'+sel.value+'」？')) {
-        delete banks[sel.value];
+    var name = sel.value;
+    if (confirm('确定删除题库「' + name + '」？此操作不可恢复。')) {
+        delete banks[name];
         saveAll();
-        selectedBanks = selectedBanks.filter(function(b){ return b!==sel.value; });
-        currentMode = null; currentQuestions = [];
+        selectedBanks = selectedBanks.filter(function(b) { return b !== name; });
+        currentMode = null;
+        currentQuestions = [];
         render();
-        setStatus('已删除');
+        setStatus('已删除「' + name + '」');
     }
 };
 
+// ========== 刷题逻辑 ==========
 window.toggleBank = function(name) {
-    var i = selectedBanks.indexOf(name);
-    if (i>=0) selectedBanks.splice(i,1);
+    var idx = selectedBanks.indexOf(name);
+    if (idx >= 0) selectedBanks.splice(idx, 1);
     else selectedBanks.push(name);
     render();
 };
 
 window.startMode = function(mode) {
-    if (selectedBanks.length===0 && mode!=='wrong' && mode!=='fav') { setStatus('请先选择题库'); return; }
+    if (selectedBanks.length === 0 && mode !== 'wrong' && mode !== 'fav') {
+        setStatus('请先选择题库');
+        return;
+    }
     currentMode = mode;
     selectedOptions.clear();
     currentIndex = 0;
     currentQuestions = [];
-    if (mode==='sequence' || mode==='random' || mode==='exam') {
-        for (var i=0; i<selectedBanks.length; i++) {
-            for (var j=0; j<(banks[selectedBanks[i]]||[]).length; j++) currentQuestions.push(banks[selectedBanks[i]][j]);
+    
+    if (mode === 'sequence' || mode === 'random' || mode === 'exam') {
+        for (var i = 0; i < selectedBanks.length; i++) {
+            var qs = banks[selectedBanks[i]] || [];
+            for (var j = 0; j < qs.length; j++) currentQuestions.push(qs[j]);
         }
-        if (mode==='random' || mode==='exam') {
-            for (var k=currentQuestions.length-1; k>0; k--) { var r=Math.floor(Math.random()*(k+1)); var t=currentQuestions[k]; currentQuestions[k]=currentQuestions[r]; currentQuestions[r]=t; }
+        if (mode === 'random' || mode === 'exam') {
+            for (var k = currentQuestions.length-1; k > 0; k--) {
+                var r = Math.floor(Math.random() * (k+1));
+                var tmp = currentQuestions[k];
+                currentQuestions[k] = currentQuestions[r];
+                currentQuestions[r] = tmp;
+            }
         }
-        if (mode==='exam') currentQuestions = currentQuestions.slice(0, Math.min(50, currentQuestions.length));
-    } else if (mode==='wrong') {
+        if (mode === 'exam') currentQuestions = currentQuestions.slice(0, Math.min(50, currentQuestions.length));
+    } else if (mode === 'wrong') {
         var all = [];
-        for (var bn in banks) { for (var j=0; j<banks[bn].length; j++) all.push(banks[bn][j]); }
-        for (var i=0; i<all.length; i++) { if (wrongSet.has(all[i].id)) currentQuestions.push(all[i]); }
-    } else if (mode==='fav') {
+        for (var bn in banks) for (var j = 0; j < banks[bn].length; j++) all.push(banks[bn][j]);
+        for (var i = 0; i < all.length; i++) if (wrongSet.has(all[i].id)) currentQuestions.push(all[i]);
+    } else if (mode === 'fav') {
         var all2 = [];
-        for (var bn in banks) { for (var j=0; j<banks[bn].length; j++) all2.push(banks[bn][j]); }
-        for (var i=0; i<all2.length; i++) { if (favSet.has(all2[i].id)) currentQuestions.push(all2[i]); }
+        for (var bn in banks) for (var j = 0; j < banks[bn].length; j++) all2.push(banks[bn][j]);
+        for (var i = 0; i < all2.length; i++) if (favSet.has(all2[i].id)) currentQuestions.push(all2[i]);
     }
+    
     render();
-    setStatus('加载 '+currentQuestions.length+' 题');
+    setStatus('加载 ' + currentQuestions.length + ' 道题目');
 };
 
 window.toggleOption = function(val, type) {
-    if (type==='single') { selectedOptions.clear(); selectedOptions.add(val); }
+    if (type === 'single') { selectedOptions.clear(); selectedOptions.add(val); }
     else { if (selectedOptions.has(val)) selectedOptions.delete(val); else selectedOptions.add(val); }
     render();
 };
@@ -328,17 +466,22 @@ window.toggleOption = function(val, type) {
 window.submitAnswer = function() {
     if (!currentQuestions.length) return;
     var q = currentQuestions[currentIndex];
-    var ua = q['题型']==='多选题' ? Array.from(selectedOptions).sort().join('') : (Array.from(selectedOptions)[0]||'');
+    var ua;
+    if (q['题型'] === '多选题') {
+        ua = Array.from(selectedOptions).sort().join('');
+    } else {
+        ua = Array.from(selectedOptions)[0] || '';
+    }
     if (!ua) { setStatus('请选择答案'); return; }
     var ok = ua.toUpperCase() === q['答案'].toUpperCase();
     var box = document.getElementById('analysisBox');
     if (box) {
-        box.className = 'analysis show '+(ok?'correct':'wrong');
-        box.innerHTML = ok ? '✓ 正确！' : '✗ 错误！正确答案：'+q['答案']+(q['解析']?'<br>'+q['解析']:'');
+        box.className = 'analysis show ' + (ok ? 'correct' : 'wrong');
+        box.innerHTML = ok ? '✓ 正确！' : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>' + q['解析'] : '');
     }
     if (!ok) wrongSet.add(q.id);
     saveAll();
-    setStatus(ok?'正确 ✓':'错误 ✗');
+    setStatus(ok ? '正确 ✓' : '错误 ✗');
     render();
 };
 
@@ -354,6 +497,7 @@ window.toggleFav = function() {
     if (q) { if (favSet.has(q.id)) favSet.delete(q.id); else favSet.add(q.id); saveAll(); render(); }
 };
 
+// ========== 启动 ==========
 loadData();
 render();
 </script>
