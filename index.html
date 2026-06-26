@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>智能刷题</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg: #f3f4f6;
@@ -59,9 +58,8 @@
         .btn-row { display:flex; gap:8px; margin-top:12px; }
         .analysis {
             padding:12px; border-radius:var(--radius); margin-top:12px; font-size:14px;
-            display:none; line-height:1.5;
+            line-height:1.5;
         }
-        .analysis.show { display:block; }
         .analysis.correct { background:#f0fdf4; color:#166534; }
         .analysis.wrong { background:#fee2e2; color:#b91c1c; }
         .progress-text { font-size:12px; color:var(--text2); text-align:center; margin-bottom:4px; }
@@ -134,12 +132,18 @@ let currentBankName = '';
 let wrongSet = new Set();
 let favSet = new Set();
 let currentTab = 'practice';
-let currentMode = null;
-let currentQuestions = [];
-let currentIndex = 0;
-let selectedOptions = new Set();
 
-// 暂存待导入数据
+// 刷题状态
+let currentMode = null;            // 'sequence' | 'random' | 'exam' | 'wrong' | 'fav'
+let currentQuestions = [];         // 当前题目列表
+let currentIndex = 0;
+let selectedOptions = new Set();   // 当前题选中的选项字母
+let feedbackInfo = null;           // { correct: bool, message: string }
+
+// 进度记忆
+let savedProgress = {};           // { bankName: { mode, questionIds, index, options? } }
+
+// 暂存导入数据
 let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
@@ -147,19 +151,61 @@ let pendingHeaders = [];
 // 字段选项
 const FIELD_OPTIONS = ['忽略','知识类型','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
+// ==================== 持久化 ====================
 function loadData() {
     try { banks = JSON.parse(localStorage.getItem('quizBanks') || '{}'); } catch(e) {}
     try { wrongSet = new Set(JSON.parse(localStorage.getItem('wrongSet') || '[]')); } catch(e) {}
     try { favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]')); } catch(e) {}
+    try { savedProgress = JSON.parse(localStorage.getItem('quizProgress') || '{}'); } catch(e) {}
     let names = Object.keys(banks);
-    if (names.length > 0) currentBankName = names[0];
+    if (names.length > 0) {
+        currentBankName = names[0];
+        // 恢复进度
+        if (savedProgress[currentBankName]) {
+            restoreProgress(currentBankName);
+        }
+    }
 }
+
 function saveAll() {
     localStorage.setItem('quizBanks', JSON.stringify(banks));
     localStorage.setItem('wrongSet', JSON.stringify(Array.from(wrongSet)));
     localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
+    saveProgress(); // 保存进度也一起
 }
 
+function saveProgress() {
+    if (currentBankName && currentMode && currentQuestions.length > 0) {
+        savedProgress[currentBankName] = {
+            mode: currentMode,
+            questionIds: currentQuestions.map(q => q.id),
+            index: currentIndex,
+            // 不保存选项，因为选项是临时的
+        };
+    }
+    localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
+}
+
+function restoreProgress(bankName) {
+    const p = savedProgress[bankName];
+    if (!p || !p.questionIds) return;
+    const pool = banks[bankName]?.questions || [];
+    const qMap = {};
+    pool.forEach(q => { qMap[q.id] = q; });
+    currentQuestions = p.questionIds.map(id => qMap[id]).filter(Boolean);
+    if (currentQuestions.length === 0) {
+        // 如果题库已变化，清空进度
+        delete savedProgress[bankName];
+        saveProgress();
+        return;
+    }
+    currentMode = p.mode;
+    currentIndex = Math.min(p.index, currentQuestions.length - 1);
+    selectedOptions.clear();
+    feedbackInfo = null;
+}
+
+// ==================== 界面切换 ====================
 window.switchTab = function(tab) {
     currentTab = tab;
     document.getElementById('tabPracticeBtn').classList.toggle('active', tab==='practice');
@@ -167,7 +213,7 @@ window.switchTab = function(tab) {
     render();
 };
 
-// ========== 文件导入 (读取 → 选择表头行 → 列映射) ==========
+// ==================== 文件导入 (带映射) ====================
 window.importFile = function(file) {
     if (!file) return;
     let reader = new FileReader();
@@ -178,13 +224,11 @@ window.importFile = function(file) {
         if (rows.length < 2) { alert('文件内容太少'); return; }
         pendingRows = rows;
         pendingFileName = file.name;
-        // 先让用户选择表头行
         showHeaderSelection();
     };
     reader.readAsArrayBuffer(file);
 };
 
-// ---- 选择表头行 ----
 function showHeaderSelection() {
     let container = document.getElementById('mappingList');
     let html = '<div class="preview-section"><p style="color:var(--text2);margin-bottom:8px;">文件前几行预览，请选择表头所在行：</p>';
@@ -213,12 +257,9 @@ window.confirmHeaderAndShowMapping = function() {
     if (isNaN(rowNum) || rowNum < 1 || rowNum > pendingRows.length) {
         alert('请输入有效行号'); return;
     }
-    // 获取表头
     let headerRow = pendingRows[rowNum - 1];
     pendingHeaders = headerRow.map(h => String(h || '').trim());
-    // 移除后续行中的表头重复
-    pendingRows = pendingRows.slice(rowNum); // 第一行是表头，后面是数据
-    // 显示列映射界面
+    pendingRows = pendingRows.slice(rowNum);
     showMappingUI();
 };
 
@@ -256,7 +297,6 @@ function showMappingUI() {
 }
 
 window.applyMapping = function() {
-    // 收集映射
     let mapping = {};
     let hasQ = false, hasA = false;
     for (let i = 0; i < pendingHeaders.length; i++) {
@@ -268,15 +308,11 @@ window.applyMapping = function() {
         if (field === '题干') hasQ = true;
         if (field === '答案') hasA = true;
     }
-    if (!hasQ || !hasA) {
-        alert('必须指定“题干”和“答案”的对应列！');
-        return;
-    }
+    if (!hasQ || !hasA) { alert('必须指定“题干”和“答案”的对应列！'); return; }
     document.getElementById('mappingModal').classList.remove('show');
     
-    // 开始解析
     let questions = [];
-    for (let r = 1; r < pendingRows.length; r++) { // 跳过表头行
+    for (let r = 0; r < pendingRows.length; r++) {
         let row = pendingRows[r];
         if (!row) continue;
         let qText = String(row[mapping['题干']] || '').trim();
@@ -293,7 +329,6 @@ window.applyMapping = function() {
             if (ans === 'A' || ans === '对') ans = '正确';
             else if (ans === 'B' || ans === '错') ans = '错误';
         }
-        // 收集选项 A~G
         let opts = {};
         for (let key in mapping) {
             if (key.startsWith('选项')) {
@@ -311,11 +346,9 @@ window.applyMapping = function() {
             '选项': opts
         });
     }
-    // 分配ID
     let maxId = 0;
     for (let bn in banks) for (let q of banks[bn].questions) if (q.id > maxId) maxId = q.id;
     questions.forEach(q => { maxId++; q.id = maxId; });
-    
     let bankName = pendingFileName.replace(/\.(xlsx|xls)$/i, '');
     banks[bankName] = { questions, fileName: pendingFileName };
     if (!currentBankName) currentBankName = bankName;
@@ -384,7 +417,16 @@ function renderPractice(main) {
             html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
             html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
             html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
-            html += '</div><div class="analysis" id="analysisBox"></div></div>';
+            html += '</div>';
+            // 显示反馈
+            if (feedbackInfo) {
+                html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
+            } else {
+                html += '<div class="analysis"></div>';
+            }
+            html += '</div>';
+        } else if (currentMode) {
+            html += '<div class="card" style="text-align:center;padding:20px;color:var(--text2);">当前模式没有题目可显示。</div>';
         }
         html += '<div style="text-align:center;margin-top:8px;">';
         html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
@@ -414,62 +456,131 @@ function renderManage(main) {
     main.innerHTML = html;
 }
 
-// ========== 题库操作 ==========
+// ==================== 题库操作 ====================
 window.switchBank = function(name) {
     currentBankName = name;
-    currentMode = null; currentQuestions = []; selectedOptions.clear(); render();
+    // 尝试恢复进度
+    if (savedProgress[name]) {
+        restoreProgress(name);
+    } else {
+        currentMode = null;
+        currentQuestions = [];
+        currentIndex = 0;
+        selectedOptions.clear();
+        feedbackInfo = null;
+    }
+    render();
 };
+
 window.deleteBank = function(name) {
     if (confirm('删除题库“'+name+'”?')) {
         delete banks[name];
-        if (currentBankName===name) currentBankName = Object.keys(banks)[0]||'';
-        saveAll(); render();
+        if (currentBankName===name) {
+            currentBankName = Object.keys(banks)[0]||'';
+            currentMode = null;
+            currentQuestions = [];
+            currentIndex = 0;
+            feedbackInfo = null;
+        }
+        delete savedProgress[name];
+        saveAll();
+        render();
     }
 };
 
-// ========== 刷题逻辑 ==========
+// ==================== 刷题逻辑 ====================
 window.startMode = function(mode) {
     if (!currentBankName || !banks[currentBankName]) return;
     let pool = banks[currentBankName].questions;
-    currentMode = mode; selectedOptions.clear(); currentIndex = 0;
-    if (mode==='sequence') currentQuestions = [...pool];
-    else if (mode==='random') currentQuestions = [...pool].sort(()=>Math.random()-0.5);
-    else if (mode==='exam') currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0,Math.min(50,pool.length));
-    else if (mode==='wrong') currentQuestions = pool.filter(q=>wrongSet.has(q.id));
-    else if (mode==='fav') currentQuestions = pool.filter(q=>favSet.has(q.id));
-    if (currentQuestions.length===0) { alert('没有题目'); currentMode=null; }
+    currentMode = mode;
+    selectedOptions.clear();
+    feedbackInfo = null;
+    currentIndex = 0;
+    
+    if (mode === 'sequence') {
+        currentQuestions = [...pool];
+    } else if (mode === 'random') {
+        currentQuestions = [...pool].sort(() => Math.random() - 0.5);
+    } else if (mode === 'exam') {
+        currentQuestions = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(50, pool.length));
+    } else if (mode === 'wrong') {
+        currentQuestions = pool.filter(q => wrongSet.has(q.id));
+    } else if (mode === 'fav') {
+        currentQuestions = pool.filter(q => favSet.has(q.id));
+    }
+    
+    if (currentQuestions.length === 0) {
+        alert('没有符合条件的题目');
+        currentMode = null;
+    }
+    saveProgress();
     render();
-};
-window.toggleOption = function(letter, type) {
-    if (type==='single') { selectedOptions.clear(); selectedOptions.add(letter); }
-    else selectedOptions.has(letter) ? selectedOptions.delete(letter) : selectedOptions.add(letter);
-    render();
-};
-window.submitAnswer = function() {
-    let q = currentQuestions[currentIndex];
-    let userAns = q['题型']==='多选题' ? Array.from(selectedOptions).sort().join('') : (Array.from(selectedOptions)[0]||'');
-    if (!userAns) { alert('请选择答案'); return; }
-    let isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
-    let box = document.getElementById('analysisBox');
-    box.className = 'analysis show '+(isCorrect?'correct':'wrong');
-    box.innerHTML = isCorrect ? '✓ 正确！' : '✗ 错误！正确答案：'+q['答案']+(q['解析']?'<br>'+q['解析']:'');
-    if (!isCorrect) wrongSet.add(q.id);
-    saveAll(); render();
-};
-window.nextQuestion = function() {
-    if (currentIndex < currentQuestions.length-1) { currentIndex++; selectedOptions.clear(); render(); }
-    else alert('已是最后一题');
-};
-window.prevQuestion = function() {
-    if (currentIndex > 0) { currentIndex--; selectedOptions.clear(); render(); }
-};
-window.toggleFav = function() {
-    let q = currentQuestions[currentIndex];
-    q && (favSet.has(q.id) ? favSet.delete(q.id) : favSet.add(q.id));
-    saveAll(); render();
 };
 
-// 启动
+window.toggleOption = function(letter, type) {
+    if (type === 'single') {
+        selectedOptions.clear();
+        selectedOptions.add(letter);
+    } else {
+        if (selectedOptions.has(letter)) selectedOptions.delete(letter);
+        else selectedOptions.add(letter);
+    }
+    render();
+};
+
+window.submitAnswer = function() {
+    if (!currentQuestions.length || currentIndex >= currentQuestions.length) return;
+    let q = currentQuestions[currentIndex];
+    let userAns = q['题型'] === '多选题'
+        ? Array.from(selectedOptions).sort().join('')
+        : (Array.from(selectedOptions)[0] || '');
+    if (!userAns) { alert('请选择答案'); return; }
+    let isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
+    // 设置反馈信息，不立即render，而是更新状态后重新render
+    feedbackInfo = {
+        correct: isCorrect,
+        message: isCorrect
+            ? '✓ 正确！'
+            : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>' + q['解析'] : '')
+    };
+    if (!isCorrect) wrongSet.add(q.id);
+    saveAll(); // 保存错题和进度
+    render();  // 重新渲染显示反馈
+};
+
+window.nextQuestion = function() {
+    if (currentIndex < currentQuestions.length - 1) {
+        currentIndex++;
+        selectedOptions.clear();
+        feedbackInfo = null;
+        saveProgress();
+        render();
+    } else {
+        alert('已是最后一题');
+    }
+};
+
+window.prevQuestion = function() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        selectedOptions.clear();
+        feedbackInfo = null;
+        saveProgress();
+        render();
+    }
+};
+
+window.toggleFav = function() {
+    let q = currentQuestions[currentIndex];
+    if (q) {
+        if (favSet.has(q.id)) favSet.delete(q.id);
+        else favSet.add(q.id);
+        saveAll();
+        render();
+    }
+};
+
+// ==================== 启动 ====================
 loadData();
 render();
 </script>
