@@ -126,7 +126,6 @@
             line-height: 1.6;
         }
         .import-help strong { color: #15803d; }
-        /* 更新提示条 */
         .update-banner {
             position: fixed;
             top: 0;
@@ -152,7 +151,6 @@
     </style>
 </head>
 <body>
-<!-- 更新提示 -->
 <div class="update-banner" id="updateBanner">
     检测到新版本
     <button onclick="location.reload()">立即刷新</button>
@@ -179,11 +177,10 @@
 </div>
 
 <script>
-// ==================== Service Worker 注册 ====================
+// ==================== Service Worker ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then(reg => {
-      // 检查更新
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
@@ -192,14 +189,12 @@ if ('serviceWorker' in navigator) {
           }
         });
       });
-      // 监听来自 service worker 的消息
       navigator.serviceWorker.addEventListener('message', event => {
         if (event.data === 'update-ready') {
           document.getElementById('updateBanner').style.display = 'block';
         }
       });
     });
-    // 定期检查更新（每30分钟）
     setInterval(() => {
       navigator.serviceWorker.getRegistration().then(reg => {
         if (reg) reg.update();
@@ -208,7 +203,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ==================== 原有业务逻辑 ====================
+// ==================== 业务逻辑 ====================
 let banks = {};
 let currentBankName = '';
 let wrongSet = new Set();
@@ -351,7 +346,13 @@ function autoGuessField(colName) {
 
 function showMappingUI() {
     let container = document.getElementById('mappingList');
-    let html = '<p style="color:var(--text2);margin-bottom:10px;">请为每列选择对应的含义：</p>';
+    let html = '<div class="import-help">';
+    html += '<strong>📌 导入说明：</strong><br>';
+    html += '① <strong>必须映射的列：题型、题干、知识类型、答案、选项A-G</strong>（无对应列则忽略）<br>';
+    html += '② 其他列（如序号、分数、难度等）请选择"忽略"<br>';
+    html += '③ 确认映射无误后点击"确认导入"';
+    html += '</div>';
+    html += '<p style="color:var(--text2);margin-bottom:10px;">请为每列选择对应的含义：</p>';
     for (let i = 0; i < pendingHeaders.length; i++) {
         let colName = pendingHeaders[i];
         let guessed = autoGuessField(colName);
