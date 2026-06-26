@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>智能刷题</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    </script>
     <style>
         :root {
             --bg: #f3f4f6;
@@ -62,10 +63,6 @@
         }
         .analysis.correct { background:#f0fdf4; color:#166534; }
         .analysis.wrong { background:#fee2e2; color:#b91c1c; }
-        .ai-analysis {
-            padding:12px; border-radius:var(--radius); margin-top:12px;
-            background:#f8fafc; border:1px solid var(--border); font-size:14px; line-height:1.6;
-        }
         .progress-text { font-size:12px; color:var(--text2); text-align:center; margin-bottom:4px; }
         .progress-bar { height:4px; background:var(--border); border-radius:2px; margin:12px 0; overflow:hidden; }
         .progress-fill { height:100%; background:var(--primary); transition:width 0.3s; }
@@ -121,37 +118,22 @@
 </div>
 
 <script>
-// ==================== 内置加密密钥（Base64编码） ====================
-// 请在此处填写你新 Key 的 Base64 编码，替换引号内的内容
-const ENCRYPTED_KEY = 'c2stNWY1N2ZlYzVlNmViNDFhOTkzOGNiYWUxN2VmMDdjMzQ='; // 这是旧Key的Base64，请务必替换
-
-// 解码函数
-function getDeepSeekKey() {
-    return atob(ENCRYPTED_KEY);
-}
-
-// ==================== 全局状态 ====================
 let banks = {};
 let currentBankName = '';
 let wrongSet = new Set();
 let favSet = new Set();
 let currentTab = 'practice';
-
 let currentMode = null;
 let currentQuestions = [];
 let currentIndex = 0;
 let selectedOptions = new Set();
 let feedbackInfo = null;
-let aiAnalysisText = '';
 let savedProgress = {};
-
 let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
-
 const FIELD_OPTIONS = ['忽略','知识类型','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
-// ==================== 持久化 ====================
 function loadData() {
     try { banks = JSON.parse(localStorage.getItem('quizBanks') || '{}'); } catch(e) {}
     try { wrongSet = new Set(JSON.parse(localStorage.getItem('wrongSet') || '[]')); } catch(e) {}
@@ -198,10 +180,8 @@ function restoreProgress(bankName) {
     currentIndex = Math.min(p.index, currentQuestions.length - 1);
     selectedOptions.clear();
     feedbackInfo = null;
-    aiAnalysisText = '';
 }
 
-// ==================== 界面切换 ====================
 window.switchTab = function(tab) {
     currentTab = tab;
     document.getElementById('tabPracticeBtn').classList.toggle('active', tab==='practice');
@@ -209,7 +189,6 @@ window.switchTab = function(tab) {
     render();
 };
 
-// ==================== 文件导入 ====================
 window.importFile = function(file) {
     if (!file) return;
     let reader = new FileReader();
@@ -227,8 +206,8 @@ window.importFile = function(file) {
 
 function showHeaderSelection() {
     let container = document.getElementById('mappingList');
-    let html = '<div class="preview-section"><p style="color:var(--text2);margin-bottom:8px;">文件前几行预览，请选择表头所在行：</p>';
-    html += '<table class="preview-table"><tr><th>行号</th><th>内容预览</th></tr>';
+    let html = '<p style="color:var(--text2);margin-bottom:8px;">文件前几行预览，请选择表头所在行：</p>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr><th>行号</th><th>内容预览</th></tr>';
     for (let r = 0; r < Math.min(10, pendingRows.length); r++) {
         html += '<tr><td style="font-weight:bold;color:var(--primary);">第'+(r+1)+'行</td><td>';
         let cells = pendingRows[r] || [];
@@ -243,7 +222,7 @@ function showHeaderSelection() {
     html += '<div class="btn-row" style="justify-content:center;margin-top:12px;">';
     html += '<button class="btn btn-nav" onclick="document.getElementById(\'mappingModal\').classList.remove(\'show\')">取消</button>';
     html += '<button class="btn btn-submit" onclick="confirmHeaderAndShowMapping()">下一步：列映射</button>';
-    html += '</div></div>';
+    html += '</div>';
     container.innerHTML = html;
     document.getElementById('mappingModal').classList.add('show');
 }
@@ -302,7 +281,7 @@ window.applyMapping = function() {
         if (field === '题干') hasQ = true;
         if (field === '答案') hasA = true;
     }
-    if (!hasQ || !hasA) { alert('必须指定“题干”和“答案”的对应列！'); return; }
+    if (!hasQ || !hasA) { alert('必须指定"题干"和"答案"的对应列！'); return; }
     document.getElementById('mappingModal').classList.remove('show');
 
     let questions = [];
@@ -363,7 +342,6 @@ window.handleFileSelect = function(input) {
     }
 };
 
-// ==================== 渲染 ====================
 function render() {
     let main = document.getElementById('mainContent');
     if (currentTab === 'practice') renderPractice(main);
@@ -414,10 +392,6 @@ function renderPractice(main) {
             html += '</div>';
             if (feedbackInfo) {
                 html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
-                html += '<button class="btn btn-nav" onclick="requestAI()" style="margin-top:8px;">🤖 AI 解析</button>';
-            }
-            if (aiAnalysisText) {
-                html += '<div class="ai-analysis">'+aiAnalysisText+'</div>';
             }
             html += '</div>';
         } else if (currentMode) {
@@ -451,20 +425,19 @@ function renderManage(main) {
     main.innerHTML = html;
 }
 
-// ==================== 题库操作 ====================
 window.switchBank = function(name) {
     currentBankName = name;
     if (savedProgress[name]) restoreProgress(name);
-    else { currentMode = null; currentQuestions = []; currentIndex = 0; selectedOptions.clear(); feedbackInfo = null; aiAnalysisText = ''; }
+    else { currentMode = null; currentQuestions = []; currentIndex = 0; selectedOptions.clear(); feedbackInfo = null; }
     render();
 };
 
 window.deleteBank = function(name) {
-    if (confirm('删除题库“'+name+'”?')) {
+    if (confirm('删除题库"'+name+'"?')) {
         delete banks[name];
         if (currentBankName===name) {
             currentBankName = Object.keys(banks)[0]||'';
-            currentMode = null; currentQuestions = []; currentIndex = 0; feedbackInfo = null; aiAnalysisText = '';
+            currentMode = null; currentQuestions = []; currentIndex = 0; feedbackInfo = null;
         }
         delete savedProgress[name];
         saveAll();
@@ -472,14 +445,12 @@ window.deleteBank = function(name) {
     }
 };
 
-// ==================== 刷题逻辑 ====================
 window.startMode = function(mode) {
     if (!currentBankName || !banks[currentBankName]) return;
     let pool = banks[currentBankName].questions;
     currentMode = mode;
     selectedOptions.clear();
     feedbackInfo = null;
-    aiAnalysisText = '';
     currentIndex = 0;
     if (mode==='sequence') currentQuestions = [...pool];
     else if (mode==='random') currentQuestions = [...pool].sort(()=>Math.random()-0.5);
@@ -505,57 +476,23 @@ window.submitAnswer = function() {
     let isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
     feedbackInfo = {
         correct: isCorrect,
-        message: isCorrect ? '✓ 正确！' : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>原解析：'+q['解析'] : '')
+        message: isCorrect ? '✓ 正确！' : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>解析：'+q['解析'] : '')
     };
     if (!isCorrect) wrongSet.add(q.id);
-    aiAnalysisText = '';
     saveAll();
-    render();
-};
-
-window.requestAI = async function() {
-    const key = getDeepSeekKey();
-    if (!key) { alert('DeepSeek API Key 未设置'); return; }
-    let q = currentQuestions[currentIndex];
-    let prompt = `题目：${q['题干']}\n题型：${q['题型']}\n选项：${Object.entries(q['选项']).map(([k,v])=>k+'. '+v).join('；')}\n正确答案：${q['答案']}\n我的答案：${Array.from(selectedOptions).sort().join('')}\n请详细解析这道题，并指出错误原因（如有）。`;
-    try {
-        let response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + key
-            },
-            body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: [
-                    { role: 'system', content: '你是一个专业的考试辅导老师，请根据题目信息提供详细的解析。' },
-                    { role: 'user', content: prompt }
-                ],
-                stream: false
-            })
-        });
-        let data = await response.json();
-        if (data.choices && data.choices[0]) {
-            aiAnalysisText = data.choices[0].message.content;
-        } else {
-            aiAnalysisText = 'AI解析失败：' + (data.error?.message || '未知错误');
-        }
-    } catch(err) {
-        aiAnalysisText = '请求AI解析出错：' + err.message;
-    }
     render();
 };
 
 window.nextQuestion = function() {
     if (currentIndex < currentQuestions.length-1) {
-        currentIndex++; selectedOptions.clear(); feedbackInfo=null; aiAnalysisText='';
+        currentIndex++; selectedOptions.clear(); feedbackInfo=null;
         saveProgress(); render();
     } else alert('已是最后一题');
 };
 
 window.prevQuestion = function() {
     if (currentIndex > 0) {
-        currentIndex--; selectedOptions.clear(); feedbackInfo=null; aiAnalysisText='';
+        currentIndex--; selectedOptions.clear(); feedbackInfo=null;
         saveProgress(); render();
     }
 };
@@ -565,7 +502,6 @@ window.toggleFav = function() {
     if (q) { favSet.has(q.id) ? favSet.delete(q.id) : favSet.add(q.id); saveAll(); render(); }
 };
 
-// 启动
 loadData();
 render();
 </script>
