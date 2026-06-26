@@ -1,19 +1,14 @@
-const CACHE_NAME = 'shuati-v1';
+const CACHE_NAME = 'shuati-v2';
 
-// 安装时缓存关键资源
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll([
-        './',
-        './index.html'
-      ]);
+      return cache.addAll(['./', './index.html']);
     })
   );
 });
 
-// 激活时清理旧缓存
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -24,7 +19,6 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 网络优先策略，同时更新缓存
 self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
@@ -37,7 +31,6 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// 监听 message，触发更新检查
 self.addEventListener('message', event => {
   if (event.data === 'check-update') {
     self.skipWaiting();
