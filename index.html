@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>智能刷题</title>
+    <title>刷题吧</title>
+    
+    <!-- PWA 图标和清单 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%233B82F6'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial'%3EA%3C/text%3E%3Cpath d='M35 50 L47 62 L70 38' stroke='white' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%233B82F6'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial'%3EA%3C/text%3E%3Cpath d='M35 50 L47 62 L70 38' stroke='white' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%253E%253Ccircle%20cx%3D'50'%20cy%3D'50'%20r%3D'48'%20fill%3D'%25233B82F6'%2F%253E%253Ctext%20x%3D'50'%20y%3D'68'%20font-size%3D'50'%20font-weight%3D'bold'%20text-anchor%3D'middle'%20fill%3D'white'%20font-family%3D'Arial'%253EA%253C%2Ftext%253E%253Cpath%20d%3D'M35%2050%20L47%2062%20L70%2038'%20stroke%3D'white'%20stroke-width%3D'8'%20fill%3D'none'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%233B82F6%22%7D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#3B82F6">
+    
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -20,8 +29,7 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg); color: var(--text); min-height:100vh;
-            padding-bottom: 1rem;
+            background: var(--bg); color: var(--text); min-height:100vh; padding-bottom:1rem;
         }
         .nav {
             background: var(--card); padding:12px 16px; display:flex;
@@ -109,7 +117,7 @@
 </head>
 <body>
 <div class="nav">
-    <div class="nav-title">智能刷题</div>
+    <div class="nav-title">刷题吧</div>
     <div>
         <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
         <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
@@ -146,7 +154,6 @@ let pendingFileName = '';
 let pendingHeaders = [];
 const FIELD_OPTIONS = ['忽略','知识类型','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
-// 页脚HTML
 const FOOTER_HTML = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
 
 function loadData() {
