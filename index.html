@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>智能刷题软件</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg: #1a1a2e;
@@ -31,7 +32,6 @@
             -webkit-user-select: none;
         }
 
-        /* 顶部导航 */
         .nav {
             background: var(--card);
             padding: 12px 16px;
@@ -65,15 +65,17 @@
             transform: scale(0.95);
             opacity: 0.8;
         }
+        .nav-btn.active {
+            background: var(--accent);
+            color: white;
+        }
 
-        /* 主内容区 */
         .main {
             padding: 12px;
             max-width: 600px;
             margin: 0 auto;
         }
 
-        /* 卡片 */
         .card {
             background: var(--card);
             border-radius: var(--radius);
@@ -88,7 +90,6 @@
             font-weight: 500;
         }
 
-        /* 题库选择 */
         .bank-list {
             display: flex;
             flex-wrap: wrap;
@@ -111,7 +112,6 @@
             border-color: var(--accent);
         }
 
-        /* 题目区 */
         .question-header {
             display: flex;
             justify-content: space-between;
@@ -185,7 +185,6 @@
             border-color: var(--accent);
         }
 
-        /* 按钮 */
         .btn-row {
             display: flex;
             gap: 8px;
@@ -207,7 +206,6 @@
         .btn-nav { background: var(--primary); color: var(--text); flex: 0.5; }
         .btn-fav { flex: 0.3; background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
 
-        /* 解析区 */
         .analysis {
             padding: 12px;
             border-radius: var(--radius);
@@ -220,7 +218,6 @@
         .analysis.correct { background: rgba(78,159,61,0.15); color: var(--success); }
         .analysis.wrong { background: rgba(233,69,96,0.15); color: var(--error); }
 
-        /* 进度条 */
         .progress-bar {
             height: 4px;
             background: var(--border);
@@ -240,7 +237,6 @@
             margin-bottom: 4px;
         }
 
-        /* 模式选择 */
         .mode-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -260,7 +256,6 @@
         .mode-btn:active { background: var(--primary); }
         .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
 
-        /* 导入区 */
         .import-area {
             border: 2px dashed var(--border);
             border-radius: var(--radius);
@@ -273,35 +268,6 @@
         .import-area:active { border-color: var(--accent); }
         .import-area input { display: none; }
 
-        /* 分类树 */
-        .cat-tree {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 8px;
-        }
-        .cat-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 2px;
-        }
-        .cat-item:active { background: var(--primary); }
-        .cat-item.selected { background: var(--accent); color: white; }
-        .cat-item .expand-icon {
-            font-size: 10px;
-            transition: 0.2s;
-            width: 16px;
-            text-align: center;
-        }
-        .cat-item .expand-icon.open { transform: rotate(90deg); }
-        .sub-cats { padding-left: 20px; display: none; }
-        .sub-cats.open { display: block; }
-
-        /* 底部状态栏 */
         .status-bar {
             background: var(--card);
             padding: 8px 16px;
@@ -313,69 +279,95 @@
             bottom: 0;
         }
 
-        /* 滚动条 */
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-        /* 添加桌面提示 */
-        .install-banner {
-            background: var(--accent);
-            color: white;
-            padding: 10px 16px;
-            text-align: center;
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: var(--radius);
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
             font-size: 14px;
+        }
+
+        .cat-item {
+            padding: 8px 12px;
             cursor: pointer;
-            display: none;
-            font-weight: 500;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 2px;
+            color: var(--text2);
+        }
+        .cat-item:active { background: var(--primary); }
+        .cat-item.selected { background: var(--accent); color: white; }
+
+        .question-list-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="install-banner" id="installBanner" onclick="installApp()">
-        📲 点击添加到手机桌面，像 App 一样使用
-    </div>
-
-    <!-- 顶部导航 -->
     <div class="nav">
         <div class="nav-title">智能刷题</div>
         <div>
-            <button class="nav-btn" onclick="switchTab('practice')" id="tabPractice">刷题</button>
-            <button class="nav-btn" onclick="switchTab('manage')" id="tabManage" style="margin-left:4px;">管理</button>
+            <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
+            <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')" style="margin-left:4px;">题库</button>
         </div>
     </div>
 
-    <!-- 主体 -->
     <div class="main" id="mainContent"></div>
-
-    <!-- 状态栏 -->
     <div class="status-bar" id="statusBar">就绪</div>
 
     <script>
         // ==================== 全局数据 ====================
-        let banks = JSON.parse(localStorage.getItem('quizBanks') || '{}');
-        let wrongSet = new Set(JSON.parse(localStorage.getItem('wrongSet') || '[]'));
-        let favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]'));
-        let progress = JSON.parse(localStorage.getItem('progress') || '{}');
-        let categories = new Set(JSON.parse(localStorage.getItem('categories') || '[]'));
+        let banks = {};
+        let wrongSet = new Set();
+        let favSet = new Set();
+        let progress = {};
+        let categories = new Set();
 
         let currentTab = 'practice';
         let currentMode = null;
         let currentQuestions = [];
         let currentIndex = 0;
         let selectedBanks = [];
-        let examAnswers = {};
-        let selectedCat = null;
         let selectedOptions = new Set();
+        let selectedCat = null;
 
-        // ==================== 持久化 ====================
+        // ==================== 初始化加载 ====================
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('quizBanks');
+                if (saved) banks = JSON.parse(saved);
+            } catch(e) { banks = {}; }
+            try {
+                const w = localStorage.getItem('wrongSet');
+                if (w) wrongSet = new Set(JSON.parse(w));
+            } catch(e) { wrongSet = new Set(); }
+            try {
+                const f = localStorage.getItem('favSet');
+                if (f) favSet = new Set(JSON.parse(f));
+            } catch(e) { favSet = new Set(); }
+            try {
+                const p = localStorage.getItem('progress');
+                if (p) progress = JSON.parse(p);
+            } catch(e) { progress = {}; }
+        }
+
         function saveAll() {
             localStorage.setItem('quizBanks', JSON.stringify(banks));
             localStorage.setItem('wrongSet', JSON.stringify([...wrongSet]));
             localStorage.setItem('favSet', JSON.stringify([...favSet]));
             localStorage.setItem('progress', JSON.stringify(progress));
-            localStorage.setItem('categories', JSON.stringify([...categories]));
         }
 
         function setStatus(msg) {
@@ -385,12 +377,19 @@
         // ==================== 标签切换 ====================
         function switchTab(tab) {
             currentTab = tab;
-            document.getElementById('tabPractice').style.background = tab === 'practice' ? '#e94560' : '#0f3460';
-            document.getElementById('tabManage').style.background = tab === 'manage' ? '#e94560' : '#0f3460';
+            const pBtn = document.getElementById('tabPracticeBtn');
+            const mBtn = document.getElementById('tabManageBtn');
+            if (tab === 'practice') {
+                pBtn.classList.add('active');
+                mBtn.classList.remove('active');
+            } else {
+                mBtn.classList.add('active');
+                pBtn.classList.remove('active');
+            }
             render();
         }
 
-        // ==================== 解析 Excel 文件 ====================
+        // ==================== 解析 Excel ====================
         function parseExcel(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -401,12 +400,11 @@
                         const sheet = workbook.Sheets[workbook.SheetNames[0]];
                         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                         if (rows.length < 2) {
-                            reject('文件为空或只有表头');
+                            reject('文件为空');
                             return;
                         }
                         const headers = rows[0].map(h => String(h || '').trim());
                         const questions = [];
-                        // 自动识别列
                         const colMap = {};
                         for (let i = 0; i < headers.length; i++) {
                             const h = headers[i].toLowerCase();
@@ -418,7 +416,7 @@
                             else if (/^[a-g]$/i.test(headers[i].trim())) colMap['选项' + headers[i].trim().toUpperCase()] = i;
                         }
                         if (!('题干' in colMap) || !('答案' in colMap)) {
-                            reject('缺少题干或答案列，已识别列：' + JSON.stringify(colMap));
+                            reject('缺少题干或答案列。已识别列：' + JSON.stringify(Object.keys(colMap)));
                             return;
                         }
                         for (let i = 1; i < rows.length; i++) {
@@ -441,8 +439,7 @@
                             const options = {};
                             for (let key in colMap) {
                                 if (key.startsWith('选项')) {
-                                    const letter = key.slice(2);
-                                    options[letter] = String(row[colMap[key]] || '').trim();
+                                    options[key.slice(2)] = String(row[colMap[key]] || '').trim();
                                 }
                             }
                             questions.push({
@@ -465,17 +462,14 @@
             });
         }
 
-        // ==================== 导入题库 ====================
+        // ==================== 导入 ====================
         async function importBanks(files) {
             let totalImported = 0;
             for (const file of files) {
                 try {
                     const questions = await parseExcel(file);
                     const maxId = Math.max(0, ...Object.values(banks).flatMap(qs => qs.map(q => q.id || 0)));
-                    questions.forEach((q, i) => {
-                        q.id = maxId + i + 1;
-                        if (q.知识类型) categories.add(q.知识类型);
-                    });
+                    questions.forEach((q, i) => { q.id = maxId + i + 1; });
                     const bankName = file.name.replace(/\.(xlsx|xls)$/i, '');
                     banks[bankName] = questions;
                     totalImported += questions.length;
@@ -502,26 +496,22 @@
             const bankNames = Object.keys(banks);
             let html = '';
 
-            // 导入按钮（如果没有题库则显示大导入区）
             if (bankNames.length === 0) {
-                html += `
-                    <div class="import-area" onclick="document.getElementById('fileInput').click()">
-                        <div style="font-size:36px;margin-bottom:8px;">📁</div>
-                        <div style="font-size:15px;color:#aaa;">点击导入题库 Excel 文件</div>
-                        <div style="font-size:12px;color:#666;margin-top:4px;">支持 .xlsx 格式</div>
-                        <input type="file" id="fileInput" accept=".xlsx,.xls" multiple
-                            onchange="importBanks(this.files);this.value=''">
-                    </div>`;
+                html += `<div class="import-area" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size:36px;margin-bottom:8px;">📁</div>
+                    <div style="font-size:15px;color:#aaa;">点击导入题库 Excel 文件</div>
+                    <div style="font-size:12px;color:#666;margin-top:4px;">支持 .xlsx 格式</div>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" multiple
+                        onchange="importBanks(this.files);this.value=''">
+                </div>`;
             } else {
-                // 题库选择
                 html += '<div class="card"><div class="card-title">选择题库（可多选）</div><div class="bank-list">';
                 for (const name of bankNames) {
-                    const selected = selectedBanks.includes(name) ? ' selected' : '';
-                    html += `<div class="bank-tag${selected}" onclick="toggleBank('${name}')">${name}</div>`;
+                    const sel = selectedBanks.includes(name) ? ' selected' : '';
+                    html += `<div class="bank-tag${sel}" onclick="toggleBank('${name}')">${name}</div>`;
                 }
                 html += '</div>';
 
-                // 模式选择
                 html += '<div class="card-title" style="margin-top:8px;">练习模式</div>';
                 html += '<div class="mode-grid">';
                 const modes = [
@@ -537,7 +527,6 @@
                 }
                 html += '</div></div>';
 
-                // 题目显示区
                 if (currentMode && currentQuestions.length > 0 && currentIndex < currentQuestions.length) {
                     const q = currentQuestions[currentIndex];
                     const total = currentQuestions.length;
@@ -551,7 +540,6 @@
                     html += `<span style="font-size:12px;color:#aaa;">${q['知识类型'] || ''}</span></div>`;
                     html += `<div class="question-text">${q['题干']}</div>`;
 
-                    // 选项
                     if (q['题型'] === '判断题') {
                         for (const opt of ['正确', '错误']) {
                             const sel = selectedOptions.has(opt) ? ' selected' : '';
@@ -577,25 +565,21 @@
                         }
                     }
 
-                    // 按钮
                     html += '<div class="btn-row">';
                     html += `<button class="btn btn-nav" onclick="prevQuestion()">◀</button>`;
                     html += `<button class="btn btn-submit" onclick="submitAnswer()">提交</button>`;
                     html += `<button class="btn btn-nav" onclick="nextQuestion()">▶</button>`;
                     const isFav = favSet.has(q.id);
-                    html += `<button class="btn btn-fav" onclick="toggleFav()">${isFav ? '★' : '☆'}</button>`;
+                    html += `<button class="btn btn-fav" onclick="toggleFav()" style="color:${isFav?'#e94560':'#aaa'}">${isFav ? '★' : '☆'}</button>`;
                     html += '</div>';
 
-                    // 解析区（提交后显示）
                     html += `<div class="analysis" id="analysisBox"></div>`;
-
                     html += '</div>';
                 } else if (currentMode && currentQuestions.length === 0) {
-                    html += '<div class="card" style="text-align:center;padding:40px;">没有题目</div>';
+                    html += '<div class="card" style="text-align:center;padding:40px;color:#aaa;">没有题目</div>';
                 }
             }
 
-            // 导入小按钮
             if (bankNames.length > 0) {
                 html += `<div style="text-align:center;margin-top:8px;">
                     <button class="nav-btn" onclick="document.getElementById('fileInput2').click()">📥 导入更多题库</button>
@@ -619,29 +603,23 @@
                         onchange="importBanks(this.files);this.value=''" style="display:none">
                 </div>`;
             } else {
-                // 分类树
-                html += '<div class="card"><div class="card-title">知识分类目录</div>';
-                html += '<div class="cat-tree" id="catTree"></div>';
+                html += '<div class="card"><div class="card-title">知识分类</div>';
+                html += '<div id="catTree"></div></div>';
 
-                // 题库管理
-                html += '<div class="btn-row">';
-                html += '<button class="nav-btn" onclick="document.getElementById(\'fileInputM2\').click()">📥 导入</button>';
-                html += '<button class="nav-btn" onclick="deleteBank()">🗑 删题库</button>';
-                html += '<button class="nav-btn" onclick="exportAll()">📤 导出</button>';
-                html += '</div>';
-                html += '<input type="file" id="fileInputM2" accept=".xlsx,.xls" multiple
-                    onchange="importBanks(this.files);this.value=''" style="display:none">';
-
-                // 题库选择
-                html += '<select id="bankSelect" onchange="onBankChange()" style="width:100%;padding:10px;border-radius:12px;margin-top:8px;background:#1a1a30;color:#eee;border:1px solid #2a2a4a;">';
+                html += '<div class="card">';
+                html += '<select id="bankSelect" onchange="onBankChange()" style="margin-bottom:8px;">';
                 for (const name of bankNames) {
                     html += `<option value="${name}">${name}</option>`;
                 }
-                html += '</select></div>';
-
-                // 题目列表
-                html += '<div class="card"><div class="card-title">题目列表</div>';
-                html += '<div id="questionList"></div></div>';
+                html += '</select>';
+                html += '<div id="questionList" style="max-height:300px;overflow-y:auto;"></div>';
+                html += `<div class="btn-row" style="margin-top:8px;">
+                    <button class="nav-btn" onclick="document.getElementById('fileInputM2').click()">📥 导入</button>
+                    <button class="nav-btn" onclick="deleteBank()">🗑 删除题库</button>
+                </div>`;
+                html += '<input type="file" id="fileInputM2" accept=".xlsx,.xls" multiple
+                    onchange="importBanks(this.files);this.value=''" style="display:none">';
+                html += '</div>';
             }
 
             main.innerHTML = html;
@@ -654,101 +632,88 @@
         function renderCatTree() {
             const treeDiv = document.getElementById('catTree');
             if (!treeDiv) return;
-            const bankName = document.getElementById('bankSelect')?.value;
-            if (!bankName) return;
+            const bankSelect = document.getElementById('bankSelect');
+            if (!bankSelect) return;
+            const bankName = bankSelect.value;
+            if (!bankName || !banks[bankName]) return;
 
-            // 从当前题库提取分类
             const qs = banks[bankName] || [];
             const cats = [...new Set(qs.map(q => q['知识类型']).filter(Boolean))];
-            const tree = {};
-            for (const cat of cats) {
-                const parts = cat.split('/');
-                let current = tree;
-                for (const part of parts) {
-                    if (!current[part]) current[part] = {};
-                    current = current[part];
+            
+            function buildTree(cats) {
+                const tree = {};
+                for (const cat of cats) {
+                    const parts = cat.split('/');
+                    let current = tree;
+                    for (const part of parts) {
+                        if (!current[part]) current[part] = {};
+                        current = current[part];
+                    }
                 }
+                return tree;
             }
 
             function renderTree(node, prefix = '') {
                 let html = '';
                 for (const [name, children] of Object.entries(node)) {
                     const path = prefix ? `${prefix}/${name}` : name;
-                    const hasChildren = Object.keys(children).length > 0;
-                    const selected = selectedCat === path ? ' selected' : '';
-                    html += `<div class="cat-item${selected}" onclick="selectCat('${path}')">`;
-                    html += `${name} (${countCatQs(path, bankName)})</div>`;
-                    if (hasChildren) {
-                        html += `<div class="sub-cats open">${renderTree(children, path)}</div>`;
+                    const count = qs.filter(q => q['知识类型'] === path || (q['知识类型'] || '').startsWith(path + '/')).length;
+                    const sel = selectedCat === path ? ' selected' : '';
+                    html += `<div class="cat-item${sel}" onclick="selectCat('${path}')">📁 ${name} (${count})</div>`;
+                    if (Object.keys(children).length > 0) {
+                        html += `<div style="padding-left:16px;">${renderTree(children, path)}</div>`;
                     }
                 }
                 return html;
             }
 
+            const tree = buildTree(cats);
             treeDiv.innerHTML = renderTree(tree) || '<div style="color:#aaa;padding:8px;">暂无分类</div>';
         }
 
-        function countCatQs(catPath, bankName) {
-            const qs = banks[bankName] || [];
-            return qs.filter(q => q['知识类型'] === catPath || (q['知识类型'] || '').startsWith(catPath + '/')).length;
-        }
-
         function selectCat(path) {
-            selectedCat = path;
+            selectedCat = (selectedCat === path) ? null : path;
             renderCatTree();
             onBankChange();
         }
 
         function onBankChange() {
-            const bankName = document.getElementById('bankSelect')?.value;
-            if (!bankName) return;
-            const qs = banks[bankName] || [];
-            let filteredQs = qs;
+            const bankSelect = document.getElementById('bankSelect');
+            if (!bankSelect) return;
+            const bankName = bankSelect.value;
+            if (!bankName || !banks[bankName]) return;
+
+            let qs = banks[bankName] || [];
             if (selectedCat) {
-                filteredQs = qs.filter(q => q['知识类型'] === selectedCat || (q['知识类型'] || '').startsWith(selectedCat + '/'));
+                qs = qs.filter(q => q['知识类型'] === selectedCat || (q['知识类型'] || '').startsWith(selectedCat + '/'));
             }
+
             const listDiv = document.getElementById('questionList');
             if (!listDiv) return;
             let html = '';
-            for (const q of filteredQs) {
-                html += `<div style="padding:8px;border-bottom:1px solid #2a2a4a;font-size:13px;">
-                    <span style="color:#e94560;">[${q['题型']}]</span> ${q['题干'].substring(0, 40)}...
-                    <span style="color:#aaa;float:right;">答案: ${q['答案']}</span></div>`;
+            for (const q of qs) {
+                html += `<div class="question-list-item">
+                    <span><span style="color:#e94560;">[${q['题型']}]</span> ${q['题干'].substring(0, 30)}...</span>
+                    <span style="color:#aaa;font-size:12px;">${q['答案']}</span>
+                </div>`;
             }
             listDiv.innerHTML = html || '<div style="color:#aaa;text-align:center;padding:20px;">无题目</div>';
         }
 
         function deleteBank() {
-            const bankName = document.getElementById('bankSelect')?.value;
+            const bankSelect = document.getElementById('bankSelect');
+            if (!bankSelect) return;
+            const bankName = bankSelect.value;
             if (!bankName) return;
-            if (confirm(`确定删除题库「${bankName}」？此操作不可恢复。`)) {
+            if (confirm(`确定删除题库「${bankName}」？`)) {
                 delete banks[bankName];
                 saveAll();
                 setStatus(`已删除「${bankName}」`);
+                selectedBanks = selectedBanks.filter(b => b !== bankName);
+                currentMode = null;
+                currentQuestions = [];
                 render();
             }
-        }
-
-        function exportAll() {
-            const allQs = [];
-            for (const [name, qs] of Object.entries(banks)) {
-                for (const q of qs) {
-                    allQs.push({
-                        题库: name,
-                        知识类型: q['知识类型'],
-                        题型: q['题型'],
-                        题干: q['题干'],
-                        ...q['选项'],
-                        答案: q['答案'],
-                        解析: q['解析']
-                    });
-                }
-            }
-            const ws = XLSX.utils.json_to_sheet(allQs);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, '题库');
-            XLSX.writeFile(wb, '全部题库导出.xlsx');
-            setStatus('导出成功');
         }
 
         // ==================== 刷题逻辑 ====================
@@ -767,32 +732,31 @@
             currentMode = mode;
             selectedOptions.clear();
             currentIndex = 0;
-            examAnswers = {};
 
             if (mode === 'sequence') {
                 currentQuestions = selectedBanks.flatMap(bn => banks[bn] || []);
-                const key = selectedBanks.sort().join('|');
-                currentIndex = Math.min(progress[key]?.sequence || 0, currentQuestions.length - 1);
             } else if (mode === 'random') {
                 currentQuestions = selectedBanks.flatMap(bn => banks[bn] || []);
-                const key = selectedBanks.sort().join('|');
-                if (!progress[key]?.randomPool) {
-                    const ids = currentQuestions.map(q => q.id);
-                    for (let i = ids.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [ids[i], ids[j]] = [ids[j], ids[i]];
-                    }
-                    progress[key] = { randomPool: ids, randomIndex: 0 };
+                // 打乱
+                for (let i = currentQuestions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentQuestions[i], currentQuestions[j]] = [currentQuestions[j], currentQuestions[i]];
                 }
-                const pool = progress[key].randomPool;
-                currentQuestions = pool.map(id => currentQuestions.find(q => q.id === id)).filter(Boolean);
-                currentIndex = progress[key].randomIndex || 0;
             } else if (mode === 'wrong') {
                 const wIds = [...wrongSet];
                 currentQuestions = Object.values(banks).flat().filter(q => wIds.includes(q.id));
             } else if (mode === 'fav') {
                 const fIds = [...favSet];
                 currentQuestions = Object.values(banks).flat().filter(q => fIds.includes(q.id));
+            } else if (mode === 'exam') {
+                currentQuestions = selectedBanks.flatMap(bn => banks[bn] || []);
+                // 随机抽取50题
+                const count = Math.min(50, currentQuestions.length);
+                for (let i = currentQuestions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentQuestions[i], currentQuestions[j]] = [currentQuestions[j], currentQuestions[i]];
+                }
+                currentQuestions = currentQuestions.slice(0, count);
             }
 
             document.getElementById('analysisBox')?.classList.remove('show', 'correct', 'wrong');
@@ -849,10 +813,6 @@
             if (currentIndex < currentQuestions.length - 1) {
                 currentIndex++;
                 selectedOptions.clear();
-                if (currentMode === 'sequence') {
-                    const key = selectedBanks.sort().join('|');
-                    progress[key] = { ...progress[key], sequence: currentIndex };
-                }
                 document.getElementById('analysisBox')?.classList.remove('show', 'correct', 'wrong');
                 render();
             } else {
@@ -880,12 +840,8 @@
         }
 
         // ==================== 初始化 ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            render();
-        });
+        loadData();
+        render();
     </script>
-
-    <!-- 使用 CDN 加载 xlsx 库 -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </body>
 </html>
