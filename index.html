@@ -126,9 +126,38 @@
             line-height: 1.6;
         }
         .import-help strong { color: #15803d; }
+        /* 更新提示条 */
+        .update-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            text-align: center;
+            padding: 10px 16px;
+            z-index: 999;
+            font-size: 14px;
+            display: none;
+        }
+        .update-banner button {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 5px 15px;
+            border-radius: 16px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
+<!-- 更新提示 -->
+<div class="update-banner" id="updateBanner">
+    检测到新版本
+    <button onclick="location.reload()">立即刷新</button>
+</div>
+
 <div class="nav">
     <div class="nav-title">刷题吧</div>
     <div>
@@ -150,6 +179,36 @@
 </div>
 
 <script>
+// ==================== Service Worker 注册 ====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // 检查更新
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            document.getElementById('updateBanner').style.display = 'block';
+          }
+        });
+      });
+      // 监听来自 service worker 的消息
+      navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data === 'update-ready') {
+          document.getElementById('updateBanner').style.display = 'block';
+        }
+      });
+    });
+    // 定期检查更新（每30分钟）
+    setInterval(() => {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg) reg.update();
+      });
+    }, 30 * 60 * 1000);
+  });
+}
+
+// ==================== 原有业务逻辑 ====================
 let banks = {};
 let currentBankName = '';
 let wrongSet = new Set();
@@ -244,6 +303,12 @@ function showHeaderSelection() {
     html += '<strong>📌 题库格式要求：</strong><br>';
     html += '表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong>';
     html += '</div>';
+    html += '<div class="import-help">';
+    html += '<strong>📌 导入说明：</strong><br>';
+    html += '① 请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）<br>';
+    html += '② 下一步将为每列指定含义，请将必须的列（题型、题干、答案）正确映射，其他列可忽略<br>';
+    html += '③ 确认无误后点"确认导入"';
+    html += '</div>';
     html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr><th>行号</th><th>内容预览</th></tr>';
     for (let r = 0; r < Math.min(10, pendingRows.length); r++) {
         html += '<tr><td style="font-weight:bold;color:var(--primary);">第'+(r+1)+'行</td><td>';
@@ -286,15 +351,7 @@ function autoGuessField(colName) {
 
 function showMappingUI() {
     let container = document.getElementById('mappingList');
-    let html = '<div class="import-help">';
-    html += '<strong>📌 导入说明：</strong><br>';
-    html += '① 请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）<br>';
-    html += '② <strong>必须映射</strong>：<strong>题型、题干、答案</strong><br>';
-    html += '③ <strong>建议映射</strong>：知识类型（题目标签）、解析（如有）、选项A-G<br>';
-    html += '④ <strong>其他列选"忽略"</strong><br>';
-    html += '⑤ 确认无误后点"确认导入"';
-    html += '</div>';
-    html += '<p style="color:var(--text2);margin-bottom:10px;">请为每列选择对应的含义：</p>';
+    let html = '<p style="color:var(--text2);margin-bottom:10px;">请为每列选择对应的含义：</p>';
     for (let i = 0; i < pendingHeaders.length; i++) {
         let colName = pendingHeaders[i];
         let guessed = autoGuessField(colName);
