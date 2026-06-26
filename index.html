@@ -148,6 +148,17 @@
             margin-left: 10px;
             font-weight: bold;
         }
+        .format-hint {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin: 8px 0;
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .format-hint strong { color: #1e293b; }
     </style>
 </head>
 <body>
@@ -295,14 +306,7 @@ window.importFile = function(file) {
 function showHeaderSelection() {
     let container = document.getElementById('mappingList');
     let html = '<div class="import-help">';
-    html += '<strong>📌 题库格式要求：</strong><br>';
-    html += '表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong>';
-    html += '</div>';
-    html += '<div class="import-help">';
-    html += '<strong>📌 导入说明：</strong><br>';
-    html += '① 请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）<br>';
-    html += '② 下一步将为每列指定含义，请将必须的列（题型、题干、答案）正确映射，其他列可忽略<br>';
-    html += '③ 确认无误后点"确认导入"';
+    html += '① 请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）';
     html += '</div>';
     html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr><th>行号</th><th>内容预览</th></tr>';
     for (let r = 0; r < Math.min(10, pendingRows.length); r++) {
@@ -455,6 +459,11 @@ function renderPractice() {
         html += '<div class="card" style="text-align:center;padding:40px;">';
         html += '<div style="font-size:48px;margin-bottom:12px;">📁</div>';
         html += '<div style="color:var(--text2);margin-bottom:12px;">还没有题库</div>';
+        // 格式要求显示在此处
+        html += '<div class="format-hint">';
+        html += '<strong>📌 题库格式要求：</strong><br>';
+        html += '表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong>';
+        html += '</div>';
         html += '<input type="file" id="mainInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
         html += '<button class="btn btn-submit" onclick="document.getElementById(\'mainInput\').click()" style="width:100%;">选择题库文件</button>';
         html += '</div>';
