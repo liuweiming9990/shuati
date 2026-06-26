@@ -4,18 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>刷题吧</title>
-    
+
     <!-- 桌面图标 -->
     <link rel="icon" type="image/png" href="tubiao.PNG">
     <link rel="apple-touch-icon" sizes="180x180" href="tubiao.PNG">
-    
+
     <!-- PWA -->
     <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%7D">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#3B82F6">
-    
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    </script>
     <style>
         :root {
             --bg: #f3f4f6;
@@ -115,6 +116,19 @@
             text-align:center; padding:20px 12px; color:var(--text2); font-size:13px;
             border-top:1px solid var(--border); margin-top:24px;
         }
+        .import-help {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #166534;
+            line-height: 1.6;
+        }
+        .import-help strong {
+            color: #15803d;
+        }
     </style>
 </head>
 <body>
@@ -130,7 +144,14 @@
 <div class="modal-overlay" id="mappingModal">
     <div class="modal-box">
         <h3>📋 列映射 - 请指定每列含义</h3>
-        <p style="color:var(--text2); text-align:center; margin-bottom:10px;">Excel列名 → 映射为</p>
+        <div class="import-help">
+            <strong>📌 导入说明：</strong><br>
+            ① 先在上一步选择表头所在行<br>
+            ② <strong>必须映射</strong>：<strong>题型、题干、答案</strong><br>
+            ③ <strong>建议映射</strong>：知识类型（题目标签）、解析（如有）、选项A-G<br>
+            ④ <strong>其他列选"忽略"</strong><br>
+            ⑤ 确认无误后点"确认导入"
+        </div>
         <div id="mappingList"></div>
         <div class="btn-row" style="justify-content:center;">
             <button class="btn btn-nav" onclick="closeMappingModal()">取消</button>
@@ -230,7 +251,11 @@ window.importFile = function(file) {
 
 function showHeaderSelection() {
     let container = document.getElementById('mappingList');
-    let html = '<p style="color:var(--text2);margin-bottom:8px;">文件前几行预览，请选择表头所在行：</p>';
+    let html = '<div class="import-help">';
+    html += '<strong>📌 题库格式要求：</strong><br>';
+    html += '表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong><br>';
+    html += '<strong>① 请在下方预览中填写表头在第几行</strong>（如第1行是注意事项，表头在第2行则填2）';
+    html += '</div>';
     html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr><th>行号</th><th>内容预览</th></tr>';
     for (let r = 0; r < Math.min(10, pendingRows.length); r++) {
         html += '<tr><td style="font-weight:bold;color:var(--primary);">第'+(r+1)+'行</td><td>';
@@ -265,7 +290,7 @@ window.confirmHeaderAndShowMapping = function() {
 function autoGuessField(colName) {
     let lower = colName.toLowerCase();
     if (/^[a-g]$/i.test(colName.trim())) return '选项' + colName.trim().toUpperCase();
-    if (/知识|类别|章|节|模块|分类/.test(lower)) return '知识类型';
+    if (/知识|类别|章|节|模块|分类|标签/.test(lower)) return '知识类型';
     if (/题型|类型/.test(lower)) return '题型';
     if (/题干|题目|问题|内容/.test(lower)) return '题干';
     if (/答案|正确/.test(lower)) return '答案';
