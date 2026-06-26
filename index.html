@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>智能刷题</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg: #f3f4f6;
@@ -47,12 +46,14 @@
             border:1.5px solid var(--border); font-size:15px; transition:0.2s;
         }
         .option-item.selected { border-color:var(--primary); background:rgba(59,130,246,0.05); }
+        .option-item.correct-highlight { border-color:#10B981; background:rgba(16,185,129,0.08); }
         .option-item .letter {
             width:28px; height:28px; border-radius:50%; background:rgba(59,130,246,0.1);
             display:flex; align-items:center; justify-content:center; margin-right:10px;
             font-weight:700; font-size:13px; flex-shrink:0; color:var(--primary);
         }
         .option-item.selected .letter { background:var(--primary); color:#fff; }
+        .option-item.correct-highlight .letter { background:#10B981; color:#fff; }
         .btn { padding:14px; border:none; border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
         .btn-submit { background:var(--primary); color:#fff; }
         .btn-nav { background:var(--input-bg); color:var(--text); border:1px solid var(--border); }
@@ -366,13 +367,24 @@ function renderPractice(main) {
         let qs = banks[currentBankName]?.questions || [];
         html += '<div style="font-size:12px;color:var(--text2);">题目数：'+qs.length+'</div></div>';
 
+        // 常规练习模式
         html += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
         let modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
         for (let m of modes) html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
         html += '</div></div>';
 
+        // 题型专项练习
+        html += '<div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
+        html += '<div class="mode-btn'+(currentMode==='single_choice'?' active':'')+'" onclick="startMode(\'single_choice\')">单选题</div>';
+        html += '<div class="mode-btn'+(currentMode==='multi_choice'?' active':'')+'" onclick="startMode(\'multi_choice\')">多选题</div>';
+        html += '<div class="mode-btn'+(currentMode==='judge'?' active':'')+'" onclick="startMode(\'judge\')">判断题</div>';
+        html += '<div class="mode-btn'+(currentMode==='memorize'?' active':'')+'" onclick="startMode(\'memorize\')">📖 背题模式</div>';
+        html += '</div></div>';
+
+        // 题目显示区域
         if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
             let q = currentQuestions[currentIndex];
+            let isMemorize = (currentMode === 'memorize');
             html += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
             html += '<div class="progress-bar"><div class="progress-fill" style="width:'+((currentIndex+1)/currentQuestions.length*100)+'%"></div></div>';
             html += '<div class="card">';
@@ -380,23 +392,52 @@ function renderPractice(main) {
             html += '<div class="question-text">'+q['题干']+'</div>';
             let labels = Object.keys(q['选项']).filter(k=>q['选项'][k]);
             if (q['题型']==='判断题') { labels=['A','B']; q['选项']={A:'正确',B:'错误'}; }
+
+            // 背题模式：确定正确答案字母
+            let correctLetters = [];
+            if (isMemorize) {
+                if (q['题型'] === '判断题') {
+                    correctLetters = (q['答案'] === '正确') ? ['A'] : ['B'];
+                } else {
+                    correctLetters = q['答案'].split('');
+                }
+            }
+
             for (let l of labels) {
                 let sel = selectedOptions.has(l)?' selected':'';
-                html += '<div class="option-item'+sel+'" onclick="toggleOption(\''+l+'\',\''+(q['题型']==='多选题'?'multi':'single')+'\')"><div class="letter">'+l+'</div>'+q['选项'][l]+'</div>';
+                let isCorrect = correctLetters.includes(l);
+                let optClass = sel;
+                if (isMemorize && isCorrect) optClass += ' correct-highlight';
+                html += '<div class="option-item'+optClass+'" onclick="'+(isMemorize?'':'toggleOption(\''+l+'\',\''+(q['题型']==='多选题'?'multi':'single')+'\')')+'"><div class="letter">'+l+'</div>'+q['选项'][l]+'</div>';
             }
-            html += '<div class="btn-row">';
-            html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
-            html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
-            html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
-            html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
-            html += '</div>';
-            if (feedbackInfo) {
-                html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
+
+            if (isMemorize) {
+                // 背题模式只显示上一题/下一题
+                html += '<div class="btn-row">';
+                html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
+                html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
+                html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
+                html += '</div>';
+                // 显示解析
+                if (q['解析']) {
+                    html += '<div class="analysis" style="background:#f0fdf4;color:#166534;display:block;">📖 解析：'+q['解析']+'</div>';
+                }
+            } else {
+                html += '<div class="btn-row">';
+                html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
+                html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
+                html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
+                html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
+                html += '</div>';
+                if (feedbackInfo) {
+                    html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
+                }
             }
             html += '</div>';
         } else if (currentMode) {
             html += '<div class="card" style="text-align:center;padding:20px;color:var(--text2);">当前模式没有题目</div>';
         }
+
         html += '<div style="text-align:center;margin-top:8px;">';
         html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
         html += '<button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥 导入更多</button></div>';
@@ -457,6 +498,10 @@ window.startMode = function(mode) {
     else if (mode==='exam') currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0,Math.min(50,pool.length));
     else if (mode==='wrong') currentQuestions = pool.filter(q=>wrongSet.has(q.id));
     else if (mode==='fav') currentQuestions = pool.filter(q=>favSet.has(q.id));
+    else if (mode==='single_choice') currentQuestions = pool.filter(q=>q['题型']==='单选题');
+    else if (mode==='multi_choice') currentQuestions = pool.filter(q=>q['题型']==='多选题');
+    else if (mode==='judge') currentQuestions = pool.filter(q=>q['题型']==='判断题');
+    else if (mode==='memorize') currentQuestions = [...pool];
     if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; }
     saveProgress();
     render();
