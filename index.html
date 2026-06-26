@@ -57,6 +57,12 @@
         .btn { padding:14px; border:none; border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
         .btn-submit { background:var(--primary); color:#fff; }
         .btn-nav { background:var(--input-bg); color:var(--text); border:1px solid var(--border); }
+        /* 背题模式大号翻页按钮 */
+        .btn-memorize-nav {
+            background:var(--primary); color:#fff; border:none;
+            padding:18px 24px; font-size:18px; font-weight:700; border-radius:var(--radius);
+            flex:1; margin:0 4px;
+        }
         .btn-row { display:flex; gap:8px; margin-top:12px; }
         .analysis {
             padding:12px; border-radius:var(--radius); margin-top:12px; font-size:14px;
@@ -64,6 +70,7 @@
         }
         .analysis.correct { background:#f0fdf4; color:#166534; }
         .analysis.wrong { background:#fee2e2; color:#b91c1c; }
+        .analysis.info { background:#f0fdf4; color:#166534; }
         .progress-text { font-size:12px; color:var(--text2); text-align:center; margin-bottom:4px; }
         .progress-bar { height:4px; background:var(--border); border-radius:2px; margin:12px 0; overflow:hidden; }
         .progress-fill { height:100%; background:var(--primary); transition:width 0.3s; }
@@ -378,13 +385,27 @@ function renderPractice(main) {
         html += '<div class="mode-btn'+(currentMode==='single_choice'?' active':'')+'" onclick="startMode(\'single_choice\')">单选题</div>';
         html += '<div class="mode-btn'+(currentMode==='multi_choice'?' active':'')+'" onclick="startMode(\'multi_choice\')">多选题</div>';
         html += '<div class="mode-btn'+(currentMode==='judge'?' active':'')+'" onclick="startMode(\'judge\')">判断题</div>';
-        html += '<div class="mode-btn'+(currentMode==='memorize'?' active':'')+'" onclick="startMode(\'memorize\')">📖 背题模式</div>';
+        html += '</div></div>';
+
+        // 背题模式（独立模块）
+        html += '<div class="card"><div class="card-title">📖 背题模式</div>';
+        html += '<div class="mode-grid">';
+        let memorizeModes = [
+            {i:'memorize_seq',l:'顺序背题'},
+            {i:'memorize_random',l:'随机背题'},
+            {i:'memorize_single',l:'只背单选'},
+            {i:'memorize_multi',l:'只背多选'},
+            {i:'memorize_judge',l:'只背判断'}
+        ];
+        for (let m of memorizeModes) {
+            html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
+        }
         html += '</div></div>';
 
         // 题目显示区域
+        let isMemorize = currentMode && currentMode.startsWith('memorize');
         if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
             let q = currentQuestions[currentIndex];
-            let isMemorize = (currentMode === 'memorize');
             html += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
             html += '<div class="progress-bar"><div class="progress-fill" style="width:'+((currentIndex+1)/currentQuestions.length*100)+'%"></div></div>';
             html += '<div class="card">';
@@ -393,7 +414,6 @@ function renderPractice(main) {
             let labels = Object.keys(q['选项']).filter(k=>q['选项'][k]);
             if (q['题型']==='判断题') { labels=['A','B']; q['选项']={A:'正确',B:'错误'}; }
 
-            // 背题模式：确定正确答案字母
             let correctLetters = [];
             if (isMemorize) {
                 if (q['题型'] === '判断题') {
@@ -412,15 +432,16 @@ function renderPractice(main) {
             }
 
             if (isMemorize) {
-                // 背题模式只显示上一题/下一题
-                html += '<div class="btn-row">';
-                html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
-                html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
-                html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
+                // 背题模式：大号翻页按钮
+                html += '<div class="btn-row" style="justify-content:center;margin-top:16px;">';
+                html += '<button class="btn-memorize-nav" onclick="prevQuestion()">◀ 上一题</button>';
+                html += '<button class="btn-memorize-nav" onclick="nextQuestion()">▶ 下一题</button>';
                 html += '</div>';
-                // 显示解析
+                html += '<div style="text-align:center;margin-top:8px;">';
+                html += '<button class="btn btn-nav" onclick="toggleFav()" style="margin:0 auto;">'+(favSet.has(q.id)?'★ 已收藏':'☆ 收藏')+'</button>';
+                html += '</div>';
                 if (q['解析']) {
-                    html += '<div class="analysis" style="background:#f0fdf4;color:#166534;display:block;">📖 解析：'+q['解析']+'</div>';
+                    html += '<div class="analysis info" style="display:block;">📖 解析：'+q['解析']+'</div>';
                 }
             } else {
                 html += '<div class="btn-row">';
@@ -493,6 +514,7 @@ window.startMode = function(mode) {
     selectedOptions.clear();
     feedbackInfo = null;
     currentIndex = 0;
+
     if (mode==='sequence') currentQuestions = [...pool];
     else if (mode==='random') currentQuestions = [...pool].sort(()=>Math.random()-0.5);
     else if (mode==='exam') currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0,Math.min(50,pool.length));
@@ -501,7 +523,12 @@ window.startMode = function(mode) {
     else if (mode==='single_choice') currentQuestions = pool.filter(q=>q['题型']==='单选题');
     else if (mode==='multi_choice') currentQuestions = pool.filter(q=>q['题型']==='多选题');
     else if (mode==='judge') currentQuestions = pool.filter(q=>q['题型']==='判断题');
-    else if (mode==='memorize') currentQuestions = [...pool];
+    else if (mode==='memorize_seq') currentQuestions = [...pool];
+    else if (mode==='memorize_random') currentQuestions = [...pool].sort(()=>Math.random()-0.5);
+    else if (mode==='memorize_single') currentQuestions = pool.filter(q=>q['题型']==='单选题');
+    else if (mode==='memorize_multi') currentQuestions = pool.filter(q=>q['题型']==='多选题');
+    else if (mode==='memorize_judge') currentQuestions = pool.filter(q=>q['题型']==='判断题');
+
     if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; }
     saveProgress();
     render();
