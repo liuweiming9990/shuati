@@ -62,6 +62,10 @@
         }
         .analysis.correct { background:#f0fdf4; color:#166534; }
         .analysis.wrong { background:#fee2e2; color:#b91c1c; }
+        .ai-analysis {
+            padding:12px; border-radius:var(--radius); margin-top:12px;
+            background:#f8fafc; border:1px solid var(--border); font-size:14px; line-height:1.6;
+        }
         .progress-text { font-size:12px; color:var(--text2); text-align:center; margin-bottom:4px; }
         .progress-bar { height:4px; background:var(--border); border-radius:2px; margin:12px 0; overflow:hidden; }
         .progress-fill { height:100%; background:var(--primary); transition:width 0.3s; }
@@ -71,8 +75,6 @@
             border-radius:var(--radius); color:var(--text); font-size:14px; cursor:pointer; text-align:center;
         }
         .mode-btn.active { background:var(--primary); border-color:var(--primary); color:#fff; }
-
-        /* 映射弹窗 */
         .modal-overlay {
             display:none; position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.5); z-index:200; justify-content:center; align-items:center;
@@ -90,12 +92,6 @@
         .mapping-row select {
             padding:6px 10px; border-radius:8px; border:1px solid var(--border); font-size:13px;
         }
-        .preview-section { margin-bottom:16px; }
-        .preview-table { width:100%; border-collapse:collapse; font-size:12px; }
-        .preview-table td, .preview-table th {
-            border:1px solid var(--border); padding:4px 6px; text-align:left;
-        }
-        .preview-table th { background:var(--input-bg); }
         select {
             width:100%; padding:12px; border-radius:var(--radius);
             border:1px solid var(--border); font-size:14px; margin-bottom:8px;
@@ -112,7 +108,6 @@
 </div>
 <div class="main" id="mainContent"></div>
 
-<!-- 列映射弹窗 -->
 <div class="modal-overlay" id="mappingModal">
     <div class="modal-box">
         <h3>📋 列映射 - 请指定每列含义</h3>
@@ -126,29 +121,34 @@
 </div>
 
 <script>
-// ==================== 全局数据 ====================
-let banks = {};                     // {题库名: { questions, fileName }}
+// ==================== 内置加密密钥（Base64编码） ====================
+// 请在此处填写你新 Key 的 Base64 编码，替换引号内的内容
+const ENCRYPTED_KEY = 'c2stNWY1N2ZlYzVlNmViNDFhOTkzOGNiYWUxN2VmMDdjMzQ='; // 这是旧Key的Base64，请务必替换
+
+// 解码函数
+function getDeepSeekKey() {
+    return atob(ENCRYPTED_KEY);
+}
+
+// ==================== 全局状态 ====================
+let banks = {};
 let currentBankName = '';
 let wrongSet = new Set();
 let favSet = new Set();
 let currentTab = 'practice';
 
-// 刷题状态
-let currentMode = null;            // 'sequence' | 'random' | 'exam' | 'wrong' | 'fav'
-let currentQuestions = [];         // 当前题目列表
+let currentMode = null;
+let currentQuestions = [];
 let currentIndex = 0;
-let selectedOptions = new Set();   // 当前题选中的选项字母
-let feedbackInfo = null;           // { correct: bool, message: string }
+let selectedOptions = new Set();
+let feedbackInfo = null;
+let aiAnalysisText = '';
+let savedProgress = {};
 
-// 进度记忆
-let savedProgress = {};           // { bankName: { mode, questionIds, index, options? } }
-
-// 暂存导入数据
 let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
 
-// 字段选项
 const FIELD_OPTIONS = ['忽略','知识类型','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
 // ==================== 持久化 ====================
@@ -160,10 +160,7 @@ function loadData() {
     let names = Object.keys(banks);
     if (names.length > 0) {
         currentBankName = names[0];
-        // 恢复进度
-        if (savedProgress[currentBankName]) {
-            restoreProgress(currentBankName);
-        }
+        if (savedProgress[currentBankName]) restoreProgress(currentBankName);
     }
 }
 
@@ -171,7 +168,7 @@ function saveAll() {
     localStorage.setItem('quizBanks', JSON.stringify(banks));
     localStorage.setItem('wrongSet', JSON.stringify(Array.from(wrongSet)));
     localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
-    saveProgress(); // 保存进度也一起
+    saveProgress();
 }
 
 function saveProgress() {
@@ -179,8 +176,7 @@ function saveProgress() {
         savedProgress[currentBankName] = {
             mode: currentMode,
             questionIds: currentQuestions.map(q => q.id),
-            index: currentIndex,
-            // 不保存选项，因为选项是临时的
+            index: currentIndex
         };
     }
     localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
@@ -194,7 +190,6 @@ function restoreProgress(bankName) {
     pool.forEach(q => { qMap[q.id] = q; });
     currentQuestions = p.questionIds.map(id => qMap[id]).filter(Boolean);
     if (currentQuestions.length === 0) {
-        // 如果题库已变化，清空进度
         delete savedProgress[bankName];
         saveProgress();
         return;
@@ -203,6 +198,7 @@ function restoreProgress(bankName) {
     currentIndex = Math.min(p.index, currentQuestions.length - 1);
     selectedOptions.clear();
     feedbackInfo = null;
+    aiAnalysisText = '';
 }
 
 // ==================== 界面切换 ====================
@@ -213,7 +209,7 @@ window.switchTab = function(tab) {
     render();
 };
 
-// ==================== 文件导入 (带映射) ====================
+// ==================== 文件导入 ====================
 window.importFile = function(file) {
     if (!file) return;
     let reader = new FileReader();
@@ -286,13 +282,11 @@ function showMappingUI() {
         for (let opt of FIELD_OPTIONS) {
             html += '<option value="' + opt + '"' + (opt === guessed ? ' selected' : '') + '>' + opt + '</option>';
         }
-        html += '</select>';
-        html += '</div>';
+        html += '</select></div>';
     }
     html += '<div class="btn-row" style="justify-content:center;margin-top:16px;">';
     html += '<button class="btn btn-nav" onclick="document.getElementById(\'mappingModal\').classList.remove(\'show\')">取消</button>';
-    html += '<button class="btn btn-submit" onclick="applyMapping()">确认导入</button>';
-    html += '</div>';
+    html += '<button class="btn btn-submit" onclick="applyMapping()">确认导入</button></div>';
     container.innerHTML = html;
 }
 
@@ -310,7 +304,7 @@ window.applyMapping = function() {
     }
     if (!hasQ || !hasA) { alert('必须指定“题干”和“答案”的对应列！'); return; }
     document.getElementById('mappingModal').classList.remove('show');
-    
+
     let questions = [];
     for (let r = 0; r < pendingRows.length; r++) {
         let row = pendingRows[r];
@@ -393,12 +387,12 @@ function renderPractice(main) {
         html += '</select>';
         let qs = banks[currentBankName]?.questions || [];
         html += '<div style="font-size:12px;color:var(--text2);">题目数：'+qs.length+'</div></div>';
-        
+
         html += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
         let modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
         for (let m of modes) html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
         html += '</div></div>';
-        
+
         if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
             let q = currentQuestions[currentIndex];
             html += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
@@ -418,15 +412,16 @@ function renderPractice(main) {
             html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
             html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
             html += '</div>';
-            // 显示反馈
             if (feedbackInfo) {
                 html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
-            } else {
-                html += '<div class="analysis"></div>';
+                html += '<button class="btn btn-nav" onclick="requestAI()" style="margin-top:8px;">🤖 AI 解析</button>';
+            }
+            if (aiAnalysisText) {
+                html += '<div class="ai-analysis">'+aiAnalysisText+'</div>';
             }
             html += '</div>';
         } else if (currentMode) {
-            html += '<div class="card" style="text-align:center;padding:20px;color:var(--text2);">当前模式没有题目可显示。</div>';
+            html += '<div class="card" style="text-align:center;padding:20px;color:var(--text2);">当前模式没有题目</div>';
         }
         html += '<div style="text-align:center;margin-top:8px;">';
         html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
@@ -459,16 +454,8 @@ function renderManage(main) {
 // ==================== 题库操作 ====================
 window.switchBank = function(name) {
     currentBankName = name;
-    // 尝试恢复进度
-    if (savedProgress[name]) {
-        restoreProgress(name);
-    } else {
-        currentMode = null;
-        currentQuestions = [];
-        currentIndex = 0;
-        selectedOptions.clear();
-        feedbackInfo = null;
-    }
+    if (savedProgress[name]) restoreProgress(name);
+    else { currentMode = null; currentQuestions = []; currentIndex = 0; selectedOptions.clear(); feedbackInfo = null; aiAnalysisText = ''; }
     render();
 };
 
@@ -477,10 +464,7 @@ window.deleteBank = function(name) {
         delete banks[name];
         if (currentBankName===name) {
             currentBankName = Object.keys(banks)[0]||'';
-            currentMode = null;
-            currentQuestions = [];
-            currentIndex = 0;
-            feedbackInfo = null;
+            currentMode = null; currentQuestions = []; currentIndex = 0; feedbackInfo = null; aiAnalysisText = '';
         }
         delete savedProgress[name];
         saveAll();
@@ -495,92 +479,93 @@ window.startMode = function(mode) {
     currentMode = mode;
     selectedOptions.clear();
     feedbackInfo = null;
+    aiAnalysisText = '';
     currentIndex = 0;
-    
-    if (mode === 'sequence') {
-        currentQuestions = [...pool];
-    } else if (mode === 'random') {
-        currentQuestions = [...pool].sort(() => Math.random() - 0.5);
-    } else if (mode === 'exam') {
-        currentQuestions = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(50, pool.length));
-    } else if (mode === 'wrong') {
-        currentQuestions = pool.filter(q => wrongSet.has(q.id));
-    } else if (mode === 'fav') {
-        currentQuestions = pool.filter(q => favSet.has(q.id));
-    }
-    
-    if (currentQuestions.length === 0) {
-        alert('没有符合条件的题目');
-        currentMode = null;
-    }
+    if (mode==='sequence') currentQuestions = [...pool];
+    else if (mode==='random') currentQuestions = [...pool].sort(()=>Math.random()-0.5);
+    else if (mode==='exam') currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0,Math.min(50,pool.length));
+    else if (mode==='wrong') currentQuestions = pool.filter(q=>wrongSet.has(q.id));
+    else if (mode==='fav') currentQuestions = pool.filter(q=>favSet.has(q.id));
+    if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; }
     saveProgress();
     render();
 };
 
 window.toggleOption = function(letter, type) {
-    if (type === 'single') {
-        selectedOptions.clear();
-        selectedOptions.add(letter);
-    } else {
-        if (selectedOptions.has(letter)) selectedOptions.delete(letter);
-        else selectedOptions.add(letter);
-    }
+    if (type==='single') { selectedOptions.clear(); selectedOptions.add(letter); }
+    else selectedOptions.has(letter) ? selectedOptions.delete(letter) : selectedOptions.add(letter);
     render();
 };
 
 window.submitAnswer = function() {
-    if (!currentQuestions.length || currentIndex >= currentQuestions.length) return;
+    if (!currentQuestions.length || currentIndex>=currentQuestions.length) return;
     let q = currentQuestions[currentIndex];
-    let userAns = q['题型'] === '多选题'
-        ? Array.from(selectedOptions).sort().join('')
-        : (Array.from(selectedOptions)[0] || '');
+    let userAns = q['题型']==='多选题' ? Array.from(selectedOptions).sort().join('') : (Array.from(selectedOptions)[0]||'');
     if (!userAns) { alert('请选择答案'); return; }
     let isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
-    // 设置反馈信息，不立即render，而是更新状态后重新render
     feedbackInfo = {
         correct: isCorrect,
-        message: isCorrect
-            ? '✓ 正确！'
-            : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>' + q['解析'] : '')
+        message: isCorrect ? '✓ 正确！' : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>原解析：'+q['解析'] : '')
     };
     if (!isCorrect) wrongSet.add(q.id);
-    saveAll(); // 保存错题和进度
-    render();  // 重新渲染显示反馈
+    aiAnalysisText = '';
+    saveAll();
+    render();
+};
+
+window.requestAI = async function() {
+    const key = getDeepSeekKey();
+    if (!key) { alert('DeepSeek API Key 未设置'); return; }
+    let q = currentQuestions[currentIndex];
+    let prompt = `题目：${q['题干']}\n题型：${q['题型']}\n选项：${Object.entries(q['选项']).map(([k,v])=>k+'. '+v).join('；')}\n正确答案：${q['答案']}\n我的答案：${Array.from(selectedOptions).sort().join('')}\n请详细解析这道题，并指出错误原因（如有）。`;
+    try {
+        let response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + key
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: '你是一个专业的考试辅导老师，请根据题目信息提供详细的解析。' },
+                    { role: 'user', content: prompt }
+                ],
+                stream: false
+            })
+        });
+        let data = await response.json();
+        if (data.choices && data.choices[0]) {
+            aiAnalysisText = data.choices[0].message.content;
+        } else {
+            aiAnalysisText = 'AI解析失败：' + (data.error?.message || '未知错误');
+        }
+    } catch(err) {
+        aiAnalysisText = '请求AI解析出错：' + err.message;
+    }
+    render();
 };
 
 window.nextQuestion = function() {
-    if (currentIndex < currentQuestions.length - 1) {
-        currentIndex++;
-        selectedOptions.clear();
-        feedbackInfo = null;
-        saveProgress();
-        render();
-    } else {
-        alert('已是最后一题');
-    }
+    if (currentIndex < currentQuestions.length-1) {
+        currentIndex++; selectedOptions.clear(); feedbackInfo=null; aiAnalysisText='';
+        saveProgress(); render();
+    } else alert('已是最后一题');
 };
 
 window.prevQuestion = function() {
     if (currentIndex > 0) {
-        currentIndex--;
-        selectedOptions.clear();
-        feedbackInfo = null;
-        saveProgress();
-        render();
+        currentIndex--; selectedOptions.clear(); feedbackInfo=null; aiAnalysisText='';
+        saveProgress(); render();
     }
 };
 
 window.toggleFav = function() {
     let q = currentQuestions[currentIndex];
-    if (q) {
-        if (favSet.has(q.id)) favSet.delete(q.id);
-        else favSet.add(q.id);
-        saveAll();
-        render();
-    }
+    if (q) { favSet.has(q.id) ? favSet.delete(q.id) : favSet.add(q.id); saveAll(); render(); }
 };
 
-// ==================== 启动 ====================
+// 启动
 loadData();
 render();
 </script>
