@@ -57,7 +57,6 @@
         .btn { padding:14px; border:none; border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
         .btn-submit { background:var(--primary); color:#fff; }
         .btn-nav { background:var(--input-bg); color:var(--text); border:1px solid var(--border); }
-        /* 背题模式大号翻页按钮 */
         .btn-memorize-nav {
             background:var(--primary); color:#fff; border:none;
             padding:18px 24px; font-size:18px; font-weight:700; border-radius:var(--radius);
@@ -101,6 +100,10 @@
             width:100%; padding:12px; border-radius:var(--radius);
             border:1px solid var(--border); font-size:14px; margin-bottom:8px;
         }
+        .footer {
+            text-align:center; padding:20px 12px; color:var(--text2); font-size:13px;
+            border-top:1px solid var(--border); margin-top:24px;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +115,11 @@
     </div>
 </div>
 <div class="main" id="mainContent"></div>
+
+<!-- 页脚 -->
+<div class="footer">
+    苟富贵勿相忘，且用且珍惜。<br>作者：云映明川
+</div>
 
 <div class="modal-overlay" id="mappingModal">
     <div class="modal-box">
@@ -374,22 +382,18 @@ function renderPractice(main) {
         let qs = banks[currentBankName]?.questions || [];
         html += '<div style="font-size:12px;color:var(--text2);">题目数：'+qs.length+'</div></div>';
 
-        // 常规练习模式
         html += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
         let modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
         for (let m of modes) html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
         html += '</div></div>';
 
-        // 题型专项练习
         html += '<div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
         html += '<div class="mode-btn'+(currentMode==='single_choice'?' active':'')+'" onclick="startMode(\'single_choice\')">单选题</div>';
         html += '<div class="mode-btn'+(currentMode==='multi_choice'?' active':'')+'" onclick="startMode(\'multi_choice\')">多选题</div>';
         html += '<div class="mode-btn'+(currentMode==='judge'?' active':'')+'" onclick="startMode(\'judge\')">判断题</div>';
         html += '</div></div>';
 
-        // 背题模式（独立模块）
-        html += '<div class="card"><div class="card-title">📖 背题模式</div>';
-        html += '<div class="mode-grid">';
+        html += '<div class="card"><div class="card-title">📖 背题模式</div><div class="mode-grid">';
         let memorizeModes = [
             {i:'memorize_seq',l:'顺序背题'},
             {i:'memorize_random',l:'随机背题'},
@@ -402,7 +406,6 @@ function renderPractice(main) {
         }
         html += '</div></div>';
 
-        // 题目显示区域
         let isMemorize = currentMode && currentMode.startsWith('memorize');
         if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
             let q = currentQuestions[currentIndex];
@@ -432,7 +435,6 @@ function renderPractice(main) {
             }
 
             if (isMemorize) {
-                // 背题模式：大号翻页按钮
                 html += '<div class="btn-row" style="justify-content:center;margin-top:16px;">';
                 html += '<button class="btn-memorize-nav" onclick="prevQuestion()">◀ 上一题</button>';
                 html += '<button class="btn-memorize-nav" onclick="nextQuestion()">▶ 下一题</button>';
