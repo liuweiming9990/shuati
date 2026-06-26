@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shuati-v2';
+const CACHE_NAME = 'shuati-v4';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -20,22 +20,34 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
+  // 对 index.html 使用网络优先策略
+  if (event.request.url.includes('index.html') || event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(response => {
         const cloned = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
         return response;
+      }).catch(() => caches.match(event.request))
+    );
+  } else {
+    // 其他资源缓存优先
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        return cached || fetch(event.request).then(response => {
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
+          return response;
+        });
       })
-      .catch(() => caches.match(event.request))
-  );
+    );
+  }
 });
 
 self.addEventListener('message', event => {
-  if (event.data === 'check-update') {
+  if (event.data === 'skip-waiting') {
     self.skipWaiting();
     self.clients.matchAll().then(clients => {
-      clients.forEach(client => client.postMessage('update-ready'));
+      clients.forEach(client => client.postMessage('reload'));
     });
   }
 });
