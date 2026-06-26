@@ -164,7 +164,7 @@
 <body>
 <div class="update-banner" id="updateBanner">
     检测到新版本
-    <button onclick="location.reload()">立即刷新</button>
+    <button id="updateRefreshBtn">立即刷新</button>
 </div>
 
 <div class="nav">
@@ -188,24 +188,43 @@
 </div>
 
 <script>
-// ==================== Service Worker ====================
+// ==================== Service Worker 注册与更新处理 ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    let refreshing = false;
     navigator.serviceWorker.register('./sw.js').then(reg => {
+      // 检测到新 SW 安装中
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // 有新版本可用，显示提示条
             document.getElementById('updateBanner').style.display = 'block';
           }
         });
       });
+      // 监听来自 SW 的消息
       navigator.serviceWorker.addEventListener('message', event => {
-        if (event.data === 'update-ready') {
-          document.getElementById('updateBanner').style.display = 'block';
+        if (event.data === 'reload') {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload(true);
+          }
         }
       });
     });
+    // 点击“立即刷新”按钮
+    document.getElementById('updateRefreshBtn').addEventListener('click', () => {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg && reg.waiting) {
+          // 通知等待中的 SW 跳过等待并刷新
+          reg.waiting.postMessage('skip-waiting');
+        } else {
+          window.location.reload(true);
+        }
+      });
+    });
+    // 定期检查更新（每30分钟）
     setInterval(() => {
       navigator.serviceWorker.getRegistration().then(reg => {
         if (reg) reg.update();
@@ -459,7 +478,6 @@ function renderPractice() {
         html += '<div class="card" style="text-align:center;padding:40px;">';
         html += '<div style="font-size:48px;margin-bottom:12px;">📁</div>';
         html += '<div style="color:var(--text2);margin-bottom:12px;">还没有题库</div>';
-        // 格式要求显示在此处
         html += '<div class="format-hint">';
         html += '<strong>📌 题库格式要求：</strong><br>';
         html += '表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong>';
