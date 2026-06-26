@@ -20,7 +20,8 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg); color: var(--text); min-height:100vh; padding-bottom:3rem;
+            background: var(--bg); color: var(--text); min-height:100vh;
+            padding-bottom: 1rem;
         }
         .nav {
             background: var(--card); padding:12px 16px; display:flex;
@@ -116,11 +117,6 @@
 </div>
 <div class="main" id="mainContent"></div>
 
-<!-- 页脚 -->
-<div class="footer">
-    苟富贵勿相忘，且用且珍惜。<br>作者：云映明川
-</div>
-
 <div class="modal-overlay" id="mappingModal">
     <div class="modal-box">
         <h3>📋 列映射 - 请指定每列含义</h3>
@@ -149,6 +145,9 @@ let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
 const FIELD_OPTIONS = ['忽略','知识类型','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
+
+// 页脚HTML
+const FOOTER_HTML = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
 
 function loadData() {
     try { banks = JSON.parse(localStorage.getItem('quizBanks') || '{}'); } catch(e) {}
@@ -360,11 +359,11 @@ window.handleFileSelect = function(input) {
 
 function render() {
     let main = document.getElementById('mainContent');
-    if (currentTab === 'practice') renderPractice(main);
-    else renderManage(main);
+    let html = currentTab === 'practice' ? renderPractice() : renderManage();
+    main.innerHTML = html + FOOTER_HTML;
 }
 
-function renderPractice(main) {
+function renderPractice() {
     let names = Object.keys(banks);
     let html = '';
     if (names.length === 0) {
@@ -374,119 +373,121 @@ function renderPractice(main) {
         html += '<input type="file" id="mainInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
         html += '<button class="btn btn-submit" onclick="document.getElementById(\'mainInput\').click()" style="width:100%;">选择题库文件</button>';
         html += '</div>';
-    } else {
-        html += '<div class="card"><div class="card-title">当前题库</div>';
-        html += '<select onchange="switchBank(this.value)">';
-        for (let name of names) html += '<option'+(name===currentBankName?' selected':'')+'>'+name+'</option>';
-        html += '</select>';
-        let qs = banks[currentBankName]?.questions || [];
-        html += '<div style="font-size:12px;color:var(--text2);">题目数：'+qs.length+'</div></div>';
-
-        html += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
-        let modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
-        for (let m of modes) html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
-        html += '</div></div>';
-
-        html += '<div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
-        html += '<div class="mode-btn'+(currentMode==='single_choice'?' active':'')+'" onclick="startMode(\'single_choice\')">单选题</div>';
-        html += '<div class="mode-btn'+(currentMode==='multi_choice'?' active':'')+'" onclick="startMode(\'multi_choice\')">多选题</div>';
-        html += '<div class="mode-btn'+(currentMode==='judge'?' active':'')+'" onclick="startMode(\'judge\')">判断题</div>';
-        html += '</div></div>';
-
-        html += '<div class="card"><div class="card-title">📖 背题模式</div><div class="mode-grid">';
-        let memorizeModes = [
-            {i:'memorize_seq',l:'顺序背题'},
-            {i:'memorize_random',l:'随机背题'},
-            {i:'memorize_single',l:'只背单选'},
-            {i:'memorize_multi',l:'只背多选'},
-            {i:'memorize_judge',l:'只背判断'}
-        ];
-        for (let m of memorizeModes) {
-            html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
-        }
-        html += '</div></div>';
-
-        let isMemorize = currentMode && currentMode.startsWith('memorize');
-        if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
-            let q = currentQuestions[currentIndex];
-            html += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
-            html += '<div class="progress-bar"><div class="progress-fill" style="width:'+((currentIndex+1)/currentQuestions.length*100)+'%"></div></div>';
-            html += '<div class="card">';
-            html += '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">'+(q['知识类型']||'')+' | '+q['题型']+'</div>';
-            html += '<div class="question-text">'+q['题干']+'</div>';
-            let labels = Object.keys(q['选项']).filter(k=>q['选项'][k]);
-            if (q['题型']==='判断题') { labels=['A','B']; q['选项']={A:'正确',B:'错误'}; }
-
-            let correctLetters = [];
-            if (isMemorize) {
-                if (q['题型'] === '判断题') {
-                    correctLetters = (q['答案'] === '正确') ? ['A'] : ['B'];
-                } else {
-                    correctLetters = q['答案'].split('');
-                }
-            }
-
-            for (let l of labels) {
-                let sel = selectedOptions.has(l)?' selected':'';
-                let isCorrect = correctLetters.includes(l);
-                let optClass = sel;
-                if (isMemorize && isCorrect) optClass += ' correct-highlight';
-                html += '<div class="option-item'+optClass+'" onclick="'+(isMemorize?'':'toggleOption(\''+l+'\',\''+(q['题型']==='多选题'?'multi':'single')+'\')')+'"><div class="letter">'+l+'</div>'+q['选项'][l]+'</div>';
-            }
-
-            if (isMemorize) {
-                html += '<div class="btn-row" style="justify-content:center;margin-top:16px;">';
-                html += '<button class="btn-memorize-nav" onclick="prevQuestion()">◀ 上一题</button>';
-                html += '<button class="btn-memorize-nav" onclick="nextQuestion()">▶ 下一题</button>';
-                html += '</div>';
-                html += '<div style="text-align:center;margin-top:8px;">';
-                html += '<button class="btn btn-nav" onclick="toggleFav()" style="margin:0 auto;">'+(favSet.has(q.id)?'★ 已收藏':'☆ 收藏')+'</button>';
-                html += '</div>';
-                if (q['解析']) {
-                    html += '<div class="analysis info" style="display:block;">📖 解析：'+q['解析']+'</div>';
-                }
-            } else {
-                html += '<div class="btn-row">';
-                html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
-                html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
-                html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
-                html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
-                html += '</div>';
-                if (feedbackInfo) {
-                    html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
-                }
-            }
-            html += '</div>';
-        } else if (currentMode) {
-            html += '<div class="card" style="text-align:center;padding:20px;color:var(--text2);">当前模式没有题目</div>';
-        }
-
-        html += '<div style="text-align:center;margin-top:8px;">';
-        html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
-        html += '<button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥 导入更多</button></div>';
+        return html;
     }
-    main.innerHTML = html;
+
+    html += '<div class="card"><div class="card-title">当前题库</div>';
+    html += '<select onchange="switchBank(this.value)">';
+    for (let name of names) html += '<option'+(name===currentBankName?' selected':'')+'>'+name+'</option>';
+    html += '</select>';
+    let qs = banks[currentBankName]?.questions || [];
+    html += '<div style="font-size:12px;color:var(--text2);">题目数：'+qs.length+'</div></div>';
+
+    html += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
+    let modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
+    for (let m of modes) html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
+    html += '</div></div>';
+
+    html += '<div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
+    html += '<div class="mode-btn'+(currentMode==='single_choice'?' active':'')+'" onclick="startMode(\'single_choice\')">单选题</div>';
+    html += '<div class="mode-btn'+(currentMode==='multi_choice'?' active':'')+'" onclick="startMode(\'multi_choice\')">多选题</div>';
+    html += '<div class="mode-btn'+(currentMode==='judge'?' active':'')+'" onclick="startMode(\'judge\')">判断题</div>';
+    html += '</div></div>';
+
+    html += '<div class="card"><div class="card-title">📖 背题模式</div><div class="mode-grid">';
+    let memorizeModes = [
+        {i:'memorize_seq',l:'顺序背题'},
+        {i:'memorize_random',l:'随机背题'},
+        {i:'memorize_single',l:'只背单选'},
+        {i:'memorize_multi',l:'只背多选'},
+        {i:'memorize_judge',l:'只背判断'}
+    ];
+    for (let m of memorizeModes) {
+        html += '<div class="mode-btn'+(currentMode===m.i?' active':'')+'" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
+    }
+    html += '</div></div>';
+
+    let isMemorize = currentMode && currentMode.startsWith('memorize');
+    if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
+        let q = currentQuestions[currentIndex];
+        html += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
+        html += '<div class="progress-bar"><div class="progress-fill" style="width:'+((currentIndex+1)/currentQuestions.length*100)+'%"></div></div>';
+        html += '<div class="card">';
+        html += '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">'+(q['知识类型']||'')+' | '+q['题型']+'</div>';
+        html += '<div class="question-text">'+q['题干']+'</div>';
+        let labels = Object.keys(q['选项']).filter(k=>q['选项'][k]);
+        if (q['题型']==='判断题') { labels=['A','B']; q['选项']={A:'正确',B:'错误'}; }
+
+        let correctLetters = [];
+        if (isMemorize) {
+            if (q['题型'] === '判断题') {
+                correctLetters = (q['答案'] === '正确') ? ['A'] : ['B'];
+            } else {
+                correctLetters = q['答案'].split('');
+            }
+        }
+
+        for (let l of labels) {
+            let sel = selectedOptions.has(l)?' selected':'';
+            let isCorrect = correctLetters.includes(l);
+            let optClass = sel;
+            if (isMemorize && isCorrect) optClass += ' correct-highlight';
+            html += '<div class="option-item'+optClass+'" onclick="'+(isMemorize?'':'toggleOption(\''+l+'\',\''+(q['题型']==='多选题'?'multi':'single')+'\')')+'"><div class="letter">'+l+'</div>'+q['选项'][l]+'</div>';
+        }
+
+        if (isMemorize) {
+            html += '<div class="btn-row" style="justify-content:center;margin-top:16px;">';
+            html += '<button class="btn-memorize-nav" onclick="prevQuestion()">◀ 上一题</button>';
+            html += '<button class="btn-memorize-nav" onclick="nextQuestion()">▶ 下一题</button>';
+            html += '</div>';
+            html += '<div style="text-align:center;margin-top:8px;">';
+            html += '<button class="btn btn-nav" onclick="toggleFav()" style="margin:0 auto;">'+(favSet.has(q.id)?'★ 已收藏':'☆ 收藏')+'</button>';
+            html += '</div>';
+            if (q['解析']) {
+                html += '<div class="analysis info" style="display:block;">📖 解析：'+q['解析']+'</div>';
+            }
+        } else {
+            html += '<div class="btn-row">';
+            html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
+            html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
+            html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
+            html += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button>';
+            html += '</div>';
+            if (feedbackInfo) {
+                html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
+            }
+        }
+        html += '</div>';
+    } else if (currentMode) {
+        html += '<div class="card" style="text-align:center;padding:20px;color:var(--text2);">当前模式没有题目</div>';
+    }
+
+    html += '<div style="text-align:center;margin-top:8px;">';
+    html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+    html += '<button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥 导入更多</button></div>';
+    return html;
 }
 
-function renderManage(main) {
+function renderManage() {
     let names = Object.keys(banks);
     let html = '';
     if (names.length===0) {
         html += '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:48px;">📁</div><div style="color:var(--text2);">还没有题库</div>';
         html += '<input type="file" id="manageInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
         html += '<button class="btn btn-submit" onclick="document.getElementById(\'manageInput\').click()">导入题库</button></div>';
-    } else {
-        html += '<div class="card"><div class="card-title">已导入题库</div>';
-        for (let name of names) {
-            html += '<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);">';
-            html += '<span>'+name+' ('+banks[name].questions.length+'题)</span>';
-            html += '<button class="btn btn-nav" onclick="deleteBank(\''+name+'\')" style="padding:6px 12px;font-size:12px;">删除</button></div>';
-        }
-        html += '<div style="text-align:center;margin-top:12px;">';
-        html += '<input type="file" id="manageInput2" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
-        html += '<button class="btn btn-nav" onclick="document.getElementById(\'manageInput2\').click()">📥 导入更多</button></div></div>';
+        return html;
     }
-    main.innerHTML = html;
+
+    html += '<div class="card"><div class="card-title">已导入题库</div>';
+    for (let name of names) {
+        html += '<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);">';
+        html += '<span>'+name+' ('+banks[name].questions.length+'题)</span>';
+        html += '<button class="btn btn-nav" onclick="deleteBank(\''+name+'\')" style="padding:6px 12px;font-size:12px;">删除</button></div>';
+    }
+    html += '<div style="text-align:center;margin-top:12px;">';
+    html += '<input type="file" id="manageInput2" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+    html += '<button class="btn btn-nav" onclick="document.getElementById(\'manageInput2\').click()">📥 导入更多</button></div></div>';
+    return html;
 }
 
 window.switchBank = function(name) {
