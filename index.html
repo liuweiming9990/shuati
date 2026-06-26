@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>智能刷题软件</title>
-    <!-- xlsx 库：支持 .xlsx 和 .xls -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <!-- mammoth 库：支持 .docx -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js">
+    </script>
     <style>
         :root {
             --bg: #1a1a2e;
@@ -23,7 +23,11 @@
             --radius: 12px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -45,14 +49,16 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
+
         .nav-title {
             font-size: 18px;
             font-weight: 700;
             color: var(--accent);
             letter-spacing: 0.5px;
         }
+
         .nav-btn {
             background: var(--primary);
             color: var(--text);
@@ -64,8 +70,16 @@
             font-weight: 500;
             transition: 0.2s;
         }
-        .nav-btn:active { transform: scale(0.95); opacity: 0.8; }
-        .nav-btn.active { background: var(--accent); color: white; }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .nav-btn.active {
+            background: var(--accent);
+            color: white;
+        }
 
         .main {
             padding: 12px;
@@ -80,6 +94,7 @@
             margin-bottom: 12px;
             border: 1px solid var(--border);
         }
+
         .card-title {
             font-size: 14px;
             color: var(--text2);
@@ -93,6 +108,7 @@
             gap: 8px;
             margin-bottom: 8px;
         }
+
         .bank-tag {
             padding: 6px 14px;
             border-radius: 20px;
@@ -103,6 +119,7 @@
             color: var(--text2);
             transition: 0.2s;
         }
+
         .bank-tag.selected {
             background: var(--accent);
             color: white;
@@ -115,19 +132,22 @@
             align-items: center;
             margin-bottom: 12px;
         }
+
         .question-type {
             font-size: 12px;
             color: var(--accent);
-            background: rgba(233,69,96,0.15);
+            background: rgba(233, 69, 96, 0.15);
             padding: 4px 10px;
             border-radius: 12px;
         }
+
         .question-text {
             font-size: 16px;
             line-height: 1.6;
             margin-bottom: 16px;
             font-weight: 500;
         }
+
         .option-item {
             display: flex;
             align-items: center;
@@ -140,11 +160,16 @@
             transition: 0.2s;
             font-size: 15px;
         }
-        .option-item:active { transform: scale(0.98); }
+
+        .option-item:active {
+            transform: scale(0.98);
+        }
+
         .option-item.selected {
             border-color: var(--accent);
-            background: rgba(233,69,96,0.1);
+            background: rgba(233, 69, 96, 0.1);
         }
+
         .option-item .letter {
             width: 28px;
             height: 28px;
@@ -158,7 +183,12 @@
             font-size: 13px;
             flex-shrink: 0;
         }
-        .option-item.selected .letter { background: var(--accent); color: white; }
+
+        .option-item.selected .letter {
+            background: var(--accent);
+            color: white;
+        }
+
         .option-item .checkbox {
             width: 22px;
             height: 22px;
@@ -172,9 +202,18 @@
             flex-shrink: 0;
             transition: 0.2s;
         }
-        .option-item.selected .checkbox { background: var(--accent); border-color: var(--accent); }
 
-        .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+        .option-item.selected .checkbox {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
         .btn {
             flex: 1;
             padding: 14px;
@@ -186,10 +225,28 @@
             transition: 0.2s;
             text-align: center;
         }
-        .btn:active { transform: scale(0.95); }
-        .btn-submit { background: var(--accent); color: white; }
-        .btn-nav { background: var(--primary); color: var(--text); flex: 0.5; }
-        .btn-fav { flex: 0.3; background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-submit {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-nav {
+            background: var(--primary);
+            color: var(--text);
+            flex: 0.5;
+        }
+
+        .btn-fav {
+            flex: 0.3;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text2);
+        }
 
         .analysis {
             padding: 12px;
@@ -199,9 +256,20 @@
             line-height: 1.5;
             display: none;
         }
-        .analysis.show { display: block; }
-        .analysis.correct { background: rgba(78,159,61,0.15); color: var(--success); }
-        .analysis.wrong { background: rgba(233,69,96,0.15); color: var(--error); }
+
+        .analysis.show {
+            display: block;
+        }
+
+        .analysis.correct {
+            background: rgba(78, 159, 61, 0.15);
+            color: var(--success);
+        }
+
+        .analysis.wrong {
+            background: rgba(233, 69, 96, 0.15);
+            color: var(--error);
+        }
 
         .progress-bar {
             height: 4px;
@@ -210,10 +278,26 @@
             margin: 12px 0;
             overflow: hidden;
         }
-        .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
-        .progress-text { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 4px; }
 
-        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--text2);
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
         .mode-btn {
             padding: 12px;
             background: var(--input-bg);
@@ -225,8 +309,16 @@
             text-align: center;
             transition: 0.2s;
         }
-        .mode-btn:active { background: var(--primary); }
-        .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+        .mode-btn:active {
+            background: var(--primary);
+        }
+
+        .mode-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
 
         .import-area {
             border: 2px dashed var(--border);
@@ -237,8 +329,14 @@
             transition: 0.2s;
             margin-bottom: 12px;
         }
-        .import-area:active { border-color: var(--accent); }
-        .import-area input { display: none; }
+
+        .import-area:active {
+            border-color: var(--accent);
+        }
+
+        .import-area input {
+            display: none;
+        }
 
         .status-bar {
             background: var(--card);
@@ -251,9 +349,18 @@
             bottom: 0;
         }
 
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
 
         select {
             width: 100%;
@@ -274,8 +381,15 @@
             margin-bottom: 2px;
             color: var(--text2);
         }
-        .cat-item:active { background: var(--primary); }
-        .cat-item.selected { background: var(--accent); color: white; }
+
+        .cat-item:active {
+            background: var(--primary);
+        }
+
+        .cat-item.selected {
+            background: var(--accent);
+            color: white;
+        }
 
         .question-list-item {
             padding: 10px;
@@ -293,7 +407,7 @@
         <div class="nav-title">智能刷题</div>
         <div>
             <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
-            <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')" style="margin-left:4px;">题库</button>
+            <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
         </div>
     </div>
 
@@ -302,31 +416,41 @@
 
     <script>
         // ==================== 全局数据 ====================
-        let banks = {};
-        let wrongSet = new Set();
-        let favSet = new Set();
-        let progress = {};
+        var banks = {};
+        var wrongSet = new Set();
+        var favSet = new Set();
+        var progress = {};
+        var currentTab = 'practice';
+        var currentMode = null;
+        var currentQuestions = [];
+        var currentIndex = 0;
+        var selectedBanks = [];
+        var selectedOptions = new Set();
+        var selectedCat = null;
 
-        let currentTab = 'practice';
-        let currentMode = null;
-        let currentQuestions = [];
-        let currentIndex = 0;
-        let selectedBanks = [];
-        let selectedOptions = new Set();
-        let selectedCat = null;
-
-        // ==================== 加载/保存 ====================
         function loadData() {
-            try { const s = localStorage.getItem('quizBanks'); if (s) banks = JSON.parse(s); } catch(e) { banks = {}; }
-            try { const w = localStorage.getItem('wrongSet'); if (w) wrongSet = new Set(JSON.parse(w)); } catch(e) { wrongSet = new Set(); }
-            try { const f = localStorage.getItem('favSet'); if (f) favSet = new Set(JSON.parse(f)); } catch(e) { favSet = new Set(); }
-            try { const p = localStorage.getItem('progress'); if (p) progress = JSON.parse(p); } catch(e) { progress = {}; }
+            try {
+                var s = localStorage.getItem('quizBanks');
+                if (s) banks = JSON.parse(s);
+            } catch (e) { banks = {}; }
+            try {
+                var w = localStorage.getItem('wrongSet');
+                if (w) wrongSet = new Set(JSON.parse(w));
+            } catch (e) { wrongSet = new Set(); }
+            try {
+                var f = localStorage.getItem('favSet');
+                if (f) favSet = new Set(JSON.parse(f));
+            } catch (e) { favSet = new Set(); }
+            try {
+                var p = localStorage.getItem('progress');
+                if (p) progress = JSON.parse(p);
+            } catch (e) { progress = {}; }
         }
 
         function saveAll() {
             localStorage.setItem('quizBanks', JSON.stringify(banks));
-            localStorage.setItem('wrongSet', JSON.stringify([...wrongSet]));
-            localStorage.setItem('favSet', JSON.stringify([...favSet]));
+            localStorage.setItem('wrongSet', JSON.stringify(Array.from(wrongSet)));
+            localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
             localStorage.setItem('progress', JSON.stringify(progress));
         }
 
@@ -334,7 +458,6 @@
             document.getElementById('statusBar').textContent = msg;
         }
 
-        // ==================== 标签切换 ====================
         function switchTab(tab) {
             currentTab = tab;
             document.getElementById('tabPracticeBtn').classList.toggle('active', tab === 'practice');
@@ -342,20 +465,19 @@
             render();
         }
 
-        // ==================== .xlsx / .xls 解析 ====================
+        // ==================== 文件解析 ====================
         function parseExcel(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
                 reader.onload = function(e) {
                     try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        var data = new Uint8Array(e.target.result);
+                        var workbook = XLSX.read(data, { type: 'array' });
+                        var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        var rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                         if (rows.length < 2) return reject('文件为空');
-                        const questions = extractQuestions(rows, file.name);
-                        resolve(questions);
-                    } catch(err) {
+                        resolve(extractQuestions(rows, file.name));
+                    } catch (err) {
                         reject('解析失败：' + err.message);
                     }
                 };
@@ -363,20 +485,17 @@
             });
         }
 
-        // ==================== .docx 解析 ====================
         function parseDocx(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
                 reader.onload = function(e) {
                     mammoth.extractRawText({ arrayBuffer: e.target.result })
                         .then(function(result) {
-                            const text = result.value;
-                            const lines = text.split('\n').filter(l => l.trim());
-                            // 尝试将文本转为表格结构
-                            const rows = lines.map(l => l.split('\t'));
+                            var text = result.value;
+                            var lines = text.split('\n').filter(function(l) { return l.trim(); });
+                            var rows = lines.map(function(l) { return l.split('\t'); });
                             if (rows.length < 2) return reject('文件内容太少');
-                            const questions = extractQuestions(rows, file.name);
-                            resolve(questions);
+                            resolve(extractQuestions(rows, file.name));
                         })
                         .catch(function(err) {
                             reject('解析失败：' + err.message);
@@ -386,32 +505,32 @@
             });
         }
 
-        // ==================== 通用题目提取 ====================
         function extractQuestions(rows, fileName) {
-            const headers = rows[0].map(h => String(h || '').trim());
-            const questions = [];
-            const colMap = {};
-            for (let i = 0; i < headers.length; i++) {
-                const h = headers[i].toLowerCase();
-                if (h.includes('知识') || h.includes('类别') || h.includes('章') || h.includes('节')) colMap['知识类型'] = i;
-                else if (h.includes('题型') || h.includes('类型')) colMap['题型'] = i;
-                else if (h.includes('题干') || h.includes('题目') || h.includes('问题')) colMap['题干'] = i;
-                else if (h.includes('答案') || h.includes('正确')) colMap['答案'] = i;
-                else if (h.includes('解析') || h.includes('解释')) colMap['解析'] = i;
+            var headers = rows[0].map(function(h) { return String(h || '').trim(); });
+            var questions = [];
+            var colMap = {};
+            for (var i = 0; i < headers.length; i++) {
+                var h = headers[i].toLowerCase();
+                if (h.indexOf('知识') >= 0 || h.indexOf('类别') >= 0 || h.indexOf('章') >= 0 || h.indexOf('节') >= 0) colMap[
+                    '知识类型'] = i;
+                else if (h.indexOf('题型') >= 0 || h.indexOf('类型') >= 0) colMap['题型'] = i;
+                else if (h.indexOf('题干') >= 0 || h.indexOf('题目') >= 0 || h.indexOf('问题') >= 0) colMap['题干'] = i;
+                else if (h.indexOf('答案') >= 0 || h.indexOf('正确') >= 0) colMap['答案'] = i;
+                else if (h.indexOf('解析') >= 0 || h.indexOf('解释') >= 0) colMap['解析'] = i;
                 else if (/^[a-g]$/i.test(headers[i].trim())) colMap['选项' + headers[i].trim().toUpperCase()] = i;
             }
             if (!('题干' in colMap) || !('答案' in colMap)) {
                 throw new Error('缺少题干或答案列。已识别列：' + JSON.stringify(Object.keys(colMap)));
             }
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.every(c => !c)) continue;
-                const qText = String(row[colMap['题干']] || '').trim();
+            for (var j = 1; j < rows.length; j++) {
+                var row = rows[j];
+                if (!row || row.every(function(c) { return !c; })) continue;
+                var qText = String(row[colMap['题干']] || '').trim();
                 if (!qText) continue;
-                let answer = String(row[colMap['答案']] || '').trim().toUpperCase()
+                var answer = String(row[colMap['答案']] || '').trim().toUpperCase()
                     .replace(/,/g, '').replace(/，/g, '').replace(/\s/g, '');
-                let qtype = String(row[colMap['题型']] || '').trim();
-                if (!qtype || !['单选题','多选题','判断题'].includes(qtype)) {
+                var qtype = String(row[colMap['题型']] || '').trim();
+                if (!qtype || ['单选题', '多选题', '判断题'].indexOf(qtype) < 0) {
                     if (answer === '正确' || answer === '错误' || answer === '对' || answer === '错') qtype = '判断题';
                     else if (answer.length > 1 && /^[A-G]+$/.test(answer)) qtype = '多选题';
                     else qtype = '单选题';
@@ -420,142 +539,164 @@
                     if (answer === 'A' || answer === '对') answer = '正确';
                     else if (answer === 'B' || answer === '错') answer = '错误';
                 }
-                const options = {};
-                for (let key in colMap) {
-                    if (key.startsWith('选项')) {
+                var options = {};
+                for (var key in colMap) {
+                    if (key.indexOf('选项') === 0) {
                         options[key.slice(2)] = String(row[colMap[key]] || '').trim();
                     }
                 }
                 questions.push({
                     id: null,
-                    知识类型: String(row[colMap['知识类型']] || '').trim(),
-                    题型: qtype,
-                    题干: qText,
-                    答案: answer,
-                    解析: String(row[colMap['解析']] || '').trim(),
-                    选项: options,
-                    来源文件: fileName
+                    '知识类型': String(row[colMap['知识类型']] || '').trim(),
+                    '题型': qtype,
+                    '题干': qText,
+                    '答案': answer,
+                    '解析': String(row[colMap['解析']] || '').trim(),
+                    '选项': options,
+                    '来源文件': fileName
                 });
             }
             return questions;
         }
 
-        // ==================== 导入入口 ====================
         async function importFiles(files) {
-            let totalImported = 0;
-            for (const file of files) {
+            var totalImported = 0;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
                 try {
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    let questions;
+                    var ext = file.name.split('.').pop().toLowerCase();
+                    var questions;
                     if (ext === 'xlsx' || ext === 'xls') {
                         questions = await parseExcel(file);
                     } else if (ext === 'docx') {
                         questions = await parseDocx(file);
                     } else {
-                        alert(`不支持的文件格式：${file.name}`);
+                        alert('不支持的文件格式：' + file.name);
                         continue;
                     }
-                    const maxId = Math.max(0, ...Object.values(banks).flatMap(qs => qs.map(q => q.id || 0)));
-                    questions.forEach((q, i) => { q.id = maxId + i + 1; });
-                    const bankName = file.name.replace(/\.(xlsx|xls|docx)$/i, '');
+                    var maxId = 0;
+                    var allQs = Object.values(banks).flat();
+                    for (var k = 0; k < allQs.length; k++) {
+                        if (allQs[k].id > maxId) maxId = allQs[k].id;
+                    }
+                    for (var j = 0; j < questions.length; j++) {
+                        maxId++;
+                        questions[j].id = maxId;
+                    }
+                    var bankName = file.name.replace(/\.(xlsx|xls|docx)$/i, '');
                     banks[bankName] = questions;
                     totalImported += questions.length;
-                } catch(err) {
-                    alert(`导入 ${file.name} 失败：${err}`);
+                } catch (err) {
+                    alert('导入 ' + file.name + ' 失败：' + err);
                 }
             }
             saveAll();
-            setStatus(`成功导入 ${totalImported} 道题目`);
+            setStatus('成功导入 ' + totalImported + ' 道题目');
             render();
         }
 
         // ==================== 渲染 ====================
         function render() {
-            const main = document.getElementById('mainContent');
+            var main = document.getElementById('mainContent');
             if (currentTab === 'practice') renderPractice(main);
             else renderManage(main);
         }
 
         function renderPractice(main) {
-            const bankNames = Object.keys(banks);
-            let html = '';
+            var bankNames = Object.keys(banks);
+            var html = '';
 
             if (bankNames.length === 0) {
-                html += `<div class="import-area" onclick="document.getElementById('fileInput').click()">
-                    <div style="font-size:36px;margin-bottom:8px;">📁</div>
-                    <div style="font-size:15px;color:#aaa;">点击导入题库文件</div>
-                    <div style="font-size:12px;color:#666;margin-top:4px;">支持 .xlsx / .xls / .docx</div>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls,.docx" multiple
-                        onchange="importFiles(this.files);this.value=''">
-                </div>`;
+                html += '<div class="import-area" onclick="document.getElementById(\'fileInput\').click()">';
+                html += '<div style="font-size:36px;margin-bottom:8px;">📁</div>';
+                html += '<div style="font-size:15px;color:#aaa;">点击导入题库文件</div>';
+                html += '<div style="font-size:12px;color:#666;margin-top:4px;">支持 .xlsx / .xls / .docx</div>';
+                html +=
+                    '<input type="file" id="fileInput" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'">';
+                html += '</div>';
             } else {
                 html += '<div class="card"><div class="card-title">选择题库（可多选）</div><div class="bank-list">';
-                for (const name of bankNames) {
-                    const sel = selectedBanks.includes(name) ? ' selected' : '';
-                    html += `<div class="bank-tag${sel}" onclick="toggleBank('${name}')">${name}</div>`;
+                for (var i = 0; i < bankNames.length; i++) {
+                    var name = bankNames[i];
+                    var sel = selectedBanks.indexOf(name) >= 0 ? ' selected' : '';
+                    html += '<div class="bank-tag' + sel + '" onclick="toggleBank(\'' + name + '\')">' + name +
+                        '</div>';
                 }
                 html += '</div>';
 
                 html += '<div class="card-title" style="margin-top:8px;">练习模式</div>';
                 html += '<div class="mode-grid">';
-                const modes = [
+                var modes = [
                     { id: 'sequence', label: '📖 顺序练习' },
                     { id: 'random', label: '🔀 随机练习' },
                     { id: 'exam', label: '📝 模拟考试' },
                     { id: 'wrong', label: '❌ 错题重做' },
-                    { id: 'fav', label: '⭐ 收藏练习' },
+                    { id: 'fav', label: '⭐ 收藏练习' }
                 ];
-                for (const m of modes) {
-                    const active = currentMode === m.id ? ' active' : '';
-                    html += `<div class="mode-btn${active}" onclick="startMode('${m.id}')">${m.label}</div>`;
+                for (var m = 0; m < modes.length; m++) {
+                    var active = currentMode === modes[m].id ? ' active' : '';
+                    html += '<div class="mode-btn' + active + '" onclick="startMode(\'' + modes[m].id + '\')">' +
+                        modes[m].label + '</div>';
                 }
                 html += '</div></div>';
 
                 if (currentMode && currentQuestions.length > 0 && currentIndex < currentQuestions.length) {
-                    const q = currentQuestions[currentIndex];
-                    const total = currentQuestions.length;
-                    const pct = ((currentIndex + 1) / total) * 100;
+                    var q = currentQuestions[currentIndex];
+                    var total = currentQuestions.length;
+                    var pct = ((currentIndex + 1) / total) * 100;
 
-                    html += `<div class="progress-text">${currentIndex + 1} / ${total}</div>`;
-                    html += `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+                    html += '<div class="progress-text">' + (currentIndex + 1) + ' / ' + total + '</div>';
+                    html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct +
+                        '%"></div></div>';
 
                     html += '<div class="card">';
-                    html += `<div class="question-header"><span class="question-type">${q['题型']}</span>`;
-                    html += `<span style="font-size:12px;color:#aaa;">${q['知识类型'] || ''}</span></div>`;
-                    html += `<div class="question-text">${q['题干']}</div>`;
+                    html += '<div class="question-header"><span class="question-type">' + q['题型'] + '</span>';
+                    html += '<span style="font-size:12px;color:#aaa;">' + (q['知识类型'] || '') + '</span></div>';
+                    html += '<div class="question-text">' + q['题干'] + '</div>';
 
                     if (q['题型'] === '判断题') {
-                        for (const opt of ['正确', '错误']) {
-                            const sel = selectedOptions.has(opt) ? ' selected' : '';
-                            html += `<div class="option-item${sel}" onclick="toggleOption('${opt}', 'single')">
-                                <div class="letter">${opt[0]}</div>${opt}</div>`;
+                        var opts = ['正确', '错误'];
+                        for (var o = 0; o < opts.length; o++) {
+                            var sel2 = selectedOptions.has(opts[o]) ? ' selected' : '';
+                            html += '<div class="option-item' + sel2 + '" onclick="toggleOption(\'' + opts[o] +
+                                '\', \'single\')"><div class="letter">' + opts[o][0] + '</div>' + opts[o] +
+                                '</div>';
                         }
                     } else if (q['题型'] === '单选题') {
-                        for (const [key, text] of Object.entries(q['选项'])) {
+                        var keys = Object.keys(q['选项']);
+                        for (var k = 0; k < keys.length; k++) {
+                            var key = keys[k];
+                            var text = q['选项'][key];
                             if (text) {
-                                const sel = selectedOptions.has(key) ? ' selected' : '';
-                                html += `<div class="option-item${sel}" onclick="toggleOption('${key}', 'single')">
-                                    <div class="letter">${key}</div>${text}</div>`;
+                                var sel3 = selectedOptions.has(key) ? ' selected' : '';
+                                html += '<div class="option-item' + sel3 + '" onclick="toggleOption(\'' + key +
+                                    '\', \'single\')"><div class="letter">' + key + '</div>' + text + '</div>';
                             }
                         }
                     } else if (q['题型'] === '多选题') {
-                        for (const [key, text] of Object.entries(q['选项'])) {
-                            if (text) {
-                                const sel = selectedOptions.has(key) ? ' selected' : '';
-                                html += `<div class="option-item${sel}" onclick="toggleOption('${key}', 'multi')">
-                                    <div class="checkbox">${sel ? '✓' : ''}</div>${key}. ${text}</div>`;
+                        var keys2 = Object.keys(q['选项']);
+                        for (var k2 = 0; k2 < keys2.length; k2++) {
+                            var key2 = keys2[k2];
+                            var text2 = q['选项'][key2];
+                            if (text2) {
+                                var sel4 = selectedOptions.has(key2) ? ' selected' : '';
+                                var check = sel4 ? '✓' : '';
+                                html += '<div class="option-item' + sel4 + '" onclick="toggleOption(\'' + key2 +
+                                    '\', \'multi\')"><div class="checkbox">' + check + '</div>' + key2 + '. ' +
+                                    text2 + '</div>';
                             }
                         }
                     }
 
                     html += '<div class="btn-row">';
-                    html += `<button class="btn btn-nav" onclick="prevQuestion()">◀</button>`;
-                    html += `<button class="btn btn-submit" onclick="submitAnswer()">提交</button>`;
-                    html += `<button class="btn btn-nav" onclick="nextQuestion()">▶</button>`;
-                    const isFav = favSet.has(q.id);
-                    html += `<button class="btn btn-fav" onclick="toggleFav()" style="color:${isFav?'#e94560':'#aaa'}">${isFav ? '★' : '☆'}</button>`;
+                    html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
+                    html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
+                    html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
+                    var isFav = favSet.has(q.id);
+                    html += '<button class="btn btn-fav" onclick="toggleFav()" style="color:' + (isFav ? '#e94560' :
+                        '#aaa') + '">' + (isFav ? '★' : '☆') + '</button>';
                     html += '</div>';
-                    html += `<div class="analysis" id="analysisBox"></div>`;
+                    html += '<div class="analysis" id="analysisBox"></div>';
                     html += '</div>';
                 } else if (currentMode && currentQuestions.length === 0) {
                     html += '<div class="card" style="text-align:center;padding:40px;color:#aaa;">没有题目</div>';
@@ -563,44 +704,46 @@
             }
 
             if (bankNames.length > 0) {
-                html += `<div style="text-align:center;margin-top:8px;">
-                    <button class="nav-btn" onclick="document.getElementById('fileInput2').click()">📥 导入更多题库</button>
-                    <input type="file" id="fileInput2" accept=".xlsx,.xls,.docx" multiple
-                        onchange="importFiles(this.files);this.value=''" style="display:none">
-                </div>`;
+                html += '<div style="text-align:center;margin-top:8px;">';
+                html +=
+                    '<button class="nav-btn" onclick="document.getElementById(\'fileInput2\').click()">📥 导入更多题库</button>';
+                html +=
+                    '<input type="file" id="fileInput2" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'" style="display:none">';
+                html += '</div>';
             }
 
             main.innerHTML = html;
         }
 
         function renderManage(main) {
-            const bankNames = Object.keys(banks);
-            let html = '';
+            var bankNames = Object.keys(banks);
+            var html = '';
 
             if (bankNames.length === 0) {
-                html += `<div class="import-area" onclick="document.getElementById('fileInputM').click()">
-                    <div style="font-size:36px;margin-bottom:8px;">📁</div>
-                    <div>点击导入题库 (.xlsx/.xls/.docx)</div>
-                    <input type="file" id="fileInputM" accept=".xlsx,.xls,.docx" multiple
-                        onchange="importFiles(this.files);this.value=''" style="display:none">
-                </div>`;
+                html += '<div class="import-area" onclick="document.getElementById(\'fileInputM\').click()">';
+                html += '<div style="font-size:36px;margin-bottom:8px;">📁</div>';
+                html += '<div>点击导入题库 (.xlsx/.xls/.docx)</div>';
+                html +=
+                    '<input type="file" id="fileInputM" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'" style="display:none">';
+                html += '</div>';
             } else {
                 html += '<div class="card"><div class="card-title">知识分类</div>';
                 html += '<div id="catTree"></div></div>';
 
                 html += '<div class="card">';
                 html += '<select id="bankSelect" onchange="onBankChange()">';
-                for (const name of bankNames) {
-                    html += `<option value="${name}">${name}</option>`;
+                for (var i = 0; i < bankNames.length; i++) {
+                    html += '<option value="' + bankNames[i] + '">' + bankNames[i] + '</option>';
                 }
                 html += '</select>';
                 html += '<div id="questionList" style="max-height:300px;overflow-y:auto;"></div>';
-                html += `<div class="btn-row" style="margin-top:8px;">
-                    <button class="nav-btn" onclick="document.getElementById('fileInputM2').click()">📥 导入</button>
-                    <button class="nav-btn" onclick="deleteBank()">🗑 删除题库</button>
-                </div>`;
-                html += '<input type="file" id="fileInputM2" accept=".xlsx,.xls,.docx" multiple
-                    onchange="importFiles(this.files);this.value=''" style="display:none">';
+                html += '<div class="btn-row" style="margin-top:8px;">';
+                html +=
+                    '<button class="nav-btn" onclick="document.getElementById(\'fileInputM2\').click()">📥 导入</button>';
+                html += '<button class="nav-btn" onclick="deleteBank()">🗑 删除题库</button>';
+                html += '</div>';
+                html +=
+                    '<input type="file" id="fileInputM2" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'" style="display:none">';
                 html += '</div>';
             }
 
@@ -612,41 +755,58 @@
         }
 
         function renderCatTree() {
-            const treeDiv = document.getElementById('catTree');
+            var treeDiv = document.getElementById('catTree');
             if (!treeDiv) return;
-            const bankSelect = document.getElementById('bankSelect');
+            var bankSelect = document.getElementById('bankSelect');
             if (!bankSelect || !banks[bankSelect.value]) return;
-            const qs = banks[bankSelect.value] || [];
-            const cats = [...new Set(qs.map(q => q['知识类型']).filter(Boolean))];
+            var qs = banks[bankSelect.value] || [];
+            var cats = [];
+            var seen = {};
+            for (var i = 0; i < qs.length; i++) {
+                var cat = qs[i]['知识类型'];
+                if (cat && !seen[cat]) {
+                    seen[cat] = true;
+                    cats.push(cat);
+                }
+            }
 
             function buildTree(cats) {
-                const tree = {};
-                for (const cat of cats) {
-                    const parts = cat.split('/');
-                    let current = tree;
-                    for (const part of parts) {
-                        if (!current[part]) current[part] = {};
-                        current = current[part];
+                var tree = {};
+                for (var i = 0; i < cats.length; i++) {
+                    var parts = cats[i].split('/');
+                    var current = tree;
+                    for (var j = 0; j < parts.length; j++) {
+                        if (!current[parts[j]]) current[parts[j]] = {};
+                        current = current[parts[j]];
                     }
                 }
                 return tree;
             }
 
-            function renderTree(node, prefix = '') {
-                let html = '';
-                for (const [name, children] of Object.entries(node)) {
-                    const path = prefix ? `${prefix}/${name}` : name;
-                    const count = qs.filter(q => q['知识类型'] === path || (q['知识类型'] || '').startsWith(path + '/')).length;
-                    const sel = selectedCat === path ? ' selected' : '';
-                    html += `<div class="cat-item${sel}" onclick="selectCat('${path}')">📁 ${name} (${count})</div>`;
+            function renderTree(node, prefix) {
+                prefix = prefix || '';
+                var html = '';
+                var keys = Object.keys(node);
+                for (var i = 0; i < keys.length; i++) {
+                    var name = keys[i];
+                    var children = node[name];
+                    var path = prefix ? prefix + '/' + name : name;
+                    var count = 0;
+                    for (var j = 0; j < qs.length; j++) {
+                        var qcat = qs[j]['知识类型'] || '';
+                        if (qcat === path || qcat.indexOf(path + '/') === 0) count++;
+                    }
+                    var sel = selectedCat === path ? ' selected' : '';
+                    html += '<div class="cat-item' + sel + '" onclick="selectCat(\'' + path + '\')">📁 ' + name +
+                        ' (' + count + ')</div>';
                     if (Object.keys(children).length > 0) {
-                        html += `<div style="padding-left:16px;">${renderTree(children, path)}</div>`;
+                        html += '<div style="padding-left:16px;">' + renderTree(children, path) + '</div>';
                     }
                 }
                 return html;
             }
 
-            const tree = buildTree(cats);
+            var tree = buildTree(cats);
             treeDiv.innerHTML = renderTree(tree) || '<div style="color:#aaa;padding:8px;">暂无分类</div>';
         }
 
@@ -657,34 +817,39 @@
         }
 
         function onBankChange() {
-            const bankSelect = document.getElementById('bankSelect');
+            var bankSelect = document.getElementById('bankSelect');
             if (!bankSelect || !banks[bankSelect.value]) return;
-            let qs = banks[bankSelect.value] || [];
+            var qs = banks[bankSelect.value] || [];
             if (selectedCat) {
-                qs = qs.filter(q => q['知识类型'] === selectedCat || (q['知识类型'] || '').startsWith(selectedCat + '/'));
+                qs = qs.filter(function(q) {
+                    var qcat = q['知识类型'] || '';
+                    return qcat === selectedCat || qcat.indexOf(selectedCat + '/') === 0;
+                });
             }
-            const listDiv = document.getElementById('questionList');
+            var listDiv = document.getElementById('questionList');
             if (!listDiv) return;
-            let html = '';
-            for (const q of qs) {
-                html += `<div class="question-list-item">
-                    <span><span style="color:#e94560;">[${q['题型']}]</span> ${q['题干'].substring(0, 30)}...</span>
-                    <span style="color:#aaa;font-size:12px;">${q['答案']}</span>
-                </div>`;
+            var html = '';
+            for (var i = 0; i < qs.length; i++) {
+                var q = qs[i];
+                html += '<div class="question-list-item">';
+                html += '<span><span style="color:#e94560;">[' + q['题型'] + ']</span> ' + q['题干'].substring(0, 30) +
+                    '...</span>';
+                html += '<span style="color:#aaa;font-size:12px;">' + q['答案'] + '</span>';
+                html += '</div>';
             }
             listDiv.innerHTML = html || '<div style="color:#aaa;text-align:center;padding:20px;">无题目</div>';
         }
 
         function deleteBank() {
-            const bankSelect = document.getElementById('bankSelect');
+            var bankSelect = document.getElementById('bankSelect');
             if (!bankSelect) return;
-            const bankName = bankSelect.value;
+            var bankName = bankSelect.value;
             if (!bankName) return;
-            if (confirm(`确定删除题库「${bankName}」？`)) {
+            if (confirm('确定删除题库「' + bankName + '」？')) {
                 delete banks[bankName];
                 saveAll();
-                setStatus(`已删除「${bankName}」`);
-                selectedBanks = selectedBanks.filter(b => b !== bankName);
+                setStatus('已删除「' + bankName + '」');
+                selectedBanks = selectedBanks.filter(function(b) { return b !== bankName; });
                 currentMode = null;
                 currentQuestions = [];
                 render();
@@ -693,7 +858,7 @@
 
         // ==================== 刷题逻辑 ====================
         function toggleBank(name) {
-            const idx = selectedBanks.indexOf(name);
+            var idx = selectedBanks.indexOf(name);
             if (idx >= 0) selectedBanks.splice(idx, 1);
             else selectedBanks.push(name);
             render();
@@ -709,29 +874,56 @@
             currentIndex = 0;
 
             if (mode === 'sequence') {
-                currentQuestions = selectedBanks.flatMap(bn => banks[bn] || []);
+                currentQuestions = [];
+                for (var i = 0; i < selectedBanks.length; i++) {
+                    var qs = banks[selectedBanks[i]] || [];
+                    for (var j = 0; j < qs.length; j++) currentQuestions.push(qs[j]);
+                }
             } else if (mode === 'random') {
-                currentQuestions = selectedBanks.flatMap(bn => banks[bn] || []);
-                for (let i = currentQuestions.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [currentQuestions[i], currentQuestions[j]] = [currentQuestions[j], currentQuestions[i]];
+                currentQuestions = [];
+                for (var i = 0; i < selectedBanks.length; i++) {
+                    var qs2 = banks[selectedBanks[i]] || [];
+                    for (var j = 0; j < qs2.length; j++) currentQuestions.push(qs2[j]);
+                }
+                for (var k = currentQuestions.length - 1; k > 0; k--) {
+                    var r = Math.floor(Math.random() * (k + 1));
+                    var tmp = currentQuestions[k];
+                    currentQuestions[k] = currentQuestions[r];
+                    currentQuestions[r] = tmp;
                 }
             } else if (mode === 'wrong') {
-                currentQuestions = Object.values(banks).flat().filter(q => wrongSet.has(q.id));
+                currentQuestions = [];
+                var allQs = Object.values(banks).flat();
+                for (var i = 0; i < allQs.length; i++) {
+                    if (wrongSet.has(allQs[i].id)) currentQuestions.push(allQs[i]);
+                }
             } else if (mode === 'fav') {
-                currentQuestions = Object.values(banks).flat().filter(q => favSet.has(q.id));
+                currentQuestions = [];
+                var allQs2 = Object.values(banks).flat();
+                for (var i = 0; i < allQs2.length; i++) {
+                    if (favSet.has(allQs2[i].id)) currentQuestions.push(allQs2[i]);
+                }
             } else if (mode === 'exam') {
-                currentQuestions = selectedBanks.flatMap(bn => banks[bn] || []);
-                for (let i = currentQuestions.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [currentQuestions[i], currentQuestions[j]] = [currentQuestions[j], currentQuestions[i]];
+                currentQuestions = [];
+                for (var i = 0; i < selectedBanks.length; i++) {
+                    var qs3 = banks[selectedBanks[i]] || [];
+                    for (var j = 0; j < qs3.length; j++) currentQuestions.push(qs3[j]);
+                }
+                for (var k = currentQuestions.length - 1; k > 0; k--) {
+                    var r = Math.floor(Math.random() * (k + 1));
+                    var tmp = currentQuestions[k];
+                    currentQuestions[k] = currentQuestions[r];
+                    currentQuestions[r] = tmp;
                 }
                 currentQuestions = currentQuestions.slice(0, Math.min(50, currentQuestions.length));
             }
 
-            document.getElementById('analysisBox')?.classList.remove('show', 'correct', 'wrong');
+            var box = document.getElementById('analysisBox');
+            if (box) {
+                box.classList.remove('show', 'correct', 'wrong');
+            }
             render();
-            setStatus(`加载 ${currentQuestions.length} 道题目`);
+            setStatus('加载 ' + currentQuestions.length + ' 道题目');
         }
 
         function toggleOption(val, type) {
@@ -747,19 +939,19 @@
 
         function submitAnswer() {
             if (!currentQuestions.length || currentIndex >= currentQuestions.length) return;
-            const q = currentQuestions[currentIndex];
-            let userAns;
+            var q = currentQuestions[currentIndex];
+            var userAns;
             if (q['题型'] === '多选题') {
-                userAns = [...selectedOptions].sort().join('');
+                userAns = Array.from(selectedOptions).sort().join('');
             } else {
-                userAns = [...selectedOptions][0] || '';
+                userAns = Array.from(selectedOptions)[0] || '';
             }
             if (!userAns) {
                 setStatus('请选择答案');
                 return;
             }
-            const isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
-            const box = document.getElementById('analysisBox');
+            var isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
+            var box = document.getElementById('analysisBox');
             if (box) {
                 box.classList.add('show');
                 if (isCorrect) {
@@ -770,7 +962,7 @@
                 } else {
                     box.classList.add('wrong');
                     box.classList.remove('correct');
-                    box.innerHTML = `✗ 错误！正确答案：${q['答案']}<br>${q['解析'] || ''}`;
+                    box.innerHTML = '✗ 错误！正确答案：' + q['答案'] + '<br>' + (q['解析'] || '');
                     wrongSet.add(q.id);
                     setStatus('回答错误 ✗');
                 }
@@ -783,7 +975,8 @@
             if (currentIndex < currentQuestions.length - 1) {
                 currentIndex++;
                 selectedOptions.clear();
-                document.getElementById('analysisBox')?.classList.remove('show', 'correct', 'wrong');
+                var box = document.getElementById('analysisBox');
+                if (box) box.classList.remove('show', 'correct', 'wrong');
                 render();
             } else {
                 setStatus('已经是最后一题');
@@ -794,13 +987,14 @@
             if (currentIndex > 0) {
                 currentIndex--;
                 selectedOptions.clear();
-                document.getElementById('analysisBox')?.classList.remove('show', 'correct', 'wrong');
+                var box = document.getElementById('analysisBox');
+                if (box) box.classList.remove('show', 'correct', 'wrong');
                 render();
             }
         }
 
         function toggleFav() {
-            const q = currentQuestions[currentIndex];
+            var q = currentQuestions[currentIndex];
             if (q) {
                 if (favSet.has(q.id)) favSet.delete(q.id);
                 else favSet.add(q.id);
