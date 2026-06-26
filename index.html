@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>刷题吧</title>
 
-    <!-- 桌面图标 -->
     <link rel="icon" type="image/png" href="tubiao.PNG">
     <link rel="apple-touch-icon" sizes="180x180" href="tubiao.PNG">
 
-    <!-- PWA -->
     <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%7D">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -188,22 +186,19 @@
 </div>
 
 <script>
-// ==================== Service Worker 注册与更新处理 ====================
+// ==================== Service Worker 更新 ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     let refreshing = false;
     navigator.serviceWorker.register('./sw.js').then(reg => {
-      // 检测到新 SW 安装中
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // 有新版本可用，显示提示条
             document.getElementById('updateBanner').style.display = 'block';
           }
         });
       });
-      // 监听来自 SW 的消息
       navigator.serviceWorker.addEventListener('message', event => {
         if (event.data === 'reload') {
           if (!refreshing) {
@@ -213,22 +208,17 @@ if ('serviceWorker' in navigator) {
         }
       });
     });
-    // 点击“立即刷新”按钮
     document.getElementById('updateRefreshBtn').addEventListener('click', () => {
       navigator.serviceWorker.getRegistration().then(reg => {
         if (reg && reg.waiting) {
-          // 通知等待中的 SW 跳过等待并刷新
           reg.waiting.postMessage('skip-waiting');
         } else {
           window.location.reload(true);
         }
       });
     });
-    // 定期检查更新（每30分钟）
     setInterval(() => {
-      navigator.serviceWorker.getRegistration().then(reg => {
-        if (reg) reg.update();
-      });
+      navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
     }, 30 * 60 * 1000);
   });
 }
@@ -248,7 +238,7 @@ let savedProgress = {};
 let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
-const FIELD_OPTIONS = ['忽略','知识类型','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
+const FIELD_OPTIONS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
 const FOOTER_HTML = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
 
@@ -359,7 +349,7 @@ window.confirmHeaderAndShowMapping = function() {
 function autoGuessField(colName) {
     let lower = colName.toLowerCase();
     if (/^[a-g]$/i.test(colName.trim())) return '选项' + colName.trim().toUpperCase();
-    if (/知识|类别|章|节|模块|分类|标签/.test(lower)) return '知识类型';
+    if (/知识|类别|章|节|模块|分类|标签/.test(lower)) return '知识类型（题目标签）';
     if (/题型|类型/.test(lower)) return '题型';
     if (/题干|题目|问题|内容/.test(lower)) return '题干';
     if (/答案|正确/.test(lower)) return '答案';
@@ -371,7 +361,7 @@ function showMappingUI() {
     let container = document.getElementById('mappingList');
     let html = '<div class="import-help">';
     html += '<strong>📌 导入说明：</strong><br>';
-    html += '① <strong>必须映射的列：题型、题干、知识类型、答案、选项A-G</strong>（无对应列则忽略）<br>';
+    html += '① <strong>必须映射的列：题型、题干、知识类型（题目标签）、答案、选项A-G</strong>（无对应列则忽略）<br>';
     html += '② 其他列（如序号、分数、难度等）请选择"忽略"<br>';
     html += '③ 确认映射无误后点击"确认导入"';
     html += '</div>';
@@ -381,7 +371,7 @@ function showMappingUI() {
         let guessed = autoGuessField(colName);
         html += '<div class="mapping-row">';
         html += '<span style="flex:1;word-break:break-all;">' + colName + '</span>';
-        html += '<select id="mapSelect_' + i + '" style="width:130px;">';
+        html += '<select id="mapSelect_' + i + '" style="width:130px;" onchange="syncOptionColumns(this, ' + i + ')">';
         for (let opt of FIELD_OPTIONS) {
             html += '<option value="' + opt + '"' + (opt === guessed ? ' selected' : '') + '>' + opt + '</option>';
         }
@@ -392,19 +382,55 @@ function showMappingUI() {
     document.getElementById('modalConfirmBtn').onclick = applyMapping;
 }
 
+// 同步相同列名的选项列选择
+window.syncOptionColumns = function(selectEl, index) {
+    const selectedValue = selectEl.value;
+    const colName = pendingHeaders[index];
+    // 查找所有列名相同的下拉框，并设置为相同选项
+    const allSelects = document.querySelectorAll('[id^="mapSelect_"]');
+    allSelects.forEach(s => {
+        const idx = parseInt(s.id.replace('mapSelect_', ''));
+        if (pendingHeaders[idx] === colName) {
+            s.value = selectedValue;
+        }
+    });
+};
+
 window.applyMapping = function() {
     let mapping = {};
     let hasQ = false, hasA = false;
+    let optionMapped = {};
     for (let i = 0; i < pendingHeaders.length; i++) {
         let sel = document.getElementById('mapSelect_' + i);
         if (!sel) continue;
         let field = sel.value;
-        if (field === '忽略') continue;
+        let colName = pendingHeaders[i];
+        if (field === '忽略') {
+            // 检查是否属于单个字母A-G的列，若表头中存在该字母列，则必须映射
+            if (/^[a-g]$/i.test(colName.trim())) {
+                const letter = colName.trim().toUpperCase();
+                optionMapped[letter] = optionMapped[letter] || false;
+            }
+            continue;
+        }
         mapping[field] = i;
         if (field === '题干') hasQ = true;
         if (field === '答案') hasA = true;
+        // 记录选项映射
+        if (field.startsWith('选项')) {
+            const letter = field.replace('选项', '');
+            optionMapped[letter] = true;
+        }
     }
     if (!hasQ || !hasA) { alert('必须指定"题干"和"答案"的对应列！'); return; }
+    // 检查表头中实际存在的字母列是否都已映射
+    for (let letter of ['A','B','C','D','E','F','G']) {
+        const hasColumn = pendingHeaders.some(h => h.trim().toUpperCase() === letter);
+        if (hasColumn && !optionMapped[letter]) {
+            alert(`选项${letter}列必须映射，不能忽略！`);
+            return;
+        }
+    }
     document.getElementById('mappingModal').classList.remove('show');
 
     let questions = [];
@@ -434,7 +460,7 @@ window.applyMapping = function() {
         }
         questions.push({
             id: 0,
-            '知识类型': mapping['知识类型']!==undefined ? String(row[mapping['知识类型']]||'').trim() : '',
+            '知识类型': mapping['知识类型（题目标签）']!==undefined ? String(row[mapping['知识类型（题目标签）']]||'').trim() : '',
             '题型': qtype,
             '题干': qText,
             '答案': ans,
