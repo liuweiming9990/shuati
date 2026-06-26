@@ -3,741 +3,359 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>智能刷题软件</title>
+    <title>智能刷题</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
-        :root {
-            --bg: #1a1a2e;
-            --card: #16213e;
-            --primary: #0f3460;
-            --accent: #e94560;
-            --text: #eee;
-            --text2: #aaa;
-            --success: #4e9f3d;
-            --error: #e94560;
-            --border: #2a2a4a;
-            --input-bg: #1a1a30;
-            --radius: 12px;
-        }
+        :root { --bg: #1a1a2e; --card: #16213e; --accent: #e94560; --text: #eee; --text2: #aaa; --border: #2a2a4a; --radius: 12px; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        .nav {
-            background: var(--card);
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .nav { background: var(--card); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
         .nav-title { font-size: 18px; font-weight: 700; color: var(--accent); }
-        .nav-btn {
-            background: var(--primary);
-            color: var(--text);
-            border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        .nav-btn:active { transform: scale(0.95); opacity: 0.8; }
+        .nav-btn { background: #0f3460; color: var(--text); border: none; padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; }
         .nav-btn.active { background: var(--accent); color: white; }
         .main { padding: 12px; max-width: 600px; margin: 0 auto; }
-        .card {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-        }
-        .card-title { font-size: 14px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
-        .bank-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-        .bank-tag {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            border: 1.5px solid var(--border);
-            background: var(--input-bg);
-            color: var(--text2);
-        }
+        .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .card-title { font-size: 14px; color: var(--text2); margin-bottom: 8px; }
+        .bank-tag { padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1.5px solid var(--border); background: #1a1a30; color: var(--text2); display: inline-block; margin: 4px; }
         .bank-tag.selected { background: var(--accent); color: white; border-color: var(--accent); }
-        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .question-type {
-            font-size: 12px;
-            color: var(--accent);
-            background: rgba(233,69,96,0.15);
-            padding: 4px 10px;
-            border-radius: 12px;
-        }
-        .question-text { font-size: 16px; line-height: 1.6; margin-bottom: 16px; font-weight: 500; }
-        .option-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 14px;
-            margin-bottom: 8px;
-            background: var(--input-bg);
-            border-radius: var(--radius);
-            cursor: pointer;
-            border: 1.5px solid transparent;
-            font-size: 15px;
-        }
-        .option-item:active { transform: scale(0.98); }
+        .question-text { font-size: 16px; line-height: 1.6; margin-bottom: 16px; }
+        .option-item { display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: #1a1a30; border-radius: var(--radius); cursor: pointer; border: 1.5px solid transparent; font-size: 15px; }
         .option-item.selected { border-color: var(--accent); background: rgba(233,69,96,0.1); }
-        .option-item .letter {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-            font-weight: 700;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-        .option-item.selected .letter { background: var(--accent); color: white; }
-        .option-item .checkbox {
-            width: 22px;
-            height: 22px;
-            border-radius: 6px;
-            border: 2px solid var(--text2);
-            margin-right: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        .option-item.selected .checkbox { background: var(--accent); border-color: var(--accent); }
-        .btn-row { display: flex; gap: 8px; margin-top: 12px; }
-        .btn {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-        }
-        .btn:active { transform: scale(0.95); }
+        .option-item .letter { width: 28px; height: 28px; border-radius: 50%; background: #0f3460; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+        .btn { padding: 14px; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; }
         .btn-submit { background: var(--accent); color: white; }
-        .btn-nav { background: var(--primary); color: var(--text); flex: 0.5; }
-        .btn-fav { flex: 0.3; background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
-        .analysis {
-            padding: 12px;
-            border-radius: var(--radius);
-            margin-top: 12px;
-            font-size: 14px;
-            line-height: 1.5;
-            display: none;
-        }
+        .btn-nav { background: #0f3460; color: var(--text); }
+        .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+        .analysis { padding: 12px; border-radius: var(--radius); margin-top: 12px; font-size: 14px; display: none; }
         .analysis.show { display: block; }
-        .analysis.correct { background: rgba(78,159,61,0.15); color: var(--success); }
-        .analysis.wrong { background: rgba(233,69,96,0.15); color: var(--error); }
+        .analysis.correct { background: rgba(78,159,61,0.15); color: #4e9f3d; }
+        .analysis.wrong { background: rgba(233,69,96,0.15); color: var(--accent); }
+        .progress-text { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 4px; }
         .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin: 12px 0; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
-        .progress-text { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 4px; }
         .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .mode-btn {
-            padding: 12px;
-            background: var(--input-bg);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius);
-            color: var(--text);
-            font-size: 14px;
-            cursor: pointer;
-            text-align: center;
-        }
-        .mode-btn:active { background: var(--primary); }
+        .mode-btn { padding: 12px; background: #1a1a30; border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 14px; cursor: pointer; text-align: center; }
         .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-        .import-area {
-            border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            margin-bottom: 12px;
-        }
-        .import-area:active { border-color: var(--accent); }
+        .import-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 30px; text-align: center; cursor: pointer; margin-bottom: 12px; }
         .import-area input { display: none; }
-        .status-bar {
-            background: var(--card);
-            padding: 8px 16px;
-            text-align: center;
-            font-size: 12px;
-            color: var(--text2);
-            border-top: 1px solid var(--border);
-            position: sticky;
-            bottom: 0;
-        }
-        select {
-            width: 100%;
-            padding: 12px;
-            border-radius: var(--radius);
-            background: var(--input-bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        .cat-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-bottom: 2px;
-            color: var(--text2);
-        }
-        .cat-item:active { background: var(--primary); }
+        .status-bar { background: var(--card); padding: 8px 16px; text-align: center; font-size: 12px; color: var(--text2); border-top: 1px solid var(--border); position: sticky; bottom: 0; }
+        select { width: 100%; padding: 12px; border-radius: var(--radius); background: #1a1a30; color: var(--text); border: 1px solid var(--border); font-size: 14px; margin-bottom: 8px; }
+        .cat-item { padding: 8px 12px; cursor: pointer; border-radius: 6px; font-size: 14px; margin-bottom: 2px; color: var(--text2); }
         .cat-item.selected { background: var(--accent); color: white; }
-        .question-list-item {
-            padding: 10px;
-            border-bottom: 1px solid var(--border);
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        /* 预览弹窗 */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 200;
-            justify-content: center;
-            align-items: center;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; justify-content: center; align-items: center; }
         .modal-overlay.show { display: flex; }
-        .modal-box {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
+        .modal-box { background: var(--card); border-radius: var(--radius); padding: 20px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
         .modal-box h3 { margin-bottom: 12px; color: var(--accent); }
-        .modal-box label { display: block; margin-bottom: 6px; color: var(--text2); font-size: 14px; }
-        .modal-box input {
-            width: 100%;
-            padding: 12px;
-            border-radius: var(--radius);
-            background: var(--input-bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-        .modal-box .btn-row { margin-top: 8px; }
-        .preview-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 12px;
-        }
-        .preview-table td, .preview-table th {
-            border: 1px solid var(--border);
-            padding: 6px 8px;
-            text-align: left;
-        }
-        .preview-table th { background: var(--primary); color: var(--text); }
+        .modal-box input { width: 100%; padding: 12px; border-radius: var(--radius); background: #1a1a30; color: var(--text); border: 1px solid var(--border); font-size: 16px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
-
-    <div class="nav">
-        <div class="nav-title">智能刷题</div>
-        <div>
-            <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
-            <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
+<div class="nav">
+    <div class="nav-title">智能刷题</div>
+    <div>
+        <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
+        <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
+    </div>
+</div>
+<div class="main" id="mainContent"></div>
+<div class="status-bar" id="statusBar">就绪</div>
+<div class="modal-overlay" id="headerModal">
+    <div class="modal-box">
+        <h3>请确认表头位置</h3>
+        <p style="color:#aaa;font-size:13px;margin-bottom:8px;">以下是文件前几行，表头在第几行？</p>
+        <table id="previewTable" style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;"></table>
+        <label style="color:#aaa;">表头行号：</label>
+        <input type="number" id="headerRowNum" min="1" value="1" step="1">
+        <div class="btn-row">
+            <button class="btn btn-nav" onclick="closeModal()">取消</button>
+            <button class="btn btn-submit" onclick="confirmHeader()">确认导入</button>
         </div>
     </div>
+</div>
 
-    <div class="main" id="mainContent"></div>
-    <div class="status-bar" id="statusBar">就绪</div>
+<script>
+var banks = {}, wrongSet = new Set(), favSet = new Set();
+var currentTab = 'practice', currentMode = null, currentQuestions = [], currentIndex = 0;
+var selectedBanks = [], selectedOptions = new Set(), selectedCat = null;
+var pendingRows = null, pendingFileName = '';
 
-    <!-- 表头预览弹窗 -->
-    <div class="modal-overlay" id="headerModal">
-        <div class="modal-box">
-            <h3>🔍 请确认表头位置</h3>
-            <p style="color:var(--text2);font-size:13px;margin-bottom:8px;">以下是你文件的前几行预览，哪一行是表头（列名）？</p>
-            <table class="preview-table" id="previewTable"></table>
-            <label>表头在第几行？</label>
-            <input type="number" id="headerRowNum" min="1" value="1" step="1">
-            <div class="btn-row">
-                <button class="btn btn-nav" onclick="closeHeaderModal()" style="flex:0.5;">取消</button>
-                <button class="btn btn-submit" onclick="confirmHeaderRow()">确认</button>
-            </div>
-        </div>
-    </div>
+function loadData() {
+    try { var s = localStorage.getItem('quizBanks'); if (s) banks = JSON.parse(s); } catch(e) {}
+    try { var w = localStorage.getItem('wrongSet'); if (w) wrongSet = new Set(JSON.parse(w)); } catch(e) {}
+    try { var f = localStorage.getItem('favSet'); if (f) favSet = new Set(JSON.parse(f)); } catch(e) {}
+}
+function saveAll() {
+    localStorage.setItem('quizBanks', JSON.stringify(banks));
+    localStorage.setItem('wrongSet', JSON.stringify(Array.from(wrongSet)));
+    localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
+}
+function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
 
-    <script>
-        var banks = {};
-        var wrongSet = new Set();
-        var favSet = new Set();
-        var progress = {};
-        var currentTab = 'practice';
-        var currentMode = null;
-        var currentQuestions = [];
-        var currentIndex = 0;
-        var selectedBanks = [];
-        var selectedOptions = new Set();
-        var selectedCat = null;
-        // 导入时的暂存数据
-        var pendingFile = null;
-        var pendingRows = null;
-        var pendingFileName = '';
+// ========== 标签切换 ==========
+window.switchTab = function(tab) {
+    currentTab = tab;
+    document.getElementById('tabPracticeBtn').classList.toggle('active', tab==='practice');
+    document.getElementById('tabManageBtn').classList.toggle('active', tab==='manage');
+    render();
+};
 
-        function loadData() {
-            try { var s = localStorage.getItem('quizBanks'); if (s) banks = JSON.parse(s); } catch(e) { banks = {}; }
-            try { var w = localStorage.getItem('wrongSet'); if (w) wrongSet = new Set(JSON.parse(w)); } catch(e) { wrongSet = new Set(); }
-            try { var f = localStorage.getItem('favSet'); if (f) favSet = new Set(JSON.parse(f)); } catch(e) { favSet = new Set(); }
-            try { var p = localStorage.getItem('progress'); if (p) progress = JSON.parse(p); } catch(e) { progress = {}; }
+// ========== 文件导入 ==========
+window.importFiles = function(input) {
+    var files = input.files; input.value = '';
+    if (!files.length) return;
+    var file = files[0];
+    setStatus('读取中...');
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, {type:'array'});
+        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+        if (rows.length < 2) { alert('文件内容太少'); setStatus('就绪'); return; }
+        pendingRows = rows;
+        pendingFileName = file.name;
+        // 显示预览
+        var t = document.getElementById('previewTable');
+        var h = '';
+        for (var r=0; r<Math.min(8,rows.length); r++) {
+            h += '<tr><td style="color:#e94560;">第'+(r+1)+'行</td>';
+            for (var c=0; c<Math.min(8,(rows[r]||[]).length); c++) h += '<td style="border:1px solid #2a2a4a;padding:4px;font-size:11px;">'+(rows[r][c]||'').toString().substring(0,20)+'</td>';
+            h += '</tr>';
         }
+        t.innerHTML = h;
+        document.getElementById('headerRowNum').value = '1';
+        document.getElementById('headerModal').classList.add('show');
+    };
+    reader.readAsArrayBuffer(file);
+};
 
-        function saveAll() {
-            localStorage.setItem('quizBanks', JSON.stringify(banks));
-            localStorage.setItem('wrongSet', JSON.stringify(Array.from(wrongSet)));
-            localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
-            localStorage.setItem('progress', JSON.stringify(progress));
+window.closeModal = function() {
+    document.getElementById('headerModal').classList.remove('show');
+    pendingRows = null;
+    setStatus('已取消');
+};
+
+window.confirmHeader = function() {
+    var n = parseInt(document.getElementById('headerRowNum').value);
+    if (isNaN(n) || n<1 || n>pendingRows.length) { alert('行号无效'); return; }
+    document.getElementById('headerModal').classList.remove('show');
+    var dataRows = pendingRows.slice(n-1);
+    var headers = dataRows[0].map(function(h){ return String(h||'').trim(); });
+    var cm = {};
+    for (var i=0; i<headers.length; i++) {
+        var h = headers[i].toLowerCase();
+        if (h.indexOf('知识')>=0||h.indexOf('类别')>=0||h.indexOf('章')>=0) cm['知识类型']=i;
+        else if (h.indexOf('题型')>=0||h.indexOf('类型')>=0) cm['题型']=i;
+        else if (h.indexOf('题干')>=0||h.indexOf('题目')>=0||h.indexOf('问题')>=0||h.indexOf('内容')>=0) cm['题干']=i;
+        else if (h.indexOf('答案')>=0||h.indexOf('正确')>=0) cm['答案']=i;
+        else if (h.indexOf('解析')>=0||h.indexOf('解释')>=0) cm['解析']=i;
+        else if (/^[a-g]$/i.test(headers[i])) cm['选项'+headers[i].toUpperCase()]=i;
+    }
+    if (!cm['题干']||!cm['答案']) { alert('找不到题干或答案列。表头：'+JSON.stringify(headers)); setStatus('导入失败'); return; }
+    var qs = [];
+    var maxId = 0;
+    for (var k in banks) { for (var j=0; j<banks[k].length; j++) { if (banks[k][j].id > maxId) maxId = banks[k][j].id; } }
+    for (var r=1; r<dataRows.length; r++) {
+        var row = dataRows[r];
+        if (!row) continue;
+        var qt = String(row[cm['题干']]||'').trim();
+        if (!qt) continue;
+        var ans = String(row[cm['答案']]||'').trim().toUpperCase().replace(/,/g,'').replace(/，/g,'').replace(/\s/g,'');
+        var tp = String(row[cm['题型']]||'').trim();
+        if (!tp || ['单选题','多选题','判断题'].indexOf(tp)<0) {
+            if (ans==='正确'||ans==='错误'||ans==='对'||ans==='错') tp='判断题';
+            else if (ans.length>1 && /^[A-G]+$/.test(ans)) tp='多选题';
+            else tp='单选题';
         }
-
-        function setStatus(msg) {
-            document.getElementById('statusBar').textContent = msg;
+        if (tp==='判断题') {
+            if (ans==='A'||ans==='对') ans='正确';
+            else if (ans==='B'||ans==='错') ans='错误';
         }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            document.getElementById('tabPracticeBtn').classList.toggle('active', tab === 'practice');
-            document.getElementById('tabManageBtn').classList.toggle('active', tab === 'manage');
-            render();
+        var opts = {};
+        for (var key in cm) {
+            if (key.indexOf('选项')===0) opts[key.slice(2)] = String(row[cm[key]]||'').trim();
         }
+        maxId++;
+        qs.push({id:maxId,'知识类型':String(row[cm['知识类型']]||'').trim(),'题型':tp,'题干':qt,'答案':ans,'解析':String(row[cm['解析']]||'').trim(),'选项':opts,'来源文件':pendingFileName});
+    }
+    var bn = pendingFileName.replace(/\.(xlsx|xls|docx)$/i, '');
+    banks[bn] = qs;
+    saveAll();
+    setStatus('导入成功：'+qs.length+' 题');
+    render();
+};
 
-        // ==================== 文件读取（不解析） ====================
-        function readFileRows(file) {
-            return new Promise(function(resolve, reject) {
-                var ext = file.name.split('.').pop().toLowerCase();
-                if (ext === 'xlsx' || ext === 'xls') {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            var data = new Uint8Array(e.target.result);
-                            var workbook = XLSX.read(data, { type: 'array' });
-                            var sheet = workbook.Sheets[workbook.SheetNames[0]];
-                            var rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                            resolve(rows);
-                        } catch(err) {
-                            reject('读取失败：' + err.message);
-                        }
-                    };
-                    reader.readAsArrayBuffer(file);
-                } else if (ext === 'docx') {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        mammoth.extractRawText({ arrayBuffer: e.target.result })
-                            .then(function(result) {
-                                var text = result.value;
-                                var lines = text.split('\n').filter(function(l) { return l.trim(); });
-                                var rows = lines.map(function(l) { return l.split('\t'); });
-                                resolve(rows);
-                            })
-                            .catch(function(err) { reject('读取失败：' + err.message); });
-                    };
-                    reader.readAsArrayBuffer(file);
-                } else {
-                    reject('不支持的文件格式');
+// ========== 渲染 ==========
+function render() {
+    var m = document.getElementById('mainContent');
+    if (currentTab==='practice') renderPractice(m);
+    else renderManage(m);
+}
+
+function renderPractice(m) {
+    var names = Object.keys(banks);
+    var h = '';
+    if (names.length===0) {
+        h += '<div class="import-area" onclick="document.getElementById(\'fileInput\').click()">📁<br>点击导入题库<br><small>支持 .xlsx .xls .docx</small><input type="file" id="fileInput" accept=".xlsx,.xls,.docx" onchange="importFiles(this)"></div>';
+    } else {
+        h += '<div class="card"><div class="card-title">选择题库</div>';
+        for (var i=0; i<names.length; i++) {
+            var sel = selectedBanks.indexOf(names[i])>=0 ? ' selected' : '';
+            h += '<span class="bank-tag'+sel+'" onclick="toggleBank(\''+names[i]+'\')">'+names[i]+'</span>';
+        }
+        h += '<div class="card-title" style="margin-top:8px;">练习模式</div><div class="mode-grid">';
+        var modes = [{i:'sequence',l:'📖 顺序'},{i:'random',l:'🔀 随机'},{i:'exam',l:'📝 考试'},{i:'wrong',l:'❌ 错题'},{i:'fav',l:'⭐ 收藏'}];
+        for (var j=0; j<modes.length; j++) {
+            h += '<div class="mode-btn'+(currentMode===modes[j].i?' active':'')+'" onclick="startMode(\''+modes[j].i+'\')">'+modes[j].l+'</div>';
+        }
+        h += '</div></div>';
+        
+        if (currentMode && currentQuestions.length>0 && currentIndex<currentQuestions.length) {
+            var q = currentQuestions[currentIndex];
+            h += '<div class="progress-text">'+(currentIndex+1)+'/'+currentQuestions.length+'</div>';
+            h += '<div class="progress-bar"><div class="progress-fill" style="width:'+((currentIndex+1)/currentQuestions.length*100)+'%"></div></div>';
+            h += '<div class="card"><div class="question-text">'+q['题干']+'</div>';
+            if (q['题型']==='判断题') {
+                for (var o=0; o<['正确','错误'].length; o++) {
+                    var s = selectedOptions.has(['正确','错误'][o]) ? ' selected' : '';
+                    h += '<div class="option-item'+s+'" onclick="toggleOption(\''+['正确','错误'][o]+'\',\'single\')"><div class="letter">'+['正确','错误'][o][0]+'</div>'+['正确','错误'][o]+'</div>';
                 }
-            });
-        }
-
-        // ==================== 导入入口 ====================
-        async function importFiles(files) {
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                setStatus('正在读取 ' + file.name + ' ...');
-                try {
-                    var rows = await readFileRows(file);
-                    if (rows.length < 2) {
-                        alert(file.name + '：文件内容太少');
-                        continue;
-                    }
-                    // 弹出预览窗口，让用户选择表头行
-                    pendingFile = file;
-                    pendingRows = rows;
-                    pendingFileName = file.name;
-                    showHeaderModal(rows);
-                    // 等待用户确认
-                    return; // 一次只处理一个文件
-                } catch(err) {
-                    alert('读取 ' + file.name + ' 失败：' + err);
-                }
-            }
-            setStatus('就绪');
-        }
-
-        // ==================== 表头预览弹窗 ====================
-        function showHeaderModal(rows) {
-            var table = document.getElementById('previewTable');
-            var html = '';
-            var maxRows = Math.min(8, rows.length);
-            for (var r = 0; r < maxRows; r++) {
-                html += '<tr><td style="color:var(--accent);font-weight:bold;">第' + (r+1) + '行</td>';
-                var cells = rows[r] || [];
-                var maxCols = Math.min(10, cells.length);
-                for (var c = 0; c < maxCols; c++) {
-                    html += '<td>' + (cells[c] !== undefined && cells[c] !== null ? String(cells[c]).substring(0, 30) : '') + '</td>';
-                }
-                html += '</tr>';
-            }
-            table.innerHTML = html;
-            document.getElementById('headerRowNum').value = '1';
-            document.getElementById('headerModal').classList.add('show');
-        }
-
-        function closeHeaderModal() {
-            document.getElementById('headerModal').classList.remove('show');
-            pendingFile = null;
-            pendingRows = null;
-            pendingFileName = '';
-            setStatus('已取消导入');
-        }
-
-        function confirmHeaderRow() {
-            var rowNum = parseInt(document.getElementById('headerRowNum').value);
-            if (isNaN(rowNum) || rowNum < 1 || rowNum > pendingRows.length) {
-                alert('请输入有效的行号（1-' + pendingRows.length + '）');
-                return;
-            }
-            document.getElementById('headerModal').classList.remove('show');
-
-            // 从指定行开始解析
-            var dataRows = pendingRows.slice(rowNum - 1); // 第 rowNum 行作为表头
-            try {
-                var questions = extractQuestions(dataRows, pendingFileName);
-                addQuestionsToBank(questions, pendingFileName);
-            } catch(err) {
-                alert('解析失败：' + err.message);
-                setStatus('导入失败');
-                pendingFile = null;
-                pendingRows = null;
-                pendingFileName = '';
-                return;
-            }
-            pendingFile = null;
-            pendingRows = null;
-            pendingFileName = '';
-        }
-
-        function addQuestionsToBank(questions, fileName) {
-            var maxId = 0;
-            var allQs = Object.values(banks).flat();
-            for (var k = 0; k < allQs.length; k++) {
-                if (allQs[k].id > maxId) maxId = allQs[k].id;
-            }
-            for (var j = 0; j < questions.length; j++) {
-                maxId++;
-                questions[j].id = maxId;
-            }
-            var bankName = fileName.replace(/\.(xlsx|xls|docx)$/i, '');
-            banks[bankName] = questions;
-            saveAll();
-            setStatus('成功导入 ' + questions.length + ' 道题目到「' + bankName + '」');
-            render();
-        }
-
-        // ==================== 题目提取 ====================
-        function extractQuestions(rows, fileName) {
-            var headers = rows[0].map(function(h) { return String(h || '').trim(); });
-            var questions = [];
-            var colMap = {};
-            for (var i = 0; i < headers.length; i++) {
-                var h = headers[i].toLowerCase();
-                if (h.indexOf('知识') >= 0 || h.indexOf('类别') >= 0 || h.indexOf('章') >= 0 || h.indexOf('节') >= 0) colMap['知识类型'] = i;
-                else if (h.indexOf('题型') >= 0 || h.indexOf('类型') >= 0) colMap['题型'] = i;
-                else if (h.indexOf('题干') >= 0 || h.indexOf('题目') >= 0 || h.indexOf('问题') >= 0 || h.indexOf('内容') >= 0) colMap['题干'] = i;
-                else if (h.indexOf('答案') >= 0 || h.indexOf('正确') >= 0) colMap['答案'] = i;
-                else if (h.indexOf('解析') >= 0 || h.indexOf('解释') >= 0) colMap['解析'] = i;
-                else if (/^[a-g]$/i.test(headers[i].trim())) colMap['选项' + headers[i].trim().toUpperCase()] = i;
-            }
-            if (!('题干' in colMap) || !('答案' in colMap)) {
-                throw new Error('找不到题干或答案列。表头：' + JSON.stringify(headers));
-            }
-            for (var j = 1; j < rows.length; j++) {
-                var row = rows[j];
-                if (!row || row.every(function(c) { return !c; })) continue;
-                var qText = String(row[colMap['题干']] || '').trim();
-                if (!qText) continue;
-                var answer = String(row[colMap['答案']] || '').trim().toUpperCase()
-                    .replace(/,/g, '').replace(/，/g, '').replace(/\s/g, '');
-                var qtype = String(row[colMap['题型']] || '').trim();
-                if (!qtype || ['单选题', '多选题', '判断题'].indexOf(qtype) < 0) {
-                    if (answer === '正确' || answer === '错误' || answer === '对' || answer === '错') qtype = '判断题';
-                    else if (answer.length > 1 && /^[A-G]+$/.test(answer)) qtype = '多选题';
-                    else qtype = '单选题';
-                }
-                if (qtype === '判断题') {
-                    if (answer === 'A' || answer === '对') answer = '正确';
-                    else if (answer === 'B' || answer === '错') answer = '错误';
-                }
-                var options = {};
-                for (var key in colMap) {
-                    if (key.indexOf('选项') === 0) {
-                        options[key.slice(2)] = String(row[colMap[key]] || '').trim();
+            } else if (q['题型']==='单选题') {
+                for (var k in q['选项']) {
+                    if (q['选项'][k]) {
+                        var s2 = selectedOptions.has(k) ? ' selected' : '';
+                        h += '<div class="option-item'+s2+'" onclick="toggleOption(\''+k+'\',\'single\')"><div class="letter">'+k+'</div>'+q['选项'][k]+'</div>';
                     }
                 }
-                questions.push({
-                    id: null,
-                    '知识类型': String(row[colMap['知识类型']] || '').trim(),
-                    '题型': qtype,
-                    '题干': qText,
-                    '答案': answer,
-                    '解析': String(row[colMap['解析']] || '').trim(),
-                    '选项': options,
-                    '来源文件': fileName
-                });
-            }
-            return questions;
-        }
-
-        // ==================== 渲染 ====================
-        function render() {
-            var main = document.getElementById('mainContent');
-            if (currentTab === 'practice') renderPractice(main);
-            else renderManage(main);
-        }
-
-        function renderPractice(main) {
-            var bankNames = Object.keys(banks);
-            var html = '';
-
-            if (bankNames.length === 0) {
-                html += '<div class="import-area" onclick="document.getElementById(\'fileInput\').click()">';
-                html += '<div style="font-size:36px;margin-bottom:8px;">📁</div>';
-                html += '<div style="font-size:15px;color:#aaa;">点击导入题库文件</div>';
-                html += '<div style="font-size:12px;color:#666;margin-top:4px;">支持 .xlsx / .xls / .docx</div>';
-                html += '<input type="file" id="fileInput" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'">';
-                html += '</div>';
-            } else {
-                html += '<div class="card"><div class="card-title">选择题库（可多选）</div><div class="bank-list">';
-                for (var i = 0; i < bankNames.length; i++) {
-                    var name = bankNames[i];
-                    var sel = selectedBanks.indexOf(name) >= 0 ? ' selected' : '';
-                    html += '<div class="bank-tag' + sel + '" onclick="toggleBank(\'' + name + '\')">' + name + '</div>';
-                }
-                html += '</div>';
-
-                html += '<div class="card-title" style="margin-top:8px;">练习模式</div>';
-                html += '<div class="mode-grid">';
-                var modes = [
-                    { id: 'sequence', label: '📖 顺序练习' },
-                    { id: 'random', label: '🔀 随机练习' },
-                    { id: 'exam', label: '📝 模拟考试' },
-                    { id: 'wrong', label: '❌ 错题重做' },
-                    { id: 'fav', label: '⭐ 收藏练习' }
-                ];
-                for (var m = 0; m < modes.length; m++) {
-                    var active = currentMode === modes[m].id ? ' active' : '';
-                    html += '<div class="mode-btn' + active + '" onclick="startMode(\'' + modes[m].id + '\')">' + modes[m].label + '</div>';
-                }
-                html += '</div></div>';
-
-                if (currentMode && currentQuestions.length > 0 && currentIndex < currentQuestions.length) {
-                    var q = currentQuestions[currentIndex];
-                    var total = currentQuestions.length;
-                    var pct = ((currentIndex + 1) / total) * 100;
-
-                    html += '<div class="progress-text">' + (currentIndex + 1) + ' / ' + total + '</div>';
-                    html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
-
-                    html += '<div class="card">';
-                    html += '<div class="question-header"><span class="question-type">' + q['题型'] + '</span>';
-                    html += '<span style="font-size:12px;color:#aaa;">' + (q['知识类型'] || '') + '</span></div>';
-                    html += '<div class="question-text">' + q['题干'] + '</div>';
-
-                    if (q['题型'] === '判断题') {
-                        var opts = ['正确', '错误'];
-                        for (var o = 0; o < opts.length; o++) {
-                            var sel2 = selectedOptions.has(opts[o]) ? ' selected' : '';
-                            html += '<div class="option-item' + sel2 + '" onclick="toggleOption(\'' + opts[o] + '\', \'single\')"><div class="letter">' + opts[o][0] + '</div>' + opts[o] + '</div>';
-                        }
-                    } else if (q['题型'] === '单选题') {
-                        var keys = Object.keys(q['选项']);
-                        for (var k = 0; k < keys.length; k++) {
-                            var key = keys[k];
-                            var text = q['选项'][key];
-                            if (text) {
-                                var sel3 = selectedOptions.has(key) ? ' selected' : '';
-                                html += '<div class="option-item' + sel3 + '" onclick="toggleOption(\'' + key + '\', \'single\')"><div class="letter">' + key + '</div>' + text + '</div>';
-                            }
-                        }
-                    } else if (q['题型'] === '多选题') {
-                        var keys2 = Object.keys(q['选项']);
-                        for (var k2 = 0; k2 < keys2.length; k2++) {
-                            var key2 = keys2[k2];
-                            var text2 = q['选项'][key2];
-                            if (text2) {
-                                var sel4 = selectedOptions.has(key2) ? ' selected' : '';
-                                var check = sel4 ? '✓' : '';
-                                html += '<div class="option-item' + sel4 + '" onclick="toggleOption(\'' + key2 + '\', \'multi\')"><div class="checkbox">' + check + '</div>' + key2 + '. ' + text2 + '</div>';
-                            }
-                        }
-                    }
-
-                    html += '<div class="btn-row">';
-                    html += '<button class="btn btn-nav" onclick="prevQuestion()">◀</button>';
-                    html += '<button class="btn btn-submit" onclick="submitAnswer()">提交</button>';
-                    html += '<button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
-                    var isFav = favSet.has(q.id);
-                    html += '<button class="btn btn-fav" onclick="toggleFav()" style="color:' + (isFav ? '#e94560' : '#aaa') + '">' + (isFav ? '★' : '☆') + '</button>';
-                    html += '</div>';
-                    html += '<div class="analysis" id="analysisBox"></div>';
-                    html += '</div>';
-                } else if (currentMode && currentQuestions.length === 0) {
-                    html += '<div class="card" style="text-align:center;padding:40px;color:#aaa;">没有题目</div>';
-                }
-            }
-
-            if (bankNames.length > 0) {
-                html += '<div style="text-align:center;margin-top:8px;">';
-                html += '<button class="nav-btn" onclick="document.getElementById(\'fileInput2\').click()">📥 导入更多题库</button>';
-                html += '<input type="file" id="fileInput2" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'" style="display:none">';
-                html += '</div>';
-            }
-
-            main.innerHTML = html;
-        }
-
-        function renderManage(main) {
-            var bankNames = Object.keys(banks);
-            var html = '';
-
-            if (bankNames.length === 0) {
-                html += '<div class="import-area" onclick="document.getElementById(\'fileInputM\').click()">';
-                html += '<div style="font-size:36px;margin-bottom:8px;">📁</div>';
-                html += '<div>点击导入题库 (.xlsx/.xls/.docx)</div>';
-                html += '<input type="file" id="fileInputM" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'" style="display:none">';
-                html += '</div>';
-            } else {
-                html += '<div class="card"><div class="card-title">知识分类</div>';
-                html += '<div id="catTree"></div></div>';
-                html += '<div class="card">';
-                html += '<select id="bankSelect" onchange="onBankChange()">';
-                for (var i = 0; i < bankNames.length; i++) {
-                    html += '<option value="' + bankNames[i] + '">' + bankNames[i] + '</option>';
-                }
-                html += '</select>';
-                html += '<div id="questionList" style="max-height:300px;overflow-y:auto;"></div>';
-                html += '<div class="btn-row" style="margin-top:8px;">';
-                html += '<button class="nav-btn" onclick="document.getElementById(\'fileInputM2\').click()">📥 导入</button>';
-                html += '<button class="nav-btn" onclick="deleteBank()">🗑 删除题库</button>';
-                html += '</div>';
-                html += '<input type="file" id="fileInputM2" accept=".xlsx,.xls,.docx" multiple onchange="importFiles(this.files);this.value=\'\'" style="display:none">';
-                html += '</div>';
-            }
-            main.innerHTML = html;
-            if (bankNames.length > 0) { renderCatTree(); onBankChange(); }
-        }
-
-        function renderCatTree() {
-            var treeDiv = document.getElementById('catTree');
-            if (!treeDiv) return;
-            var bankSelect = document.getElementById('bankSelect');
-            if (!bankSelect || !banks[bankSelect.value]) return;
-            var qs = banks[bankSelect.value] || [];
-            var cats = [];
-            var seen = {};
-            for (var i = 0; i < qs.length; i++) {
-                var cat = qs[i]['知识类型'];
-                if (cat && !seen[cat]) { seen[cat] = true; cats.push(cat); }
-            }
-            function buildTree(cats) {
-                var tree = {};
-                for (var i = 0; i < cats.length; i++) {
-                    var parts = cats[i].split('/');
-                    var current = tree;
-                    for (var j = 0; j < parts.length; j++) {
-                        if (!current[parts[j]]) current[parts[j]] = {};
-                        current = current[parts[j]];
+            } else if (q['题型']==='多选题') {
+                for (var k2 in q['选项']) {
+                    if (q['选项'][k2]) {
+                        var s3 = selectedOptions.has(k2) ? ' selected' : '';
+                        h += '<div class="option-item'+s3+'" onclick="toggleOption(\''+k2+'\',\'multi\')"><div class="letter">'+(s3?'✓':'')+'</div>'+k2+'. '+q['选项'][k2]+'</div>';
                     }
                 }
-                return tree;
             }
-            function renderTree(node, prefix) {
-                prefix = prefix || '';
-                var html = '';
-                var keys = Object.keys(node);
-                for (var i = 0; i < keys.length; i++) {
-                    var name = keys[i];
-                    var children = node[name];
-                    var path = prefix ? prefix + '/' + name : name;
-                    var count = 0;
-                    for (var j = 0; j < qs.length; j++) {
-                        var qcat = qs[j]['知识类型'] || '';
-                        if (qcat === path || qcat.indexOf(path + '/') === 0) count++;
-                    }
-                    var sel = selectedCat === path ? ' selected' : '';
-                    html += '<div class="cat-item' + sel + '" onclick="selectCat(\'' + path + '\')">📁 ' + name + ' (' + count + ')</div>';
-                    if (Object.keys(children).length > 0) {
-                        html += '<div style="padding-left:16px;">' + renderTree(children, path) + '</div>';
-                    }
-                }
-                return html;
-            }
-            var tree = buildTree(cats);
-            treeDiv.innerHTML = renderTree(tree) || '<div style="color:#aaa;padding:8px;">暂无分类</div>';
+            h += '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()">◀</button><button class="btn btn-submit" onclick="submitAnswer()">提交</button><button class="btn btn-nav" onclick="nextQuestion()">▶</button>';
+            h += '<button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'★':'☆')+'</button></div>';
+            h += '<div class="analysis" id="analysisBox"></div></div>';
         }
+    }
+    if (names.length>0) h += '<div style="text-align:center;margin-top:8px;"><button class="nav-btn" onclick="document.getElementById(\'fileInput2\').click()">📥 导入更多</button><input type="file" id="fileInput2" accept=".xlsx,.xls,.docx" onchange="importFiles(this)" style="display:none"></div>';
+    m.innerHTML = h;
+}
 
-        function selectCat(path) {
-            selectedCat = (selectedCat === path) ? null : path;
-            renderCatTree();
-            onBankChange();
+function renderManage(m) {
+    var names = Object.keys(banks);
+    var h = '';
+    if (names.length===0) {
+        h += '<div class="import-area" onclick="document.getElementById(\'fileInputM\').click()">📁<br>点击导入题库<input type="file" id="fileInputM" accept=".xlsx,.xls,.docx" onchange="importFiles(this)"></div>';
+    } else {
+        h += '<div class="card"><div class="card-title">题库管理</div><select id="bankSelect" onchange="onBankChange()">';
+        for (var i=0; i<names.length; i++) h += '<option>'+names[i]+'</option>';
+        h += '</select><div id="qList" style="max-height:300px;overflow-y:auto;"></div>';
+        h += '<div class="btn-row"><button class="btn btn-nav" onclick="document.getElementById(\'fileInputM2\').click()">📥 导入</button><button class="btn btn-nav" onclick="deleteBank()">🗑 删除</button></div>';
+        h += '<input type="file" id="fileInputM2" accept=".xlsx,.xls,.docx" onchange="importFiles(this)" style="display:none"></div>';
+    }
+    m.innerHTML = h;
+    if (names.length>0) onBankChange();
+}
+
+window.onBankChange = function() {
+    var sel = document.getElementById('bankSelect');
+    if (!sel) return;
+    var qs = banks[sel.value] || [];
+    var d = document.getElementById('qList');
+    var h = '';
+    for (var i=0; i<qs.length; i++) {
+        h += '<div style="padding:8px;border-bottom:1px solid #2a2a4a;font-size:13px;"><span style="color:#e94560;">['+qs[i]['题型']+']</span> '+qs[i]['题干'].substring(0,30)+'... <span style="color:#aaa;">'+qs[i]['答案']+'</span></div>';
+    }
+    d.innerHTML = h || '<div style="color:#aaa;text-align:center;padding:20px;">无题目</div>';
+};
+
+window.deleteBank = function() {
+    var sel = document.getElementById('bankSelect');
+    if (!sel) return;
+    if (confirm('删除「'+sel.value+'」？')) {
+        delete banks[sel.value];
+        saveAll();
+        selectedBanks = selectedBanks.filter(function(b){ return b!==sel.value; });
+        currentMode = null; currentQuestions = [];
+        render();
+        setStatus('已删除');
+    }
+};
+
+window.toggleBank = function(name) {
+    var i = selectedBanks.indexOf(name);
+    if (i>=0) selectedBanks.splice(i,1);
+    else selectedBanks.push(name);
+    render();
+};
+
+window.startMode = function(mode) {
+    if (selectedBanks.length===0 && mode!=='wrong' && mode!=='fav') { setStatus('请先选择题库'); return; }
+    currentMode = mode;
+    selectedOptions.clear();
+    currentIndex = 0;
+    currentQuestions = [];
+    if (mode==='sequence' || mode==='random' || mode==='exam') {
+        for (var i=0; i<selectedBanks.length; i++) {
+            for (var j=0; j<(banks[selectedBanks[i]]||[]).length; j++) currentQuestions.push(banks[selectedBanks[i]][j]);
         }
-
-        function onBankChange() {
-            var bankSelect = document.getElementById('bankSelect');
-            if (!bankSelect || !banks[bankSelect.value]) return;
-            var qs = banks[bankSelect.value] || [];
-            if (selectedCat) {
-                qs = qs.filter(function(q) {
-                    var qcat = q['知识类型'] || '';
-                    return qcat === selectedCat || qcat.indexOf(selectedCat + '/') === 0;
-                });
-            }
-            var listDiv = document.getElementById('questionList');
-            if (!listDiv) return;
-            var html = '';
-            for (var i = 0; i < qs.length; i++) {
-                var q = qs[i];
-                html += '<div class="question-list-item"><span><span style="color:#e94560;">[' + q['题型'] + ']</span> ' + q['题干'].substring(0, 30) + '...</span><span style="color:#aaa;font-size:12px;">' + q['答案'] + '</span></div>';
-            }
-            listDiv.innerHTML = html || '<div style="color:#aaa;text-align:center;padding:20px;">无题目</div>';
+        if (mode==='random' || mode==='exam') {
+            for (var k=currentQuestions.length-1; k>0; k--) { var r=Math.floor(Math.random()*(k+1)); var t=currentQuestions[k]; currentQuestions[k]=currentQuestions[r]; currentQuestions[r]=t; }
         }
+        if (mode==='exam') currentQuestions = currentQuestions.slice(0, Math.min(50, currentQuestions.length));
+    } else if (mode==='wrong') {
+        var all = [];
+        for (var bn in banks) { for (var j=0; j<banks[bn].length; j++) all.push(banks[bn][j]); }
+        for (var i=0; i<all.length; i++) { if (wrongSet.has(all[i].id)) currentQuestions.push(all[i]); }
+    } else if (mode==='fav') {
+        var all2 = [];
+        for (var bn in banks) { for (var j=0; j<banks[bn].length; j++) all2.push(banks[bn][j]); }
+        for (var i=0; i<all2.length; i++) { if (favSet.has(all2[i].id)) currentQuestions.push(all2[i]); }
+    }
+    render();
+    setStatus('加载 '+currentQuestions.length+' 题');
+};
 
-        function deleteBank() {
-            var bankSelect = document.getElementById('bankSelect');
-            if (!bankSelect) return;
-            var bankName = bankSelect.value;
-            if (!bankName) return;
-            if (confirm('确定删除题库「' + bankName + '」？')) {
-                delete banks[bankName];
-                saveAll();
-                setStatus('已删除「' + bankName + '」');
-                selectedBanks = selectedBanks.filter(function(b) { return b !== bankName; });
-                currentMode = null
+window.toggleOption = function(val, type) {
+    if (type==='single') { selectedOptions.clear(); selectedOptions.add(val); }
+    else { if (selectedOptions.has(val)) selectedOptions.delete(val); else selectedOptions.add(val); }
+    render();
+};
+
+window.submitAnswer = function() {
+    if (!currentQuestions.length) return;
+    var q = currentQuestions[currentIndex];
+    var ua = q['题型']==='多选题' ? Array.from(selectedOptions).sort().join('') : (Array.from(selectedOptions)[0]||'');
+    if (!ua) { setStatus('请选择答案'); return; }
+    var ok = ua.toUpperCase() === q['答案'].toUpperCase();
+    var box = document.getElementById('analysisBox');
+    if (box) {
+        box.className = 'analysis show '+(ok?'correct':'wrong');
+        box.innerHTML = ok ? '✓ 正确！' : '✗ 错误！正确答案：'+q['答案']+(q['解析']?'<br>'+q['解析']:'');
+    }
+    if (!ok) wrongSet.add(q.id);
+    saveAll();
+    setStatus(ok?'正确 ✓':'错误 ✗');
+    render();
+};
+
+window.nextQuestion = function() {
+    if (currentIndex < currentQuestions.length-1) { currentIndex++; selectedOptions.clear(); render(); }
+    else setStatus('已经是最后一题');
+};
+window.prevQuestion = function() {
+    if (currentIndex > 0) { currentIndex--; selectedOptions.clear(); render(); }
+};
+window.toggleFav = function() {
+    var q = currentQuestions[currentIndex];
+    if (q) { if (favSet.has(q.id)) favSet.delete(q.id); else favSet.add(q.id); saveAll(); render(); }
+};
+
+loadData();
+render();
+</script>
+</body>
+</html>
