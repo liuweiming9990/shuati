@@ -167,7 +167,6 @@
             font-weight: 500;
             color: var(--text);
         }
-        /* 答题卡网格 */
         .answer-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -210,9 +209,7 @@
             margin-bottom: 12px;
             font-size: 14px;
         }
-        .answer-stats span {
-            font-weight: 600;
-        }
+        .answer-stats span { font-weight: 600; }
     </style>
 </head>
 <body>
@@ -258,7 +255,7 @@
 </div>
 
 <script>
-// ==================== 手动检查更新按钮 ====================
+// ==================== 强制更新（修复不退出无法更新） ====================
 function checkForUpdate() {
     const toast = document.getElementById('updateToast');
     toast.classList.add('show');
@@ -274,22 +271,41 @@ function checkForUpdate() {
             setTimeout(() => toast.classList.remove('show'), 2000);
             return;
         }
+        // 强制刷新：先尝试通过 SW 更新，2.5秒后无论如何硬刷新
+        let refreshed = false;
+        const forceReload = setTimeout(() => {
+            if (!refreshed) {
+                refreshed = true;
+                window.location.reload(true);
+            }
+        }, 2500);
+        // 监听来自 SW 的 reload 消息
+        navigator.serviceWorker.addEventListener('message', function onMsg(event) {
+            if (event.data === 'reload') {
+                if (!refreshed) {
+                    refreshed = true;
+                    clearTimeout(forceReload);
+                    window.location.reload(true);
+                }
+                navigator.serviceWorker.removeEventListener('message', onMsg);
+            }
+        });
         reg.update().then(() => {
             setTimeout(() => {
                 if (reg.waiting) {
                     reg.waiting.postMessage('skip-waiting');
                     toast.textContent = '发现新版本，即将刷新';
-                    setTimeout(() => window.location.reload(true), 1000);
                 } else if (reg.installing) {
                     toast.textContent = '正在安装更新...';
-                    setTimeout(() => window.location.reload(true), 1500);
                 } else {
                     toast.textContent = '已是最新版本';
+                    clearTimeout(forceReload);
                     setTimeout(() => toast.classList.remove('show'), 2000);
                 }
             }, 300);
         }).catch(() => {
             toast.textContent = '网络异常，检查更新失败';
+            clearTimeout(forceReload);
             setTimeout(() => toast.classList.remove('show'), 2000);
         });
     });
@@ -298,27 +314,17 @@ function checkForUpdate() {
 // ==================== Service Worker 注册 ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    let refreshing = false;
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      navigator.serviceWorker.addEventListener('message', event => {
-        if (event.data === 'reload') {
-          if (!refreshing) {
-            refreshing = true;
-            window.location.reload(true);
-          }
-        }
-      });
-    });
+    navigator.serviceWorker.register('./sw.js');
   });
 }
 
-// ==================== 业务逻辑 ====================
+// ==================== 业务逻辑（保持之前版本不变） ====================
 let banks = {};
 let currentBankName = '';
 let wrongSet = new Set();
 let favSet = new Set();
 let currentTab = 'practice';
-let currentPage = 'home';      // 'home' or 'quiz'
+let currentPage = 'home';
 let currentMode = null;
 let currentQuestions = [];
 let currentIndex = 0;
@@ -328,8 +334,7 @@ let savedProgress = {};
 let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
-// 新增：题目状态数组（用于答题卡）
-let questionStatus = []; // { answered, correct }
+let questionStatus = [];
 
 const FIELD_OPTIONS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
@@ -360,7 +365,7 @@ function saveProgress() {
             mode: currentMode,
             questionIds: currentQuestions.map(q => q.id),
             index: currentIndex,
-            status: questionStatus  // 保存答题状态
+            status: questionStatus
         };
     }
     localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
@@ -385,7 +390,6 @@ function restoreProgress(bankName) {
     feedbackInfo = null;
 }
 
-// ==================== 页面导航 ====================
 window.switchTab = function(tab) {
     currentTab = tab;
     if (tab === 'practice') currentPage = 'home';
@@ -400,7 +404,6 @@ window.goHome = function() {
     render();
 };
 
-// ==================== 文件导入（保持不变） ====================
 window.importFile = function(file) {
     if (!file) return;
     let reader = new FileReader();
@@ -565,7 +568,6 @@ window.handleFileSelect = function(input) {
     }
 };
 
-// ==================== 渲染 ====================
 function render() {
     let main = document.getElementById('mainContent');
     if (currentPage === 'quiz') {
@@ -631,7 +633,6 @@ function renderHome() {
     return html;
 }
 
-// 答题页渲染（包含答题卡按钮）
 function renderQuizPage() {
     if (!currentMode || currentQuestions.length === 0) {
         return '<div class="card" style="text-align:center;padding:20px;">当前模式没有题目</div>';
@@ -679,7 +680,6 @@ function renderQuizPage() {
             html += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
         }
     }
-    // 答题卡按钮
     html += '<div style="text-align:center; margin-top:12px;">';
     html += '<button class="btn btn-nav" onclick="showAnswerSheet()">📋 答题卡</button>';
     html += '</div>';
@@ -708,7 +708,6 @@ function renderManage() {
     return html;
 }
 
-// ==================== 答题卡功能 ====================
 window.showAnswerSheet = function() {
     const modal = document.getElementById('answerSheetModal');
     document.getElementById('sheetTotal').textContent = currentQuestions.length;
@@ -741,7 +740,6 @@ window.closeAnswerSheet = function() {
     document.getElementById('answerSheetModal').classList.remove('show');
 };
 
-// ==================== 题库操作 ====================
 window.switchBank = function(name) {
     currentBankName = name;
     if (savedProgress[name]) restoreProgress(name);
@@ -762,7 +760,6 @@ window.deleteBank = function(name) {
     }
 };
 
-// ==================== 刷题逻辑（加入随机题数选择） ====================
 window.startMode = function(mode) {
     if (!currentBankName || !banks[currentBankName]) return;
     let pool = banks[currentBankName].questions;
@@ -770,13 +767,12 @@ window.startMode = function(mode) {
     selectedOptions.clear();
     feedbackInfo = null;
     currentIndex = 0;
-    questionStatus = []; // 重置答题状态
+    questionStatus = [];
 
-    // 处理随机模式：询问抽取数量
     if (mode === 'random' || mode === 'memorize_random') {
         let total = pool.length;
         let countStr = prompt('请输入随机抽取的题目数量（1~'+total+'）', Math.min(50, total));
-        if (countStr === null) return; // 取消
+        if (countStr === null) return;
         let count = parseInt(countStr);
         if (isNaN(count) || count < 1 || count > total) {
             alert('请输入有效数字 1~'+total);
@@ -823,7 +819,6 @@ window.submitAnswer = function() {
         message: isCorrect ? '✓ 正确！' : '✗ 错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>解析：'+q['解析'] : '')
     };
     if (!isCorrect) wrongSet.add(q.id);
-    // 更新答题状态
     if (questionStatus[currentIndex]) {
         questionStatus[currentIndex].answered = true;
         questionStatus[currentIndex].correct = isCorrect;
