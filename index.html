@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>刷题吧</title>
+    <!-- 图标配置（回滚到最初可靠的版本） -->
     <link rel="icon" type="image/png" href="tubiao.PNG">
     <link rel="apple-touch-icon" sizes="180x180" href="tubiao.PNG">
-    <!-- 预加载图标，确保 iOS 能识别 -->
-    <link rel="preload" as="image" href="tubiao.PNG">
-    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22tubiao.PNG%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%7D">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#3B82F6">
@@ -76,8 +75,6 @@
     </style>
 </head>
 <body>
-<!-- 隐藏图片，触发 iOS 图标缓存 -->
-<img src="tubiao.PNG" style="display:none" alt="icon preload">
 <div class="toast" id="updateToast"></div>
 <div class="nav">
     <div class="nav-title">刷题吧</div>
@@ -112,6 +109,7 @@
 function hardUpdate(){location.reload(true)}
 function showToast(msg){const t=document.getElementById('updateToast');t.classList.add('show');t.textContent=msg;setTimeout(()=>t.classList.remove('show'),2000)}
 
+// ========== 数据 ==========
 let banks={},currentBankName='',wrongInfo={},favSet=new Set;
 let currentTab='practice',currentPage='home',currentMode=null,currentQuestions=[],currentIndex=0;
 let selectedOptions=new Set,feedbackInfo=null,savedProgress={};
