@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shuati-v9';
+const CACHE_NAME = 'shuati-v10';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -22,8 +22,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.url.includes('index.html') || event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).then(responseached => {
-        return cached => {
+      fetch(event.request).then(response => {
         const cloned = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
         return response;
@@ -31,7 +30,8 @@ self.addEventListener('fetch', event => {
     );
   } else {
     event.respondWith(
-      caches.match(event.request).then(c || fetch(event.request).then(response => {
+      caches.match(event.request).then(cached => {
+        return cached || fetch(event.request).then(response => {
           const cloned = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
           return response;
