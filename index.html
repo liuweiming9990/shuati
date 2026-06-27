@@ -25,8 +25,8 @@
         .nav-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
         .main { padding:12px; max-width:600px; margin:0 auto; }
         .card { background:var(--card); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-        .card-title { font-size:14px; color:var(--text2); margin-bottom:8px; font-weight:500; }
-        .question-text { font-size:16px; line-height:1.6; margin-bottom:16px; font-weight:500; }
+        .card-title { font-size:14px; color:var(--text2); margin-bottom:8px; font-weight:500; word-break: break-word; }
+        .question-text { font-size:16px; line-height:1.6; margin-bottom:16px; font-weight:500; word-break: break-word; }
         .option-item { display:flex; align-items:center; padding:12px; margin-bottom:8px; background:var(--input-bg); border-radius:var(--radius); cursor:pointer; border:1.5px solid var(--border); font-size:15px; transition:0.2s; }
         .option-item.selected { border-color:var(--primary); background:rgba(59,130,246,0.05); }
         .option-item.correct-highlight { border-color:#10B981; background:rgba(16,185,129,0.08); }
@@ -71,6 +71,9 @@
         .manage-item { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
         .manage-item button { margin-left: 8px; }
         .badge { background: var(--accent); color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
+        .settings-row { margin-bottom: 16px; }
+        .settings-row label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); }
+        .settings-row .hint { font-size: 12px; color: var(--text2); margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -85,7 +88,6 @@
 </div>
 <div class="main" id="mainContent"></div>
 
-<!-- 答题卡弹窗 -->
 <div class="modal-overlay" id="answerSheetModal">
     <div class="modal-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -103,16 +105,23 @@
     </div>
 </div>
 
-<!-- 设置弹窗 -->
 <div class="modal-overlay" id="settingsModal">
     <div class="modal-box">
         <h3>⚙️ 设置</h3>
-        <div style="margin-bottom:16px;">
-            <label style="display:block; margin-bottom:6px; font-weight:500;">随机抽取题数</label>
+        <div class="settings-row">
+            <label>随机抽取题数</label>
             <div style="display:flex; gap:8px; align-items:center;">
                 <input type="number" id="settingsRandomCount" min="1" value="50" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border); font-size:14px;">
                 <span>题</span>
             </div>
+        </div>
+        <div class="settings-row">
+            <label>答对几次自动移出错题</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" id="settingsAutoRemoveCount" min="0" value="1" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border); font-size:14px;">
+                <span>次</span>
+            </div>
+            <div class="hint">达到此次数后，错题将自动从错题本中移除。设为 0 表示不自动移除。</div>
         </div>
         <div style="text-align:center; margin-top:16px;">
             <button class="btn btn-nav" onclick="closeSettings()">取消</button>
@@ -121,7 +130,6 @@
     </div>
 </div>
 
-<!-- 列映射弹窗 -->
 <div class="modal-overlay" id="mappingModal">
     <div class="modal-box">
         <h3>📋 列映射 - 请指定每列含义</h3>
@@ -134,7 +142,6 @@
 </div>
 
 <script>
-// ==================== 强制更新 ====================
 function hardUpdate() { location.reload(true); }
 
 // ==================== 全局数据 ====================
@@ -153,6 +160,7 @@ let savedProgress = {};
 let pendingRows = null, pendingFileName = '', pendingHeaders = [];
 let questionStatus = [];
 let randomCount = 50, autoSkip = true;
+let autoRemoveWrongCount = 1;
 
 const FIELD_OPTIONS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 const FOOTER_HTML = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
@@ -162,7 +170,12 @@ function loadData() {
     try { wrongInfo = JSON.parse(localStorage.getItem('wrongInfo') || '{}'); } catch(e) {}
     try { favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]')); } catch(e) {}
     try { savedProgress = JSON.parse(localStorage.getItem('quizProgress') || '{}'); } catch(e) {}
-    try { let s = JSON.parse(localStorage.getItem('appSettings') || '{}'); randomCount = s.randomCount || 50; autoSkip = s.autoSkip !== false; } catch(e) {}
+    try { 
+        let s = JSON.parse(localStorage.getItem('appSettings') || '{}'); 
+        randomCount = s.randomCount || 50; 
+        autoSkip = s.autoSkip !== false;
+        autoRemoveWrongCount = s.autoRemoveWrongCount || 1;
+    } catch(e) {}
     let names = Object.keys(banks);
     if (names.length > 0) { currentBankName = names[0]; if (savedProgress[currentBankName]) restoreProgress(currentBankName); }
 }
@@ -173,16 +186,26 @@ function saveAll() {
     localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
     saveProgress();
 }
+
 function saveSettings() {
     randomCount = parseInt(document.getElementById('settingsRandomCount').value);
+    autoRemoveWrongCount = parseInt(document.getElementById('settingsAutoRemoveCount').value);
     if (isNaN(randomCount) || randomCount < 1) randomCount = 50;
-    localStorage.setItem('appSettings', JSON.stringify({ randomCount, autoSkip }));
+    if (isNaN(autoRemoveWrongCount) || autoRemoveWrongCount < 0) autoRemoveWrongCount = 1;
+    localStorage.setItem('appSettings', JSON.stringify({ randomCount, autoSkip, autoRemoveWrongCount }));
     document.getElementById('settingsModal').classList.remove('show');
     showToast('设置已保存');
 }
+
 function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
 function showToast(msg) { const t = document.getElementById('updateToast'); t.classList.add('show'); t.textContent = msg; setTimeout(() => t.classList.remove('show'), 2000); }
-window.openSettings = function() { document.getElementById('settingsRandomCount').value = randomCount; document.getElementById('settingsModal').classList.add('show'); };
+
+window.openSettings = function() {
+    document.getElementById('settingsRandomCount').value = randomCount;
+    document.getElementById('settingsAutoRemoveCount').value = autoRemoveWrongCount;
+    document.getElementById('settingsModal').classList.add('show');
+};
+
 window.toggleAutoSkip = function(checkbox) { autoSkip = checkbox.checked; saveAll(); };
 
 function saveProgress() {
@@ -191,6 +214,7 @@ function saveProgress() {
     }
     localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
 }
+
 function restoreProgress(bankName) {
     const p = savedProgress[bankName];
     if (!p || !p.questionIds || !p.mode) return false;
@@ -203,7 +227,6 @@ function restoreProgress(bankName) {
     selectedOptions.clear(); feedbackInfo = null; return true;
 }
 
-// ==================== 导航 ====================
 window.switchTab = function(tab) {
     currentTab = tab;
     if (tab==='practice') currentPage = 'home'; else currentPage = 'manage';
@@ -329,7 +352,7 @@ window.applyMapping = function() {
 window.closeMappingModal = function() { document.getElementById('mappingModal').classList.remove('show'); pendingRows=null; };
 window.handleFileSelect = function(input) { if(input.files&&input.files.length>0){importFile(input.files[0]);input.value='';} };
 
-// ==================== 渲染 ====================
+// ==================== 页面渲染 ====================
 function render() {
     let main = document.getElementById('mainContent');
     if (currentPage === 'quiz') { main.innerHTML = renderQuizPage() + FOOTER_HTML; }
@@ -538,11 +561,22 @@ window.submitAnswer = function() {
     if (!userAns) { alert('请选择答案'); return; }
     let isCorrect = userAns.toUpperCase() === q['答案'].toUpperCase();
     feedbackInfo = { correct: isCorrect, message: isCorrect ? '✓ 正确！' : '✗ 错误！正确答案：'+q['答案']+(q['解析']?'<br>解析：'+q['解析']:'') };
+
     if (!isCorrect) {
-        let info = wrongInfo[q.id] || { count:0, lastDate:'', dates:[] };
-        info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate);
+        let info = wrongInfo[q.id] || { count:0, lastDate:'', dates:[], correctStreak:0 };
+        info.count = (info.count||0) + 1;
+        info.lastDate = new Date().toISOString().slice(0,10);
+        info.dates.push(info.lastDate);
+        info.correctStreak = 0;
         wrongInfo[q.id] = info;
-    } else { if (wrongInfo[q.id]) delete wrongInfo[q.id]; }
+    } else {
+        if (wrongInfo[q.id]) {
+            wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak || 0) + 1;
+            if (autoRemoveWrongCount > 0 && wrongInfo[q.id].correctStreak >= autoRemoveWrongCount) {
+                delete wrongInfo[q.id];
+            }
+        }
+    }
     if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered = true; questionStatus[currentIndex].correct = isCorrect; }
     saveAll(); render();
     if (isCorrect && autoSkip && currentIndex < currentQuestions.length-1) {
