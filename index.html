@@ -172,6 +172,9 @@
             grid-template-columns: repeat(5, 1fr);
             gap: 10px;
             margin: 16px 0;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding-right: 4px;
         }
         .answer-cell {
             width: 100%;
@@ -226,10 +229,13 @@
 </div>
 <div class="main" id="mainContent"></div>
 
-<!-- 答题卡弹窗 -->
+<!-- 答题卡弹窗（优化版：顶部有关闭按钮，网格限制高度） -->
 <div class="modal-overlay" id="answerSheetModal">
     <div class="modal-box">
-        <h3>📋 答题卡</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin-bottom:0;">📋 答题卡</h3>
+            <button class="btn btn-nav" onclick="closeAnswerSheet()" style="padding:4px 10px; font-size:18px; line-height:1;">✕</button>
+        </div>
         <div class="answer-stats">
             <span>已答：<span id="sheetAnswered">0</span></span>
             <span>正确：<span id="sheetCorrect" style="color:#10B981;">0</span></span>
@@ -271,7 +277,6 @@ function checkForUpdate() {
             setTimeout(() => toast.classList.remove('show'), 2000);
             return;
         }
-        // 强制刷新：先尝试通过 SW 更新，2.5秒后无论如何硬刷新
         let refreshed = false;
         const forceReload = setTimeout(() => {
             if (!refreshed) {
@@ -279,7 +284,6 @@ function checkForUpdate() {
                 window.location.reload(true);
             }
         }, 2500);
-        // 监听来自 SW 的 reload 消息
         navigator.serviceWorker.addEventListener('message', function onMsg(event) {
             if (event.data === 'reload') {
                 if (!refreshed) {
@@ -318,7 +322,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ==================== 业务逻辑（保持之前版本不变） ====================
+// ==================== 业务逻辑 ====================
 let banks = {};
 let currentBankName = '';
 let wrongSet = new Set();
