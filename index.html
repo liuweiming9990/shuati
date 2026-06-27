@@ -6,7 +6,9 @@
     <title>刷题吧</title>
     <link rel="icon" type="image/png" href="tubiao.PNG">
     <link rel="apple-touch-icon" sizes="180x180" href="tubiao.PNG">
-    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%7D">
+    <!-- 预加载图标，确保 iOS 能识别 -->
+    <link rel="preload" as="image" href="tubiao.PNG">
+    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22tubiao.PNG%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#3B82F6">
@@ -74,6 +76,8 @@
     </style>
 </head>
 <body>
+<!-- 隐藏图片，触发 iOS 图标缓存 -->
+<img src="tubiao.PNG" style="display:none" alt="icon preload">
 <div class="toast" id="updateToast"></div>
 <div class="nav">
     <div class="nav-title">刷题吧</div>
@@ -108,7 +112,6 @@
 function hardUpdate(){location.reload(true)}
 function showToast(msg){const t=document.getElementById('updateToast');t.classList.add('show');t.textContent=msg;setTimeout(()=>t.classList.remove('show'),2000)}
 
-// ========== 数据 ==========
 let banks={},currentBankName='',wrongInfo={},favSet=new Set;
 let currentTab='practice',currentPage='home',currentMode=null,currentQuestions=[],currentIndex=0;
 let selectedOptions=new Set,feedbackInfo=null,savedProgress={};
@@ -138,14 +141,12 @@ function saveSettings(){
 }
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show')}
 
-// ========== 导航 ==========
 window.switchTab=function(tab){currentTab=tab;if(tab==='practice')currentPage='home';else currentPage='manage';document.getElementById('tabPracticeBtn').classList.toggle('active',tab==='practice');document.getElementById('tabManageBtn').classList.toggle('active',tab==='manage');render()};
 window.goHome=function(){currentPage='home';render()};
 window.goPage=function(page){currentPage=page;render()};
 window.openSettings=function(){document.getElementById('settingsRandomCount').value=randomCount;document.getElementById('settingsAutoRemoveCount').value=autoRemoveWrongCount;document.getElementById('settingsModal').classList.add('show')};
 window.toggleAutoSkip=function(cb){autoSkip=cb.checked;saveAll()};
 
-// ========== 文件导入 ==========
 window.importFile=function(file){
     if(!file)return;let reader=new FileReader();
     reader.onload=function(e){let data=new Uint8Array(e.target.result);let wb=XLSX.read(data,{type:'array'});let rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});if(rows.length<2){alert('文件内容太少');return}pendingRows=rows;pendingFileName=file.name;showHeaderSelection()};
@@ -183,7 +184,6 @@ window.applyMapping=function(){
 window.closeMappingModal=function(){document.getElementById('mappingModal').classList.remove('show');pendingRows=null};
 window.handleFileSelect=function(input){if(input.files&&input.files.length>0){importFile(input.files[0]);input.value=''}};
 
-// ========== 渲染 ==========
 function render(){let m=document.getElementById('mainContent');if(currentPage==='quiz')m.innerHTML=renderQuiz()+FOOTER;else if(currentPage==='manage')m.innerHTML=renderManage()+FOOTER;else if(currentPage==='wrongManage')m.innerHTML=renderWrongMgr()+FOOTER;else if(currentPage==='favManage')m.innerHTML=renderFavMgr()+FOOTER;else m.innerHTML=renderHome()+FOOTER}
 
 function renderHome(){
@@ -244,13 +244,11 @@ function renderFavMgr(){
     }h+='</div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';return h
 }
 
-// ========== 错题/收藏操作 ==========
 window.removeWrong=function(id){delete wrongInfo[id];saveAll();if(currentPage==='wrongManage')render();showToast('已移出错题')};
 window.clearWrong=function(){if(confirm('确定清空所有错题？')){wrongInfo={};saveAll();if(currentPage==='home')render();showToast('错题已清空')}};
 window.clearFavs=function(){if(confirm('确定清空所有收藏？')){favSet.clear();saveAll();if(currentPage==='home')render();showToast('收藏已清空')}};
 window.toggleFavQ=function(id){if(favSet.has(id))favSet.delete(id);else favSet.add(id);saveAll();if(currentPage==='favManage')render()};
 
-// ========== 刷题逻辑 ==========
 window.startMode=function(mode){
     if(!currentBankName||!banks[currentBankName])return;let pool=banks[currentBankName].questions;
     currentMode=mode;selectedOptions.clear();feedbackInfo=null;currentIndex=0;questionStatus=[];
