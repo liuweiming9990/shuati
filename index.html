@@ -213,21 +213,6 @@
             font-size: 14px;
         }
         .answer-stats span { font-weight: 600; }
-        .random-input-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .random-input-row input {
-            flex: 1;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            font-size: 14px;
-            background: var(--input-bg);
-            color: var(--text);
-        }
     </style>
 </head>
 <body>
@@ -260,6 +245,24 @@
         <div class="answer-grid" id="answerGrid"></div>
         <div style="text-align:center; margin-top:12px;">
             <button class="btn btn-nav" onclick="closeAnswerSheet()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+        <h3>⚙️ 设置</h3>
+        <div style="margin-bottom:16px;">
+            <label style="display:block; margin-bottom:6px; font-weight:500;">随机抽取题数</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" id="settingsRandomCount" min="1" value="50" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border); font-size:14px;">
+                <span>题</span>
+            </div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+            <button class="btn btn-nav" onclick="closeSettings()">取消</button>
+            <button class="btn btn-submit" onclick="saveSettings()">保存</button>
         </div>
     </div>
 </div>
@@ -302,6 +305,8 @@ let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
 let questionStatus = [];
+// 设置项：随机题数（默认为50）
+let randomCount = 50;
 
 const FIELD_OPTIONS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
 
@@ -312,6 +317,10 @@ function loadData() {
     try { wrongSet = new Set(JSON.parse(localStorage.getItem('wrongSet') || '[]')); } catch(e) {}
     try { favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]')); } catch(e) {}
     try { savedProgress = JSON.parse(localStorage.getItem('quizProgress') || '{}'); } catch(e) {}
+    try {
+        let savedSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        randomCount = savedSettings.randomCount || 50;
+    } catch(e) {}
     let names = Object.keys(banks);
     if (names.length > 0) {
         currentBankName = names[0];
@@ -325,6 +334,25 @@ function saveAll() {
     localStorage.setItem('favSet', JSON.stringify(Array.from(favSet)));
     saveProgress();
 }
+
+function saveSettings() {
+    randomCount = parseInt(document.getElementById('settingsRandomCount').value);
+    if (isNaN(randomCount) || randomCount < 1) randomCount = 50;
+    localStorage.setItem('appSettings', JSON.stringify({ randomCount }));
+    document.getElementById('settingsModal').classList.remove('show');
+    document.getElementById('updateToast').classList.add('show');
+    document.getElementById('updateToast').textContent = '设置已保存';
+    setTimeout(() => document.getElementById('updateToast').classList.remove('show'), 2000);
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+}
+
+window.openSettings = function() {
+    document.getElementById('settingsRandomCount').value = randomCount;
+    document.getElementById('settingsModal').classList.add('show');
+};
 
 function saveProgress() {
     if (currentBankName && currentMode && currentQuestions.length > 0) {
@@ -575,16 +603,6 @@ function renderHome() {
     for (let m of modes) html += '<div class="mode-btn" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
     html += '</div></div>';
 
-    // 随机题数输入区
-    let totalQ = banks[currentBankName]?.questions.length || 0;
-    let defaultCount = Math.min(50, totalQ);
-    html += '<div class="card"><div class="card-title">随机抽取题数</div>';
-    html += '<div class="random-input-row">';
-    html += '<span>抽取</span>';
-    html += '<input type="number" id="randomCountInput" min="1" max="'+totalQ+'" value="'+defaultCount+'" style="flex:1;">';
-    html += '<span>题</span>';
-    html += '</div></div>';
-
     html += '<div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
     html += '<div class="mode-btn" onclick="startMode(\'single_choice\')">单选题</div>';
     html += '<div class="mode-btn" onclick="startMode(\'multi_choice\')">多选题</div>';
@@ -604,9 +622,12 @@ function renderHome() {
     }
     html += '</div></div>';
 
-    html += '<div style="text-align:center;margin-top:8px;">';
-    html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+    // 设置按钮
+    html += '<div style="text-align:center; margin-top:12px;">';
+    html += '<button class="btn btn-nav" onclick="openSettings()">⚙️ 设置</button>';
+    html += ' <input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
     html += '<button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥 导入更多</button></div>';
+
     return html;
 }
 
@@ -746,14 +767,10 @@ window.startMode = function(mode) {
     currentIndex = 0;
     questionStatus = [];
 
-    // 随机模式使用页面上的输入框
+    // 随机模式使用设置中的 randomCount
     if (mode === 'random' || mode === 'memorize_random') {
-        let countInput = document.getElementById('randomCountInput');
-        let count = parseInt(countInput?.value);
         let total = pool.length;
-        if (isNaN(count) || count < 1 || count > total) {
-            count = Math.min(50, total);
-        }
+        let count = Math.min(randomCount, total);
         currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0, count);
     } else if (mode==='sequence') currentQuestions = [...pool];
     else if (mode==='exam') currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0, Math.min(50, pool.length));
