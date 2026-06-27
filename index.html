@@ -30,6 +30,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg); color: var(--text); min-height:100vh; padding-bottom:1rem;
+            overflow-x: hidden;
         }
         .nav {
             background: var(--card); padding:12px 16px; display:flex;
@@ -157,9 +158,54 @@
             line-height: 1.6;
         }
         .format-hint strong { color: #1e293b; }
+
+        /* 下拉更新指示器 */
+        .pull-down-indicator {
+            position: fixed;
+            top: -80px;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: top 0.3s ease;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 0 0 20px 20px;
+        }
+        .pull-down-indicator.show {
+            top: 0;
+        }
+        .pull-down-indicator .progress-ring {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            margin-right: 12px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        .pull-down-indicator.updating .progress-ring {
+            display: block;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+
+<!-- 下拉更新指示器 -->
+<div class="pull-down-indicator" id="pullDownIndicator">
+    <div class="progress-ring"></div>
+    <span id="pullDownText">下拉3秒更新</span>
+</div>
+
 <div class="update-banner" id="updateBanner">
     检测到新版本
     <button id="updateRefreshBtn">立即刷新</button>
@@ -186,6 +232,82 @@
 </div>
 
 <script>
+// ==================== 下拉3秒更新功能 ====================
+(function() {
+    const indicator = document.getElementById('pullDownIndicator');
+    const textEl = document.getElementById('pullDownText');
+    let touchStartY = 0;
+    let pullTimer = null;
+    let isPulling = false;
+
+    document.addEventListener('touchstart', function(e) {
+        if (window.scrollY === 0) {
+            touchStartY = e.touches[0].clientY;
+            isPulling = true;
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!isPulling) return;
+        const currentY = e.touches[0].clientY;
+        const distance = currentY - touchStartY;
+
+        if (distance > 60 && window.scrollY === 0) {
+            e.preventDefault();
+            indicator.classList.add('show');
+            if (!pullTimer) {
+                let countdown = 3;
+                textEl.textContent = '继续下拉 ' + countdown + ' 秒更新';
+                pullTimer = setInterval(function() {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(pullTimer);
+                        pullTimer = null;
+                        indicator.classList.add('updating');
+                        textEl.textContent = '正在检查更新...';
+                        // 触发更新
+                        if (navigator.serviceWorker) {
+                            navigator.serviceWorker.getRegistration().then(function(reg) {
+                                if (reg) {
+                                    reg.update().then(function() {
+                                        setTimeout(function() {
+                                            if (reg.waiting) {
+                                                reg.waiting.postMessage('skip-waiting');
+                                            } else if (reg.installing) {
+                                                reg.installing.postMessage('skip-waiting');
+                                            }
+                                            // 无论如何，3秒后刷新
+                                            setTimeout(function() {
+                                                window.location.reload(true);
+                                            }, 1500);
+                                        }, 500);
+                                    });
+                                } else {
+                                    window.location.reload(true);
+                                }
+                            });
+                        } else {
+                            window.location.reload(true);
+                        }
+                    } else {
+                        textEl.textContent = '继续下拉 ' + countdown + ' 秒更新';
+                    }
+                }, 1000);
+            }
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchend', function() {
+        isPulling = false;
+        if (pullTimer) {
+            clearInterval(pullTimer);
+            pullTimer = null;
+        }
+        indicator.classList.remove('show', 'updating');
+        textEl.textContent = '下拉3秒更新';
+    });
+})();
+
 // ==================== Service Worker 更新 ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -346,29 +468,19 @@ window.confirmHeaderAndShowMapping = function() {
     showMappingUI();
 };
 
-// 智能识别列名（支持 A、选项A、A选项 等写法）
 function autoGuessField(colName) {
     let trimmed = colName.trim();
     let lower = trimmed.toLowerCase();
-
-    // 1. 单个字母 A-G
     if (/^[a-g]$/i.test(trimmed)) return '选项' + trimmed.toUpperCase();
-
-    // 2. "选项A" 或 "选项 A"
     let match = lower.match(/^选项\s*([a-g])$/);
     if (match) return '选项' + match[1].toUpperCase();
-
-    // 3. "A选项" 或 "A 选项"
     match = lower.match(/^([a-g])\s*选项$/);
     if (match) return '选项' + match[1].toUpperCase();
-
-    // 4. 其他关键词
     if (/知识|类别|章|节|模块|分类|标签/.test(lower)) return '知识类型（题目标签）';
     if (/题型|类型/.test(lower)) return '题型';
     if (/题干|题目|问题|内容/.test(lower)) return '题干';
     if (/答案|正确/.test(lower)) return '答案';
     if (/解析|解释/.test(lower)) return '解析';
-
     return '忽略';
 }
 
