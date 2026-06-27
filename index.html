@@ -359,7 +359,7 @@ function saveProgress() {
 
 function restoreProgress(bankName) {
     const p = savedProgress[bankName];
-    if (!p || !p.questionIds) return;
+    if (!p || !p.questionIds || !p.mode) return false;
     const pool = banks[bankName]?.questions || [];
     const qMap = {};
     pool.forEach(q => { qMap[q.id] = q; });
@@ -367,13 +367,14 @@ function restoreProgress(bankName) {
     if (currentQuestions.length === 0) {
         delete savedProgress[bankName];
         saveProgress();
-        return;
+        return false;
     }
     currentMode = p.mode;
     currentIndex = Math.min(p.index, currentQuestions.length - 1);
     questionStatus = p.status || currentQuestions.map(() => ({ answered: false, correct: false }));
     selectedOptions.clear();
     feedbackInfo = null;
+    return true;
 }
 
 window.switchTab = function(tab) {
@@ -750,6 +751,7 @@ window.deleteBank = function(name) {
     }
 };
 
+// ==================== 核心修复：所有模式返回后再进入都能接续 ====================
 window.startMode = function(mode) {
     if (!currentBankName || !banks[currentBankName]) return;
     let pool = banks[currentBankName].questions;
@@ -759,6 +761,17 @@ window.startMode = function(mode) {
     currentIndex = 0;
     questionStatus = [];
 
+    // 【关键修复】先检查是否有保存的进度可以恢复（适用于所有模式）
+    if (savedProgress[currentBankName] && savedProgress[currentBankName].mode === mode) {
+        if (restoreProgress(currentBankName)) {
+            // 成功恢复进度，直接进入答题页
+            currentPage = 'quiz';
+            render();
+            return;
+        }
+    }
+
+    // 没有可恢复的进度，按模式生成新题目列表
     if (mode === 'random' || mode === 'memorize_random') {
         let total = pool.length;
         let count = Math.min(randomCount, total);
