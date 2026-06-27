@@ -213,6 +213,21 @@
             font-size: 14px;
         }
         .answer-stats span { font-weight: 600; }
+        .random-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .random-input-row input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
@@ -222,14 +237,14 @@
 <div class="nav">
     <div class="nav-title">刷题吧</div>
     <div class="nav-right">
-        <button class="nav-btn nav-btn-update" onclick="checkForUpdate()" title="检查更新">🔄 更新</button>
+        <button class="nav-btn nav-btn-update" onclick="hardUpdate()" title="强制更新">🔄 更新</button>
         <button class="nav-btn" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
         <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
     </div>
 </div>
 <div class="main" id="mainContent"></div>
 
-<!-- 答题卡弹窗（优化版：顶部有关闭按钮，网格限制高度） -->
+<!-- 答题卡弹窗 -->
 <div class="modal-overlay" id="answerSheetModal">
     <div class="modal-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -261,65 +276,13 @@
 </div>
 
 <script>
-// ==================== 强制更新（修复不退出无法更新） ====================
-function checkForUpdate() {
+// ==================== 强制更新 ====================
+function hardUpdate() {
     const toast = document.getElementById('updateToast');
     toast.classList.add('show');
-    toast.textContent = '正在检查更新...';
-    if (!navigator.serviceWorker) {
-        toast.textContent = '当前浏览器不支持更新功能';
-        setTimeout(() => toast.classList.remove('show'), 2000);
-        return;
-    }
-    navigator.serviceWorker.getRegistration().then(reg => {
-        if (!reg) {
-            toast.textContent = '离线模式，请连接网络后重试';
-            setTimeout(() => toast.classList.remove('show'), 2000);
-            return;
-        }
-        let refreshed = false;
-        const forceReload = setTimeout(() => {
-            if (!refreshed) {
-                refreshed = true;
-                window.location.reload(true);
-            }
-        }, 2500);
-        navigator.serviceWorker.addEventListener('message', function onMsg(event) {
-            if (event.data === 'reload') {
-                if (!refreshed) {
-                    refreshed = true;
-                    clearTimeout(forceReload);
-                    window.location.reload(true);
-                }
-                navigator.serviceWorker.removeEventListener('message', onMsg);
-            }
-        });
-        reg.update().then(() => {
-            setTimeout(() => {
-                if (reg.waiting) {
-                    reg.waiting.postMessage('skip-waiting');
-                    toast.textContent = '发现新版本，即将刷新';
-                } else if (reg.installing) {
-                    toast.textContent = '正在安装更新...';
-                } else {
-                    toast.textContent = '已是最新版本';
-                    clearTimeout(forceReload);
-                    setTimeout(() => toast.classList.remove('show'), 2000);
-                }
-            }, 300);
-        }).catch(() => {
-            toast.textContent = '网络异常，检查更新失败';
-            clearTimeout(forceReload);
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        });
-    });
-}
-
-// ==================== Service Worker 注册 ====================
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js');
-  });
+    toast.textContent = '正在更新...';
+    // 直接强制刷新页面，忽略所有缓存
+    location.reload(true);
 }
 
 // ==================== 业务逻辑 ====================
@@ -612,6 +575,16 @@ function renderHome() {
     for (let m of modes) html += '<div class="mode-btn" onclick="startMode(\''+m.i+'\')">'+m.l+'</div>';
     html += '</div></div>';
 
+    // 随机题数输入区
+    let totalQ = banks[currentBankName]?.questions.length || 0;
+    let defaultCount = Math.min(50, totalQ);
+    html += '<div class="card"><div class="card-title">随机抽取题数</div>';
+    html += '<div class="random-input-row">';
+    html += '<span>抽取</span>';
+    html += '<input type="number" id="randomCountInput" min="1" max="'+totalQ+'" value="'+defaultCount+'" style="flex:1;">';
+    html += '<span>题</span>';
+    html += '</div></div>';
+
     html += '<div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
     html += '<div class="mode-btn" onclick="startMode(\'single_choice\')">单选题</div>';
     html += '<div class="mode-btn" onclick="startMode(\'multi_choice\')">多选题</div>';
@@ -773,20 +746,15 @@ window.startMode = function(mode) {
     currentIndex = 0;
     questionStatus = [];
 
+    // 随机模式使用页面上的输入框
     if (mode === 'random' || mode === 'memorize_random') {
+        let countInput = document.getElementById('randomCountInput');
+        let count = parseInt(countInput?.value);
         let total = pool.length;
-        let countStr = prompt('请输入随机抽取的题目数量（1~'+total+'）', Math.min(50, total));
-        if (countStr === null) return;
-        let count = parseInt(countStr);
         if (isNaN(count) || count < 1 || count > total) {
-            alert('请输入有效数字 1~'+total);
-            return;
+            count = Math.min(50, total);
         }
-        if (mode === 'random') {
-            currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0, count);
-        } else {
-            currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0, count);
-        }
+        currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0, count);
     } else if (mode==='sequence') currentQuestions = [...pool];
     else if (mode==='exam') currentQuestions = [...pool].sort(()=>Math.random()-0.5).slice(0, Math.min(50, pool.length));
     else if (mode==='wrong') currentQuestions = pool.filter(q=>wrongSet.has(q.id));
