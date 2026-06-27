@@ -170,14 +170,17 @@ function loadData() {
     try { wrongInfo = JSON.parse(localStorage.getItem('wrongInfo') || '{}'); } catch(e) {}
     try { favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]')); } catch(e) {}
     try { savedProgress = JSON.parse(localStorage.getItem('quizProgress') || '{}'); } catch(e) {}
-    try { 
-        let s = JSON.parse(localStorage.getItem('appSettings') || '{}'); 
-        randomCount = s.randomCount || 50; 
+    try {
+        let s = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        randomCount = s.randomCount || 50;
         autoSkip = s.autoSkip !== false;
         autoRemoveWrongCount = s.autoRemoveWrongCount || 1;
     } catch(e) {}
     let names = Object.keys(banks);
-    if (names.length > 0) { currentBankName = names[0]; if (savedProgress[currentBankName]) restoreProgress(currentBankName); }
+    if (names.length > 0) {
+        currentBankName = names[0];
+        if (savedProgress[currentBankName]) restoreProgress(currentBankName);
+    }
 }
 
 function saveAll() {
