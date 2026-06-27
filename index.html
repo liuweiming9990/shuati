@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>刷题吧</title>
 
+    <!-- 桌面图标 -->
     <link rel="icon" type="image/png" href="tubiao.PNG">
     <link rel="apple-touch-icon" sizes="180x180" href="tubiao.PNG">
 
+    <!-- PWA -->
     <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22short_name%22%3A%22%E5%88%B7%E9%A2%98%E5%90%A7%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%7D">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -30,7 +32,6 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg); color: var(--text); min-height:100vh; padding-bottom:1rem;
-            overflow-x: hidden;
         }
         .nav {
             background: var(--card); padding:12px 16px; display:flex;
@@ -38,11 +39,15 @@
             border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100;
         }
         .nav-title { font-size:18px; font-weight:700; color:var(--primary); }
+        .nav-right { display:flex; gap:6px; align-items:center; }
         .nav-btn {
             background:var(--input-bg); color:var(--text); border:1px solid var(--border);
             padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; font-weight:500;
         }
         .nav-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        .nav-btn-update {
+            background:transparent; color:var(--primary); border:1px solid var(--primary); font-weight:600;
+        }
         .main { padding:12px; max-width:600px; margin:0 auto; }
         .card {
             background:var(--card); border-radius:var(--radius); padding:16px;
@@ -125,28 +130,6 @@
             line-height: 1.6;
         }
         .import-help strong { color: #15803d; }
-        .update-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: var(--primary);
-            color: white;
-            text-align: center;
-            padding: 10px 16px;
-            z-index: 999;
-            font-size: 14px;
-            display: none;
-        }
-        .update-banner button {
-            background: white;
-            color: var(--primary);
-            border: none;
-            padding: 5px 15px;
-            border-radius: 16px;
-            margin-left: 10px;
-            font-weight: bold;
-        }
         .format-hint {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -158,62 +141,32 @@
             line-height: 1.6;
         }
         .format-hint strong { color: #1e293b; }
-
-        /* 下拉更新指示器 */
-        .pull-down-indicator {
+        .toast {
             position: fixed;
-            top: -80px;
-            left: 0;
-            right: 0;
-            height: 80px;
-            background: var(--primary);
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
             color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: top 0.3s ease;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 0 0 20px 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
         }
-        .pull-down-indicator.show {
-            top: 0;
-        }
-        .pull-down-indicator .progress-ring {
-            width: 30px;
-            height: 30px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            margin-right: 12px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-        .pull-down-indicator.updating .progress-ring {
-            display: block;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 
-<!-- 下拉更新指示器 -->
-<div class="pull-down-indicator" id="pullDownIndicator">
-    <div class="progress-ring"></div>
-    <span id="pullDownText">下拉3秒更新</span>
-</div>
-
-<div class="update-banner" id="updateBanner">
-    检测到新版本
-    <button id="updateRefreshBtn">立即刷新</button>
-</div>
+<div class="toast" id="updateToast">正在检查更新...</div>
 
 <div class="nav">
     <div class="nav-title">刷题吧</div>
-    <div>
+    <div class="nav-right">
+        <button class="nav-btn nav-btn-update" onclick="checkForUpdate()" title="检查更新">🔄 更新</button>
         <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
         <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
     </div>
@@ -232,95 +185,51 @@
 </div>
 
 <script>
-// ==================== 下拉3秒更新功能 ====================
-(function() {
-    const indicator = document.getElementById('pullDownIndicator');
-    const textEl = document.getElementById('pullDownText');
-    let touchStartY = 0;
-    let pullTimer = null;
-    let isPulling = false;
+// ==================== 手动检查更新按钮 ====================
+function checkForUpdate() {
+    const toast = document.getElementById('updateToast');
+    toast.classList.add('show');
+    toast.textContent = '正在检查更新...';
 
-    document.addEventListener('touchstart', function(e) {
-        if (window.scrollY === 0) {
-            touchStartY = e.touches[0].clientY;
-            isPulling = true;
+    if (!navigator.serviceWorker) {
+        toast.textContent = '当前浏览器不支持更新功能';
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+    }
+
+    navigator.serviceWorker.getRegistration().then(reg => {
+        if (!reg) {
+            toast.textContent = '离线模式，请连接网络后重试';
+            setTimeout(() => toast.classList.remove('show'), 2000);
+            return;
         }
-    }, { passive: false });
 
-    document.addEventListener('touchmove', function(e) {
-        if (!isPulling) return;
-        const currentY = e.touches[0].clientY;
-        const distance = currentY - touchStartY;
-
-        if (distance > 60 && window.scrollY === 0) {
-            e.preventDefault();
-            indicator.classList.add('show');
-            if (!pullTimer) {
-                let countdown = 3;
-                textEl.textContent = '继续下拉 ' + countdown + ' 秒更新';
-                pullTimer = setInterval(function() {
-                    countdown--;
-                    if (countdown <= 0) {
-                        clearInterval(pullTimer);
-                        pullTimer = null;
-                        indicator.classList.add('updating');
-                        textEl.textContent = '正在检查更新...';
-                        // 触发更新
-                        if (navigator.serviceWorker) {
-                            navigator.serviceWorker.getRegistration().then(function(reg) {
-                                if (reg) {
-                                    reg.update().then(function() {
-                                        setTimeout(function() {
-                                            if (reg.waiting) {
-                                                reg.waiting.postMessage('skip-waiting');
-                                            } else if (reg.installing) {
-                                                reg.installing.postMessage('skip-waiting');
-                                            }
-                                            // 无论如何，3秒后刷新
-                                            setTimeout(function() {
-                                                window.location.reload(true);
-                                            }, 1500);
-                                        }, 500);
-                                    });
-                                } else {
-                                    window.location.reload(true);
-                                }
-                            });
-                        } else {
-                            window.location.reload(true);
-                        }
-                    } else {
-                        textEl.textContent = '继续下拉 ' + countdown + ' 秒更新';
-                    }
-                }, 1000);
-            }
-        }
-    }, { passive: false });
-
-    document.addEventListener('touchend', function() {
-        isPulling = false;
-        if (pullTimer) {
-            clearInterval(pullTimer);
-            pullTimer = null;
-        }
-        indicator.classList.remove('show', 'updating');
-        textEl.textContent = '下拉3秒更新';
+        reg.update().then(() => {
+            setTimeout(() => {
+                if (reg.waiting) {
+                    reg.waiting.postMessage('skip-waiting');
+                    toast.textContent = '发现新版本，即将刷新';
+                    setTimeout(() => window.location.reload(true), 1000);
+                } else if (reg.installing) {
+                    toast.textContent = '正在安装更新...';
+                    setTimeout(() => window.location.reload(true), 1500);
+                } else {
+                    toast.textContent = '已是最新版本';
+                    setTimeout(() => toast.classList.remove('show'), 2000);
+                }
+            }, 300);
+        }).catch(() => {
+            toast.textContent = '网络异常，检查更新失败';
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        });
     });
-})();
+}
 
-// ==================== Service Worker 更新 ====================
+// ==================== Service Worker 注册（仅用于缓存和消息，无自动更新） ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     let refreshing = false;
     navigator.serviceWorker.register('./sw.js').then(reg => {
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            document.getElementById('updateBanner').style.display = 'block';
-          }
-        });
-      });
       navigator.serviceWorker.addEventListener('message', event => {
         if (event.data === 'reload') {
           if (!refreshing) {
@@ -330,18 +239,6 @@ if ('serviceWorker' in navigator) {
         }
       });
     });
-    document.getElementById('updateRefreshBtn').addEventListener('click', () => {
-      navigator.serviceWorker.getRegistration().then(reg => {
-        if (reg && reg.waiting) {
-          reg.waiting.postMessage('skip-waiting');
-        } else {
-          window.location.reload(true);
-        }
-      });
-    });
-    setInterval(() => {
-      navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
-    }, 30 * 60 * 1000);
   });
 }
 
