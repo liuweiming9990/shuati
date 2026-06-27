@@ -43,9 +43,6 @@
             padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; font-weight:500;
         }
         .nav-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
-        .nav-btn-update {
-            background:transparent; color:var(--primary); border:1px solid var(--primary); font-weight:600;
-        }
         .main { padding:12px; max-width:600px; margin:0 auto; }
         .card {
             background:var(--card); border-radius:var(--radius); padding:16px;
@@ -222,7 +219,7 @@
 <div class="nav">
     <div class="nav-title">刷题吧</div>
     <div class="nav-right">
-        <button class="nav-btn nav-btn-update" onclick="hardUpdate()" title="强制更新">🔄 更新</button>
+        <button class="nav-btn" onclick="hardUpdate()">🔄 更新</button>
         <button class="nav-btn" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
         <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
     </div>
@@ -281,10 +278,8 @@
 <script>
 // ==================== 强制更新 ====================
 function hardUpdate() {
-    const toast = document.getElementById('updateToast');
-    toast.classList.add('show');
-    toast.textContent = '正在更新...';
-    // 直接强制刷新页面，忽略所有缓存
+    document.getElementById('updateToast').classList.add('show');
+    document.getElementById('updateToast').textContent = '正在更新...';
     location.reload(true);
 }
 
@@ -305,11 +300,9 @@ let pendingRows = null;
 let pendingFileName = '';
 let pendingHeaders = [];
 let questionStatus = [];
-// 设置项：随机题数（默认为50）
 let randomCount = 50;
 
 const FIELD_OPTIONS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
-
 const FOOTER_HTML = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
 
 function loadData() {
@@ -317,10 +310,7 @@ function loadData() {
     try { wrongSet = new Set(JSON.parse(localStorage.getItem('wrongSet') || '[]')); } catch(e) {}
     try { favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]')); } catch(e) {}
     try { savedProgress = JSON.parse(localStorage.getItem('quizProgress') || '{}'); } catch(e) {}
-    try {
-        let savedSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-        randomCount = savedSettings.randomCount || 50;
-    } catch(e) {}
+    try { let s = JSON.parse(localStorage.getItem('appSettings') || '{}'); randomCount = s.randomCount || 50; } catch(e) {}
     let names = Object.keys(banks);
     if (names.length > 0) {
         currentBankName = names[0];
@@ -340,9 +330,10 @@ function saveSettings() {
     if (isNaN(randomCount) || randomCount < 1) randomCount = 50;
     localStorage.setItem('appSettings', JSON.stringify({ randomCount }));
     document.getElementById('settingsModal').classList.remove('show');
-    document.getElementById('updateToast').classList.add('show');
-    document.getElementById('updateToast').textContent = '设置已保存';
-    setTimeout(() => document.getElementById('updateToast').classList.remove('show'), 2000);
+    const toast = document.getElementById('updateToast');
+    toast.classList.add('show');
+    toast.textContent = '设置已保存';
+    setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
 function closeSettings() {
@@ -622,11 +613,12 @@ function renderHome() {
     }
     html += '</div></div>';
 
-    // 设置按钮
-    html += '<div style="text-align:center; margin-top:12px;">';
+    // 底部工具栏（设置 + 导入更多）
+    html += '<div style="text-align:center; margin-top:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">';
     html += '<button class="btn btn-nav" onclick="openSettings()">⚙️ 设置</button>';
-    html += ' <input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
-    html += '<button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥 导入更多</button></div>';
+    html += '<input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">';
+    html += '<button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥 导入更多</button>';
+    html += '</div>';
 
     return html;
 }
@@ -767,7 +759,6 @@ window.startMode = function(mode) {
     currentIndex = 0;
     questionStatus = [];
 
-    // 随机模式使用设置中的 randomCount
     if (mode === 'random' || mode === 'memorize_random') {
         let total = pool.length;
         let count = Math.min(randomCount, total);
