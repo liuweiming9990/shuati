@@ -346,14 +346,29 @@ window.confirmHeaderAndShowMapping = function() {
     showMappingUI();
 };
 
+// 智能识别列名（支持 A、选项A、A选项 等写法）
 function autoGuessField(colName) {
-    let lower = colName.toLowerCase();
-    if (/^[a-g]$/i.test(colName.trim())) return '选项' + colName.trim().toUpperCase();
+    let trimmed = colName.trim();
+    let lower = trimmed.toLowerCase();
+
+    // 1. 单个字母 A-G
+    if (/^[a-g]$/i.test(trimmed)) return '选项' + trimmed.toUpperCase();
+
+    // 2. "选项A" 或 "选项 A"
+    let match = lower.match(/^选项\s*([a-g])$/);
+    if (match) return '选项' + match[1].toUpperCase();
+
+    // 3. "A选项" 或 "A 选项"
+    match = lower.match(/^([a-g])\s*选项$/);
+    if (match) return '选项' + match[1].toUpperCase();
+
+    // 4. 其他关键词
     if (/知识|类别|章|节|模块|分类|标签/.test(lower)) return '知识类型（题目标签）';
     if (/题型|类型/.test(lower)) return '题型';
     if (/题干|题目|问题|内容/.test(lower)) return '题干';
     if (/答案|正确/.test(lower)) return '答案';
     if (/解析|解释/.test(lower)) return '解析';
+
     return '忽略';
 }
 
@@ -361,8 +376,8 @@ function showMappingUI() {
     let container = document.getElementById('mappingList');
     let html = '<div class="import-help">';
     html += '<strong>📌 导入说明：</strong><br>';
-    html += '① <strong>必须映射的列：题型、题干、知识类型（题目标签）、答案、选项A-G</strong>（无对应列则忽略）<br>';
-    html += '② 其他列（如序号、分数、难度等）请选择"忽略"<br>';
+    html += '① <strong>必须映射的列：题型、题干、知识类型（题目标签）、答案</strong>（无对应列则忽略）<br>';
+    html += '② 选项A-G列建议映射，其他列（如序号、分数、难度等）请选择"忽略"<br>';
     html += '③ 确认映射无误后点击"确认导入"';
     html += '</div>';
     html += '<p style="color:var(--text2);margin-bottom:10px;">请为每列选择对应的含义：</p>';
@@ -371,9 +386,10 @@ function showMappingUI() {
         let guessed = autoGuessField(colName);
         html += '<div class="mapping-row">';
         html += '<span style="flex:1;word-break:break-all;">' + colName + '</span>';
-        html += '<select id="mapSelect_' + i + '" style="width:130px;" onchange="syncOptionColumns(this, ' + i + ')">';
+        html += '<select id="mapSelect_' + i + '" style="width:130px;">';
         for (let opt of FIELD_OPTIONS) {
-            html += '<option value="' + opt + '"' + (opt === guessed ? ' selected' : '') + '>' + opt + '</option>';
+            let selected = (opt === guessed) ? ' selected' : '';
+            html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
         }
         html += '</select></div>';
     }
@@ -382,55 +398,19 @@ function showMappingUI() {
     document.getElementById('modalConfirmBtn').onclick = applyMapping;
 }
 
-// 同步相同列名的选项列选择
-window.syncOptionColumns = function(selectEl, index) {
-    const selectedValue = selectEl.value;
-    const colName = pendingHeaders[index];
-    // 查找所有列名相同的下拉框，并设置为相同选项
-    const allSelects = document.querySelectorAll('[id^="mapSelect_"]');
-    allSelects.forEach(s => {
-        const idx = parseInt(s.id.replace('mapSelect_', ''));
-        if (pendingHeaders[idx] === colName) {
-            s.value = selectedValue;
-        }
-    });
-};
-
 window.applyMapping = function() {
     let mapping = {};
     let hasQ = false, hasA = false;
-    let optionMapped = {};
     for (let i = 0; i < pendingHeaders.length; i++) {
         let sel = document.getElementById('mapSelect_' + i);
         if (!sel) continue;
         let field = sel.value;
-        let colName = pendingHeaders[i];
-        if (field === '忽略') {
-            // 检查是否属于单个字母A-G的列，若表头中存在该字母列，则必须映射
-            if (/^[a-g]$/i.test(colName.trim())) {
-                const letter = colName.trim().toUpperCase();
-                optionMapped[letter] = optionMapped[letter] || false;
-            }
-            continue;
-        }
+        if (field === '忽略') continue;
         mapping[field] = i;
         if (field === '题干') hasQ = true;
         if (field === '答案') hasA = true;
-        // 记录选项映射
-        if (field.startsWith('选项')) {
-            const letter = field.replace('选项', '');
-            optionMapped[letter] = true;
-        }
     }
     if (!hasQ || !hasA) { alert('必须指定"题干"和"答案"的对应列！'); return; }
-    // 检查表头中实际存在的字母列是否都已映射
-    for (let letter of ['A','B','C','D','E','F','G']) {
-        const hasColumn = pendingHeaders.some(h => h.trim().toUpperCase() === letter);
-        if (hasColumn && !optionMapped[letter]) {
-            alert(`选项${letter}列必须映射，不能忽略！`);
-            return;
-        }
-    }
     document.getElementById('mappingModal').classList.remove('show');
 
     let questions = [];
