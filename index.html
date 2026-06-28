@@ -47,7 +47,7 @@
         .progress-fill{height:100%;background:var(--primary);transition:width .3s}
         .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
         .mode-btn{padding:12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;cursor:pointer;text-align:center}
-        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:200;justify-content:center;align-items:center}
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:200;justify-content:center;align-items:center;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
         .modal-overlay.show{display:flex}
         .modal-box{background:var(--card);border-radius:var(--r);padding:20px;width:92%;max-width:600px;max-height:85vh;overflow-y:auto;color:var(--text);-webkit-overflow-scrolling:touch}
         .modal-box h3{margin-bottom:12px;color:var(--primary);text-align:center}
@@ -75,11 +75,9 @@
         .settings-row label{display:block;margin-bottom:6px;font-weight:500;color:var(--text)}
         .settings-row .hint{font-size:12px;color:var(--text2);margin-top:4px}
         select{width:100%;padding:12px;border-radius:var(--r);border:1px solid var(--border);font-size:14px;margin-bottom:8px;background:var(--input-bg);color:var(--text);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        /* 主题按钮组 */
         .theme-btn-group{display:flex;gap:8px}
         .theme-btn{flex:1;padding:10px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;text-align:center;transition:.2s}
         .theme-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-        /* 设置按钮统一 */
         .settings-reset-btn{padding:12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;cursor:pointer;text-align:center;width:100%;display:block}
     </style>
 </head>
@@ -157,19 +155,16 @@ function hardUpdate(){
 
 function showToast(msg){const t=document.getElementById('updateToast');t.classList.add('show');t.textContent=msg;setTimeout(()=>t.classList.remove('show'),2000)}
 
-// ========== 主题管理 ==========
 function applyTheme(theme){
     document.body.classList.remove('theme-night','theme-eye');
     if(theme==='night')document.body.classList.add('theme-night');
     if(theme==='eye')document.body.classList.add('theme-eye');
-    // 同步主题按钮状态
     document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===theme));
 }
 window.setTheme=function(t){theme=t;applyTheme(t)};
 function applyFontSize(size){document.documentElement.style.setProperty('--fs',size+'px')}
 function applyOptGap(gap){document.documentElement.style.setProperty('--opt-gap',gap+'px');document.documentElement.style.setProperty('--opt-pad',(gap+4)+'px')}
 
-// ========== 全局数据 ==========
 let banks={},currentBankName='',wrongInfo={},favSet=new Set;
 let currentTab='practice',currentPage='home',currentMode=null,currentQuestions=[],currentIndex=0;
 let selectedOptions=new Set,feedbackInfo=null,savedProgress={};
@@ -202,9 +197,14 @@ function saveSettings(){
     if(isNaN(fontSize))fontSize=15;if(isNaN(optGap))optGap=8;
     localStorage.setItem('appSettings',JSON.stringify({randomCount,autoSkip,autoRemoveWrongCount,hideDone,theme,fontSize,optGap}));
     applyTheme(theme);applyFontSize(fontSize);applyOptGap(optGap);
-    document.getElementById('settingsModal').classList.remove('show');showToast('设置已保存')
+    document.getElementById('settingsModal').classList.remove('show');
+    document.body.style.overflow='';
+    showToast('设置已保存')
 }
-function closeSettings(){document.getElementById('settingsModal').classList.remove('show')}
+function closeSettings(){
+    document.getElementById('settingsModal').classList.remove('show');
+    document.body.style.overflow='';
+}
 
 window.resetProgress=function(){
     if(!currentBankName){showToast('请先选择题库');return}
@@ -224,7 +224,8 @@ window.openSettings=function(){
     document.getElementById('settingsFontSize').value=fontSize;
     document.getElementById('settingsOptGap').value=optGap;
     applyTheme(theme);
-    document.getElementById('settingsModal').classList.add('show')
+    document.getElementById('settingsModal').classList.add('show');
+    document.body.style.overflow='hidden';
 };
 
 window.switchTab=function(tab){currentTab=tab;if(tab==='practice')currentPage='home';else currentPage='manage';document.getElementById('tabPracticeBtn').classList.toggle('active',tab==='practice');document.getElementById('tabManageBtn').classList.toggle('active',tab==='manage');render()};
@@ -232,7 +233,6 @@ window.goHome=function(){currentPage='home';render()};
 window.goPage=function(page){currentPage=page;render()};
 window.toggleAutoSkip=function(cb){autoSkip=cb.checked;saveAll()};
 
-// ========== 文件导入 ==========
 window.importFile=function(file){
     if(!file)return;let reader=new FileReader();
     reader.onload=function(e){let data=new Uint8Array(e.target.result);let wb=XLSX.read(data,{type:'array'});let rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});if(rows.length<2){alert('文件内容太少');return}pendingRows=rows;pendingFileName=file.name;showHeaderSelection()};
@@ -267,7 +267,7 @@ window.applyMapping=function(){
     let bn=pendingFileName.replace(/\.(xlsx|xls)$/i,'');banks[bn]={questions:qs,fileName:pendingFileName};if(!currentBankName)currentBankName=bn;
     saveAll();pendingRows=null;pendingHeaders=[];render()
 };
-window.closeMappingModal=function(){document.getElementById('mappingModal').classList.remove('show');pendingRows=null};
+window.closeMappingModal=function(){document.getElementById('mappingModal').classList.remove('show');pendingRows=null;document.body.style.overflow=''};
 window.handleFileSelect=function(input){if(input.files&&input.files.length>0){importFile(input.files[0]);input.value=''}};
 
 function render(){let m=document.getElementById('mainContent');if(currentPage==='quiz')m.innerHTML=renderQuiz()+FOOTER;else if(currentPage==='manage')m.innerHTML=renderManage()+FOOTER;else if(currentPage==='wrongManage')m.innerHTML=renderWrongMgr()+FOOTER;else if(currentPage==='favManage')m.innerHTML=renderFavMgr()+FOOTER;else m.innerHTML=renderHome()+FOOTER}
@@ -386,9 +386,14 @@ window.showAnswerSheet=function(){
     let modal=document.getElementById('answerSheetModal');document.getElementById('sheetTotal').textContent=currentQuestions.length;
     let ac=0,cc=0,grid=document.getElementById('answerGrid');grid.innerHTML='';
     for(let i=0;i<currentQuestions.length;i++){let s=questionStatus[i]||{answered:false,correct:false};if(s.answered)ac++;if(s.correct)cc++;let cell=document.createElement('div');cell.className='answer-cell';if(i===currentIndex)cell.classList.add('current');else if(s.answered)cell.classList.add(s.correct?'correct':'wrong');cell.textContent=i+1;cell.onclick=(()=>{currentIndex=i;closeAnswerSheet();render()});grid.appendChild(cell)}
-    document.getElementById('sheetAnswered').textContent=ac;document.getElementById('sheetCorrect').textContent=cc;document.getElementById('sheetWrong').textContent=ac-cc;modal.classList.add('show')
+    document.getElementById('sheetAnswered').textContent=ac;document.getElementById('sheetCorrect').textContent=cc;document.getElementById('sheetWrong').textContent=ac-cc;
+    modal.classList.add('show');
+    document.body.style.overflow='hidden';
 };
-window.closeAnswerSheet=function(){document.getElementById('answerSheetModal').classList.remove('show')};
+window.closeAnswerSheet=function(){
+    document.getElementById('answerSheetModal').classList.remove('show');
+    document.body.style.overflow='';
+};
 window.switchBank=function(name){currentBankName=name;if(savedProgress[name])restoreProgress(name);else{currentMode=null;currentQuestions=[];currentIndex=0;questionStatus=[];selectedOptions.clear();feedbackInfo=null}render()};
 window.deleteBank=function(name){if(confirm('删除题库"'+name+'"？')){delete banks[name];saveAll();if(currentBankName===name)currentBankName=Object.keys(banks)[0]||'';render()}};
 
