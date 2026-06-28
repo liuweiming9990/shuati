@@ -431,7 +431,6 @@
         .answer-cell {
             width: 100%;
             aspect-ratio: 1;
-            /* Fallback for older browsers */
             height: 0;
             padding-bottom: 100%;
             position: relative;
@@ -707,7 +706,6 @@
             -webkit-appearance: none;
             margin: 0
         }
-        /* iOS 安全区域 fallback */
         @supports (padding-top: constant(safe-area-inset-top)) {
             body {
                 padding-top: constant(safe-area-inset-top);
@@ -732,7 +730,6 @@
                 top: calc(20px + env(safe-area-inset-top))
             }
         }
-        /* 修复 iOS 输入框缩放 */
         @media screen and (max-width: 768px) {
             input[type="text"],
             input[type="number"],
@@ -837,13 +834,12 @@
             </div>
             <div class="settings-row">
                 <label>🔄重新练习</label>
-                <div class="hint">选择要清空的练习模式（不影响错题和收藏）</div>
+                <div class="hint">选择要清空的练习模式（考试模式无需清空，每次随机生成）</div>
                 <select id="settingsResetMode" style="width:100%;margin-bottom:8px;font-size:16px">
                     <option value="all">全部模式</option>
                     <optgroup label="练习模式">
                         <option value="sequence">📖 顺序练习</option>
                         <option value="random">🔀 随机练习</option>
-                        <option value="exam">📝 考试模式</option>
                     </optgroup>
                     <optgroup label="题型练习">
                         <option value="single_choice">单选题练习</option>
@@ -861,12 +857,6 @@
                     </optgroup>
                 </select>
                 <button class="settings-reset-btn" onclick="resetProgressWithMode()">🔄 清空选定模式</button>
-            </div>
-            <div class="settings-row" id="currentModeResetRow" style="display:none">
-                <button class="settings-reset-btn" onclick="resetCurrentMode()" style="background:#EF4444;color:#fff;border-color:#EF4444">
-                    🗑 清空当前练习模式
-                </button>
-                <div class="hint" id="currentModeLabel"></div>
             </div>
             <div class="settings-row">
                 <button class="settings-reset-btn" onclick="window.open('changelog.md')">📋版本日志</button>
@@ -903,12 +893,10 @@
                 setTimeout(setVH, 100);
             });
 
-            // 检测安全区域
             function setSafeArea() {
                 var style = getComputedStyle(document.documentElement);
                 var safeTop = style.getPropertyValue('--safe-top');
                 if (!safeTop || safeTop === '0px') {
-                    // 尝试检测
                     if (CSS.supports('padding-top', 'env(safe-area-inset-top)')) {
                         document.documentElement.style.setProperty('--safe-top', 'env(safe-area-inset-top)');
                         document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom)');
@@ -922,7 +910,6 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 var swPath = 'sw.js';
-                // 检测是否在子目录
                 var path = window.location.pathname;
                 if (path.lastIndexOf('/') > 0) {
                     swPath = path.substring(0, path.lastIndexOf('/') + 1) + 'sw.js';
@@ -1204,36 +1191,8 @@
             render();
         };
 
-        // 快捷清空当前模式
-        window.resetCurrentMode = function() {
-            if (!currentBankName || !currentMode) {
-                showToast('没有正在进行的练习');
-                return;
-            }
-            var modeLabel = getModeLabel(currentMode);
-            if (!confirm('确定清空当前【' + modeLabel + '】的练习记录吗？')) {
-                return;
-            }
-            if (savedProgress[currentBankName] && savedProgress[currentBankName].mode === currentMode) {
-                delete savedProgress[currentBankName];
-            }
-            currentMode = null;
-            currentQuestions = [];
-            currentIndex = 0;
-            questionStatus = [];
-            selectedOptions.clear();
-            feedbackInfo = null;
-            localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
-            showToast('已清空【' + modeLabel + '】的练习记录');
-            document.getElementById('settingsModal').classList.remove('show');
-            document.body.style.overflow = '';
-            currentPage = 'home';
-            render();
-        };
-
-        // 滑块实时更新 - 直接绑定（修复 DOMContentLoaded 问题）
+        // 滑块实时更新
         (function bindSliderEvents() {
-            // 延迟绑定，确保 DOM 已就绪
             function bind() {
                 var fontSizeSlider = document.getElementById('settingsFontSize');
                 if (fontSizeSlider) {
@@ -1303,26 +1262,6 @@
             if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize + 'px';
             var optGapDisplay = document.getElementById('optGapDisplay');
             if (optGapDisplay) optGapDisplay.textContent = optGap + 'px';
-            var currentModeRow = document.getElementById('currentModeResetRow');
-            var currentModeLabel = document.getElementById('currentModeLabel');
-            if (currentModeRow && currentModeLabel) {
-                var savedMode = null;
-                var savedCount = 0;
-                if (currentBankName && savedProgress[currentBankName]) {
-                    savedMode = savedProgress[currentBankName].mode;
-                    savedCount = (savedProgress[currentBankName].questionIds || []).length;
-                }
-                if (currentMode && currentPage === 'quiz') {
-                    currentModeRow.style.display = 'block';
-                    currentModeLabel.textContent = '当前模式：' + getModeLabel(currentMode) + '（' + (currentIndex + 1) + '/' +
-                        currentQuestions.length + '题）';
-                } else if (savedMode) {
-                    currentModeRow.style.display = 'block';
-                    currentModeLabel.textContent = '有保存的进度：' + getModeLabel(savedMode) + '（' + savedCount + '题）';
-                } else {
-                    currentModeRow.style.display = 'none';
-                }
-            }
             applyTheme(theme);
             document.getElementById('settingsModal').classList.add('show');
             document.body.style.overflow = 'hidden';
@@ -1348,7 +1287,6 @@
             if (!file) return;
             var reader = new FileReader();
             reader.onload = function(e) {
-                // 使用 setTimeout 避免阻塞 UI
                 setTimeout(function() {
                     try {
                         var data = new Uint8Array(e.target.result);
@@ -1372,15 +1310,13 @@
 
         function showHeaderSelection() {
             var c = document.getElementById('mappingList'),
-                h =
-                '<div class="import-help">①请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）</div>';
+                h = '<div class="import-help">①请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）</div>';
             h += '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th>行号</th><th>内容预览</th></tr>';
             for (var r = 0; r < Math.min(10, pendingRows.length); r++) {
                 h += '<tr><td style="font-weight:bold;color:var(--primary)">第' + (r + 1) + '行</td><td>';
                 var cells = pendingRows[r] || [];
                 for (var c2 = 0; c2 < Math.min(8, cells.length); c2++) {
-                    h +=
-                        '<span style="background:var(--input-bg);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block;font-size:11px">' +
+                    h += '<span style="background:var(--input-bg);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block;font-size:11px">' +
                         (cells[c2] || '').toString().substring(0, 15) + '</span>';
                 }
                 h += '</td></tr>';
@@ -1937,11 +1873,7 @@
         });
 
         // 防止 iOS 橡皮筋效果导致弹窗背景滚动
-        document.addEventListener('touchmove', function(e) {
-            if (document.body.style.overflow === 'hidden') {
-                // 允许弹窗内部滚动
-            }
-        }, { passive: true });
+        document.addEventListener('touchmove', function(e) {}, { passive: true });
 
         loadData();
         render();
