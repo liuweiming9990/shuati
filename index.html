@@ -236,6 +236,11 @@
             color: var(--text);
             border: 1px solid var(--border)
         }
+        .btn-danger {
+            background: var(--card);
+            color: #EF4444;
+            border: 1.5px solid #EF4444
+        }
         .btn-row {
             display: flex;
             gap: 8px;
@@ -285,7 +290,7 @@
         }
         .mode-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 8px
         }
         .mode-btn {
@@ -739,6 +744,90 @@
                 font-size: 16px !important
             }
         }
+        .danger-confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .6);
+            z-index: 300;
+            justify-content: center;
+            align-items: center
+        }
+        .danger-confirm-overlay.show {
+            display: flex
+        }
+        .danger-confirm-box {
+            background: var(--card);
+            border-radius: var(--r);
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 2px solid #EF4444
+        }
+        .danger-confirm-box .icon {
+            font-size: 40px;
+            margin-bottom: 8px
+        }
+        .danger-confirm-box .title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #EF4444;
+            margin-bottom: 4px
+        }
+        .danger-confirm-box .desc {
+            font-size: 13px;
+            color: var(--text2);
+            margin-bottom: 12px;
+            line-height: 1.5
+        }
+        .danger-confirm-box input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            font-size: 16px;
+            text-align: center;
+            background: var(--input-bg);
+            color: var(--text);
+            margin-bottom: 12px
+        }
+        .danger-confirm-box .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 0
+        }
+        .danger-confirm-box .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border-radius: var(--r);
+            border: 1px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer
+        }
+        .danger-confirm-box .btn-confirm {
+            flex: 1;
+            padding: 12px;
+            border-radius: var(--r);
+            border: none;
+            background: #EF4444;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0.4;
+            pointer-events: none;
+            transition: .2s
+        }
+        .danger-confirm-box .btn-confirm.active {
+            opacity: 1;
+            pointer-events: auto
+        }
     </style>
 </head>
 <body>
@@ -752,6 +841,19 @@
         </div>
     </div>
     <div class="main" id="mainContent"></div>
+
+    <div class="danger-confirm-overlay" id="dangerConfirmOverlay">
+        <div class="danger-confirm-box">
+            <div class="icon">⚠️</div>
+            <div class="title" id="dangerTitle">确认操作</div>
+            <div class="desc" id="dangerDesc">此操作不可恢复</div>
+            <input type="text" id="dangerInput" placeholder="输入"确认清空"确认" autocomplete="off">
+            <div class="btn-row">
+                <button class="btn-cancel" onclick="closeDangerConfirm()">取消</button>
+                <button class="btn-confirm" id="dangerConfirmBtn" onclick="executeDangerAction()">确认清空</button>
+            </div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="answerSheetModal">
         <div class="modal-box">
@@ -889,9 +991,7 @@
             }
             setVH();
             window.addEventListener('resize', setVH);
-            window.addEventListener('orientationchange', function() {
-                setTimeout(setVH, 100);
-            });
+            window.addEventListener('orientationchange', function() { setTimeout(setVH, 100); });
 
             function setSafeArea() {
                 var style = getComputedStyle(document.documentElement);
@@ -906,14 +1006,36 @@
             setSafeArea();
         })();
 
+        // ===== 危险操作确认弹窗 =====
+        var dangerCallback = null;
+        window.showDangerConfirm = function(title, desc, callback) {
+            document.getElementById('dangerTitle').textContent = title;
+            document.getElementById('dangerDesc').textContent = desc;
+            document.getElementById('dangerInput').value = '';
+            document.getElementById('dangerConfirmBtn').classList.remove('active');
+            dangerCallback = callback;
+            document.getElementById('dangerConfirmOverlay').classList.add('show');
+            setTimeout(function() { document.getElementById('dangerInput').focus(); }, 200);
+        };
+        window.closeDangerConfirm = function() {
+            document.getElementById('dangerConfirmOverlay').classList.remove('show');
+            dangerCallback = null;
+        };
+        window.executeDangerAction = function() {
+            if (dangerCallback) { dangerCallback(); }
+            closeDangerConfirm();
+        };
+        document.getElementById('dangerInput').addEventListener('input', function() {
+            var btn = document.getElementById('dangerConfirmBtn');
+            if (this.value === '确认清空') { btn.classList.add('active'); } else { btn.classList.remove('active'); }
+        });
+
         // ===== Service Worker =====
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 var swPath = 'sw.js';
                 var path = window.location.pathname;
-                if (path.lastIndexOf('/') > 0) {
-                    swPath = path.substring(0, path.lastIndexOf('/') + 1) + 'sw.js';
-                }
+                if (path.lastIndexOf('/') > 0) { swPath = path.substring(0, path.lastIndexOf('/') + 1) + 'sw.js'; }
                 navigator.serviceWorker.register(swPath, { scope: './' }).catch(function() {});
             });
         }
@@ -927,60 +1049,34 @@
                     if (reg && reg.waiting) {
                         reg.waiting.postMessage('skip-waiting');
                         navigator.serviceWorker.addEventListener('message', function handler(e) {
-                            if (e.data === 'reload') {
-                                navigator.serviceWorker.removeEventListener('message', handler);
-                                window.location.reload();
-                            }
+                            if (e.data === 'reload') { navigator.serviceWorker.removeEventListener('message',
+                                handler);
+                                window.location.reload(); }
                         });
-                    } else if (reg) {
-                        reg.update().then(function() {
-                            setTimeout(function() {
-                                if (reg.waiting) reg.waiting.postMessage('skip-waiting');
-                                setTimeout(function() { window.location.reload(); }, 2000);
-                            }, 500);
-                        }).catch(function() {
-                            window.location.reload();
-                        });
-                    } else {
-                        window.location.reload();
-                    }
-                }).catch(function() {
-                    window.location.reload();
-                });
-            } else {
-                window.location.reload();
-            }
+                    } else if (reg) { reg.update().then(function() { setTimeout(function() { if (reg.waiting) reg
+                                .waiting.postMessage('skip-waiting');
+                            setTimeout(function() { window.location.reload(); }, 2000); }, 500); }).catch(
+                            function() { window.location.reload(); }); } else { window.location.reload(); }
+                }).catch(function() { window.location.reload(); });
+            } else { window.location.reload(); }
         }
 
-        function showToast(msg) {
-            var t = document.getElementById('updateToast');
+        function showToast(msg) { var t = document.getElementById('updateToast');
             t.classList.add('show');
             t.textContent = msg;
-            setTimeout(function() { t.classList.remove('show'); }, 2000);
-        }
+            setTimeout(function() { t.classList.remove('show'); }, 2000); }
 
-        function applyTheme(theme) {
-            document.body.classList.remove('theme-night', 'theme-eye');
-            if (theme === 'night') document.body.classList.add('theme-night');
-            if (theme === 'eye') document.body.classList.add('theme-eye');
-            var btns = document.querySelectorAll('.theme-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].classList.toggle('active', btns[i].dataset.theme === theme);
-            }
-        }
-        window.setTheme = function(t) {
-            theme = t;
-            applyTheme(t);
-        };
+        function applyTheme(theme) { document.body.classList.remove('theme-night', 'theme-eye'); if (theme === 'night')
+                document.body.classList.add('theme-night'); if (theme === 'eye') document.body.classList.add('theme-eye');
+            var btns = document.querySelectorAll('.theme-btn'); for (var i = 0; i < btns.length; i++) { btns[i].classList
+                    .toggle('active', btns[i].dataset.theme === theme); } }
+        window.setTheme = function(t) { theme = t;
+            applyTheme(t); };
 
-        function applyFontSize(size) {
-            document.documentElement.style.setProperty('--fs', size + 'px');
-        }
+        function applyFontSize(size) { document.documentElement.style.setProperty('--fs', size + 'px'); }
 
-        function applyOptGap(gap) {
-            document.documentElement.style.setProperty('--opt-gap', gap + 'px');
-            document.documentElement.style.setProperty('--opt-pad', (gap + 4) + 'px');
-        }
+        function applyOptGap(gap) { document.documentElement.style.setProperty('--opt-gap', gap + 'px'); document.documentElement
+                .style.setProperty('--opt-pad', (gap + 4) + 'px'); }
 
         var banks = {},
             currentBankName = '',
@@ -1008,273 +1104,152 @@
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略', '知识类型（题目标签）', '题型', '题干', '答案', '解析', '选项A', '选项B', '选项C', '选项D', '选项E', '选项F', '选项G'];
 
-        function loadData() {
-            try { banks = JSON.parse(localStorage.getItem('quizBanks') || '{}'); } catch (e) {}
-            try { wrongInfo = JSON.parse(localStorage.getItem('wrongInfo') || '{}'); } catch (e) {}
-            try { favSet = new Set(JSON.parse(localStorage.getItem('favSet') || '[]')); } catch (e) {}
-            try { savedProgress = JSON.parse(localStorage.getItem('quizProgress') || '{}'); } catch (e) {}
-            try {
-                var s = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        function loadData() { try { banks = JSON.parse(localStorage.getItem('quizBanks') || '{}'); } catch (e) {} try { wrongInfo =
+                    JSON.parse(localStorage.getItem('wrongInfo') || '{}'); } catch (e) {} try { favSet = new Set(JSON.parse(
+                        localStorage.getItem('favSet') || '[]')); } catch (e) {} try { savedProgress = JSON.parse(localStorage
+                    .getItem('quizProgress') || '{}'); } catch (e) {} try { var s = JSON.parse(localStorage.getItem(
+                    'appSettings') || '{}');
                 randomCount = s.randomCount || 50;
                 autoSkip = s.autoSkip !== false;
                 autoRemoveWrongCount = s.autoRemoveWrongCount || 1;
                 hideDone = s.hideDone || false;
                 theme = s.theme || 'day';
                 fontSize = s.fontSize || 15;
-                optGap = s.optGap || 8;
-            } catch (e) {}
-            applyTheme(theme);
+                optGap = s.optGap || 8; } catch (e) {} applyTheme(theme);
             applyFontSize(fontSize);
             applyOptGap(optGap);
-            var names = Object.keys(banks);
-            if (names.length > 0) {
-                currentBankName = names[0];
-                if (savedProgress[currentBankName]) restoreProgress(currentBankName);
-            }
-        }
+            var names = Object.keys(banks); if (names.length > 0) { currentBankName = names[0]; if (savedProgress[
+                    currentBankName]) restoreProgress(currentBankName); } }
 
-        function saveAll() {
-            localStorage.setItem('quizBanks', JSON.stringify(banks));
+        function saveAll() { localStorage.setItem('quizBanks', JSON.stringify(banks));
             localStorage.setItem('wrongInfo', JSON.stringify(wrongInfo));
             localStorage.setItem('favSet', JSON.stringify([].slice.call(favSet)));
-            saveProgress();
-        }
+            saveProgress(); }
 
-        function saveProgress() {
-            if (currentBankName && currentMode && currentQuestions.length > 0) {
-                savedProgress[currentBankName] = {
-                    mode: currentMode,
-                    questionIds: currentQuestions.map(function(q) { return q.id; }),
-                    index: currentIndex,
-                    status: questionStatus
-                };
-            }
-            localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
-        }
+        function saveProgress() { if (currentBankName && currentMode && currentQuestions.length > 0) { savedProgress[
+                    currentBankName] = { mode: currentMode, questionIds: currentQuestions.map(function(q) { return q
+                            .id; }), index: currentIndex, status: questionStatus }; }
+            localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
 
-        function restoreProgress(bn) {
-            var p = savedProgress[bn];
-            if (!p || !p.questionIds || !p.mode) return false;
+        function restoreProgress(bn) { var p = savedProgress[bn]; if (!p || !p.questionIds || !p.mode) return false;
             var pool = banks[bn] ? banks[bn].questions : [],
-                qm = {};
-            for (var i = 0; i < pool.length; i++) {
-                qm[pool[i].id] = pool[i];
-            }
-            currentQuestions = p.questionIds.map(function(id) { return qm[id]; }).filter(Boolean);
-            if (currentQuestions.length === 0) {
-                delete savedProgress[bn];
-                saveProgress();
-                return false;
-            }
+                qm = {}; for (var i = 0; i < pool.length; i++) { qm[pool[i].id] = pool[i]; }
+            currentQuestions = p.questionIds.map(function(id) { return qm[id]; }).filter(Boolean); if (currentQuestions
+                .length === 0) { delete savedProgress[bn];
+                saveProgress(); return false; }
             currentMode = p.mode;
             currentIndex = Math.min(p.index, currentQuestions.length - 1);
             questionStatus = p.status || currentQuestions.map(function() { return { answered: false, correct: false }; });
             selectedOptions.clear();
-            feedbackInfo = null;
-            return true;
-        }
+            feedbackInfo = null; return true; }
 
-        function findQ(id) {
-            for (var bn in banks) {
-                var qs = banks[bn].questions;
-                for (var i = 0; i < qs.length; i++) {
-                    if (qs[i].id == id) return qs[i];
-                }
-            }
-            return null;
-        }
+        function findQ(id) { for (var bn in banks) { var qs = banks[bn].questions; for (var i = 0; i < qs.length; i++) { if (
+                        qs[i].id == id) return qs[i]; } } return null; }
 
-        function getModeLabel(mode) {
-            var labels = {
-                'sequence': '📖 顺序练习',
-                'random': '🔀 随机练习',
-                'exam': '📝 考试模式',
-                'wrong': '❌ 错题练习',
-                'fav': '⭐ 收藏练习',
-                'judge_true': '✅ 只练对题',
-                'judge_false': '❌ 只练错题',
-                'single_choice': '单选题练习',
-                'multi_choice': '多选题练习',
-                'judge': '判断题练习',
-                'memorize_seq': '📖 顺序背题',
-                'memorize_random': '🔀 随机背题',
-                'memorize_single': '只背单选',
-                'memorize_multi': '只背多选',
-                'memorize_judge': '只背判断'
-            };
-            return labels[mode] || mode;
-        }
+        function getModeLabel(mode) { var labels = { 'sequence': '📖 顺序练习', 'random': '🔀 随机练习', 'exam': '📝 考试模式',
+                'wrong': '❌ 错题练习', 'fav': '⭐ 收藏练习', 'judge_true': '✅ 只练对题', 'judge_false': '❌ 只练错题',
+                'single_choice': '单选题练习', 'multi_choice': '多选题练习', 'judge': '判断题练习', 'memorize_seq': '📖 顺序背题',
+                'memorize_random': '🔀 随机背题', 'memorize_single': '只背单选', 'memorize_multi': '只背多选', 'memorize_judge': '只背判断' };
+            return labels[mode] || mode; }
 
-        // 字体大小调整
-        window.adjustFontSize = function(delta) {
-            var input = document.getElementById('settingsFontSize');
-            var display = document.getElementById('fontSizeDisplay');
-            if (!input || !display) return;
+        window.adjustFontSize = function(delta) { var input = document.getElementById('settingsFontSize'); var display =
+                document.getElementById('fontSizeDisplay'); if (!input || !display) return;
             var val = parseInt(input.value) + delta;
             val = Math.max(13, Math.min(22, val));
             input.value = val;
             display.textContent = val + 'px';
-            applyFontSize(val);
-        };
-
-        window.resetFontSize = function() {
-            var input = document.getElementById('settingsFontSize');
-            var display = document.getElementById('fontSizeDisplay');
-            if (!input || !display) return;
+            applyFontSize(val); };
+        window.resetFontSize = function() { var input = document.getElementById('settingsFontSize'); var display = document
+                .getElementById('fontSizeDisplay'); if (!input || !display) return;
             input.value = 15;
             display.textContent = '15px';
-            applyFontSize(15);
-        };
-
-        // 选项间距调整
-        window.adjustOptGap = function(delta) {
-            var input = document.getElementById('settingsOptGap');
-            var display = document.getElementById('optGapDisplay');
-            if (!input || !display) return;
+            applyFontSize(15); };
+        window.adjustOptGap = function(delta) { var input = document.getElementById('settingsOptGap'); var display = document
+                .getElementById('optGapDisplay'); if (!input || !display) return;
             var val = parseInt(input.value) + delta;
             val = Math.max(4, Math.min(20, val));
             input.value = val;
             display.textContent = val + 'px';
-            applyOptGap(val);
-        };
-
-        window.resetOptGap = function() {
-            var input = document.getElementById('settingsOptGap');
-            var display = document.getElementById('optGapDisplay');
-            if (!input || !display) return;
+            applyOptGap(val); };
+        window.resetOptGap = function() { var input = document.getElementById('settingsOptGap'); var display = document
+                .getElementById('optGapDisplay'); if (!input || !display) return;
             input.value = 8;
             display.textContent = '8px';
-            applyOptGap(8);
-        };
+            applyOptGap(8); };
 
-        // 清空指定模式的练习记录
-        window.resetProgressWithMode = function() {
-            if (!currentBankName) {
-                showToast('请先选择题库');
-                return;
-            }
-            var selectEl = document.getElementById('settingsResetMode');
-            if (!selectEl) {
-                showToast('设置界面异常');
-                return;
-            }
-            var selectedMode = selectEl.value;
-            if (selectedMode === 'all') {
-                if (!confirm('确定清空当前题库【所有模式】的练习记录吗？\n此操作不可恢复。')) {
-                    return;
-                }
-                delete savedProgress[currentBankName];
-                showToast('已清空所有练习记录');
-            } else {
-                if (!confirm('确定清空【' + getModeLabel(selectedMode) + '】的练习记录吗？')) {
-                    return;
-                }
-                if (savedProgress[currentBankName] && savedProgress[currentBankName].mode === selectedMode) {
-                    delete savedProgress[currentBankName];
-                }
-                showToast('已清空【' + getModeLabel(selectedMode) + '】的练习记录');
-            }
-            var shouldExit = currentPage === 'quiz' &&
-                (selectedMode === 'all' || selectedMode === currentMode);
-            if (shouldExit) {
-                currentMode = null;
+        window.resetProgressWithMode = function() { if (!currentBankName) { showToast('请先选择题库'); return; }
+            var selectEl = document.getElementById('settingsResetMode'); if (!selectEl) { showToast('设置界面异常'); return; }
+            var selectedMode = selectEl.value; if (selectedMode === 'all') { if (!confirm(
+                    '确定清空当前题库【所有模式】的练习记录吗？\n此操作不可恢复。')) { return; } delete savedProgress[
+                    currentBankName];
+                showToast('已清空所有练习记录'); } else { if (!confirm('确定清空【' + getModeLabel(selectedMode) +
+                    '】的练习记录吗？')) { return; } if (savedProgress[currentBankName] && savedProgress[currentBankName]
+                    .mode === selectedMode) { delete savedProgress[currentBankName]; }
+                showToast('已清空【' + getModeLabel(selectedMode) + '】的练习记录'); }
+            var shouldExit = currentPage === 'quiz' && (selectedMode === 'all' || selectedMode === currentMode); if (
+                shouldExit) { currentMode = null;
                 currentQuestions = [];
                 currentIndex = 0;
                 questionStatus = [];
                 selectedOptions.clear();
                 feedbackInfo = null;
-                currentPage = 'home';
-            }
+                currentPage = 'home'; }
             localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
             document.getElementById('settingsModal').classList.remove('show');
             document.body.style.overflow = '';
-            render();
-        };
+            render(); };
 
-        // 滑块实时更新
         (function bindSliderEvents() {
-            function bind() {
-                var fontSizeSlider = document.getElementById('settingsFontSize');
-                if (fontSizeSlider) {
-                    fontSizeSlider.addEventListener('input', function() {
-                        var display = document.getElementById('fontSizeDisplay');
-                        if (display) display.textContent = this.value + 'px';
-                        applyFontSize(parseInt(this.value));
-                    });
-                }
-                var optGapSlider = document.getElementById('settingsOptGap');
-                if (optGapSlider) {
-                    optGapSlider.addEventListener('input', function() {
-                        var display = document.getElementById('optGapDisplay');
-                        if (display) display.textContent = this.value + 'px';
-                        applyOptGap(parseInt(this.value));
-                    });
-                }
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', bind);
-            } else {
-                bind();
-            }
+            function bind() { var fontSizeSlider = document.getElementById('settingsFontSize'); if (fontSizeSlider) {
+                    fontSizeSlider.addEventListener('input', function() { var display = document.getElementById(
+                            'fontSizeDisplay'); if (display) display.textContent = this.value + 'px';
+                        applyFontSize(parseInt(this.value)); }); }
+                var optGapSlider = document.getElementById('settingsOptGap'); if (optGapSlider) { optGapSlider.addEventListener(
+                        'input', function() { var display = document.getElementById('optGapDisplay'); if (display)
+                            display.textContent = this.value + 'px';
+                        applyOptGap(parseInt(this.value)); }); } } if (document.readyState === 'loading') { document
+                    .addEventListener('DOMContentLoaded', bind); } else { bind(); }
         })();
 
-        function saveSettings() {
-            var fontSizeInput = document.getElementById('settingsFontSize');
-            var optGapInput = document.getElementById('settingsOptGap');
+        function saveSettings() { var fontSizeInput = document.getElementById('settingsFontSize'); var optGapInput = document
+                .getElementById('settingsOptGap');
             randomCount = parseInt(document.getElementById('settingsRandomCount').value);
             autoRemoveWrongCount = parseInt(document.getElementById('settingsAutoRemoveCount').value);
             hideDone = document.getElementById('settingsHideDone').checked;
             fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15;
-            optGap = optGapInput ? parseInt(optGapInput.value) : 8;
-            if (isNaN(randomCount) || randomCount < 1) randomCount = 50;
-            if (isNaN(autoRemoveWrongCount) || autoRemoveWrongCount < 0) autoRemoveWrongCount = 1;
-            if (isNaN(fontSize) || fontSize < 13) fontSize = 15;
-            if (isNaN(optGap) || optGap < 4) optGap = 8;
-            localStorage.setItem('appSettings', JSON.stringify({
-                randomCount: randomCount,
-                autoSkip: autoSkip,
-                autoRemoveWrongCount: autoRemoveWrongCount,
-                hideDone: hideDone,
-                theme: theme,
-                fontSize: fontSize,
-                optGap: optGap
-            }));
+            optGap = optGapInput ? parseInt(optGapInput.value) : 8; if (isNaN(randomCount) || randomCount < 1)
+            randomCount = 50; if (isNaN(autoRemoveWrongCount) || autoRemoveWrongCount < 0) autoRemoveWrongCount = 1; if (
+                isNaN(fontSize) || fontSize < 13) fontSize = 15; if (isNaN(optGap) || optGap < 4) optGap = 8;
+            localStorage.setItem('appSettings', JSON.stringify({ randomCount: randomCount, autoSkip: autoSkip,
+                autoRemoveWrongCount: autoRemoveWrongCount, hideDone: hideDone, theme: theme, fontSize: fontSize,
+                optGap: optGap }));
             applyTheme(theme);
             applyFontSize(fontSize);
             applyOptGap(optGap);
             document.getElementById('settingsModal').classList.remove('show');
             document.body.style.overflow = '';
-            showToast('设置已保存');
-        }
+            showToast('设置已保存'); }
 
-        function closeSettings() {
-            document.getElementById('settingsModal').classList.remove('show');
-            document.body.style.overflow = '';
-        }
+        function closeSettings() { document.getElementById('settingsModal').classList.remove('show');
+            document.body.style.overflow = ''; }
 
-        window.openSettings = function() {
-            document.getElementById('settingsRandomCount').value = randomCount;
+        window.openSettings = function() { document.getElementById('settingsRandomCount').value = randomCount;
             document.getElementById('settingsAutoRemoveCount').value = autoRemoveWrongCount;
             document.getElementById('settingsHideDone').checked = hideDone;
             document.getElementById('settingsFontSize').value = fontSize;
             document.getElementById('settingsOptGap').value = optGap;
-            var fontSizeDisplay = document.getElementById('fontSizeDisplay');
-            if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize + 'px';
-            var optGapDisplay = document.getElementById('optGapDisplay');
-            if (optGapDisplay) optGapDisplay.textContent = optGap + 'px';
+            var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay
+                .textContent = fontSize + 'px';
+            var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent =
+                optGap + 'px';
             applyTheme(theme);
             document.getElementById('settingsModal').classList.add('show');
-            document.body.style.overflow = 'hidden';
-        };
-
-        window.switchTab = function(tab) {
-            currentTab = tab;
-            if (tab === 'practice') currentPage = 'home';
+            document.body.style.overflow = 'hidden'; };
+        window.switchTab = function(tab) { currentTab = tab; if (tab === 'practice') currentPage = 'home';
             else currentPage = 'manage';
             document.getElementById('tabPracticeBtn').classList.toggle('active', tab === 'practice');
             document.getElementById('tabManageBtn').classList.toggle('active', tab === 'manage');
-            render();
-        };
+            render(); };
         window.goHome = function() { currentPage = 'home';
             render(); };
         window.goPage = function(page) { currentPage = page;
@@ -1283,158 +1258,90 @@
         window.toggleAutoSkip = function(cb) { autoSkip = cb.checked;
             saveAll(); };
 
-        window.importFile = function(file) {
-            if (!file) return;
+        window.importFile = function(file) { if (!file) return;
             var reader = new FileReader();
-            reader.onload = function(e) {
-                setTimeout(function() {
-                    try {
-                        var data = new Uint8Array(e.target.result);
+            reader.onload = function(e) { setTimeout(function() { try { var data = new Uint8Array(e.target.result);
                         var wb = XLSX.read(data, { type: 'array' });
-                        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                        if (rows.length < 2) { alert('文件内容太少');
-                            return; }
+                        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 }); if (rows
+                            .length < 2) { alert('文件内容太少'); return; }
                         pendingRows = rows;
                         pendingFileName = file.name;
-                        showHeaderSelection();
-                    } catch (err) {
-                        alert('文件读取失败，请检查文件格式');
-                    }
-                }, 50);
-            };
-            reader.onerror = function() {
-                alert('文件读取失败');
-            };
-            reader.readAsArrayBuffer(file);
-        };
+                        showHeaderSelection(); } catch (err) { alert('文件读取失败，请检查文件格式'); } }, 50); };
+            reader.onerror = function() { alert('文件读取失败'); };
+            reader.readAsArrayBuffer(file); };
 
-        function showHeaderSelection() {
-            var c = document.getElementById('mappingList'),
+        function showHeaderSelection() { var c = document.getElementById('mappingList'),
                 h = '<div class="import-help">①请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）</div>';
             h += '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th>行号</th><th>内容预览</th></tr>';
-            for (var r = 0; r < Math.min(10, pendingRows.length); r++) {
-                h += '<tr><td style="font-weight:bold;color:var(--primary)">第' + (r + 1) + '行</td><td>';
-                var cells = pendingRows[r] || [];
-                for (var c2 = 0; c2 < Math.min(8, cells.length); c2++) {
-                    h += '<span style="background:var(--input-bg);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block;font-size:11px">' +
-                        (cells[c2] || '').toString().substring(0, 15) + '</span>';
-                }
-                h += '</td></tr>';
-            }
+            for (var r = 0; r < Math.min(10, pendingRows.length); r++) { h +=
+                    '<tr><td style="font-weight:bold;color:var(--primary)">第' + (r + 1) + '行</td><td>';
+                var cells = pendingRows[r] || []; for (var c2 = 0; c2 < Math.min(8, cells.length); c2++) { h +=
+                        '<span style="background:var(--input-bg);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block;font-size:11px">' +
+                        (cells[c2] || '').toString().substring(0, 15) + '</span>'; }
+                h += '</td></tr>'; }
             h +=
                 '</table><label style="display:block;margin-top:12px;color:var(--text2)">表头在第几行？</label><input type="number" id="headerRowNum" min="1" value="1" step="1" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px">';
             c.innerHTML = h;
             document.getElementById('modalConfirmBtn').textContent = '下一步：列映射';
             document.getElementById('modalConfirmBtn').onclick = confirmHeaderAndShowMapping;
-            document.getElementById('mappingModal').classList.add('show');
-        }
-        window.confirmHeaderAndShowMapping = function() {
-            var n = parseInt(document.getElementById('headerRowNum').value);
-            if (isNaN(n) || n < 1 || n > pendingRows.length) { alert('请输入有效行号');
-                return; }
+            document.getElementById('mappingModal').classList.add('show'); }
+        window.confirmHeaderAndShowMapping = function() { var n = parseInt(document.getElementById('headerRowNum').value); if (
+                isNaN(n) || n < 1 || n > pendingRows.length) { alert('请输入有效行号'); return; }
             pendingHeaders = pendingRows[n - 1].map(function(h) { return String(h || '').trim(); });
             pendingRows = pendingRows.slice(n);
-            showMappingUI();
-        };
+            showMappingUI(); };
 
-        function autoGuess(col) {
-            var t = col.trim(),
-                l = t.toLowerCase();
-            if (/^[a-g]$/i.test(t)) return '选项' + t.toUpperCase();
-            var m = l.match(/^选项\s*([a-g])$/);
-            if (m) return '选项' + m[1].toUpperCase();
-            m = l.match(/^([a-g])\s*选项$/);
-            if (m) return '选项' + m[1].toUpperCase();
-            if (/知识|类别|章|节|模块|分类|标签/.test(l)) return '知识类型（题目标签）';
-            if (/题型|类型/.test(l)) return '题型';
-            if (/题干|题目|问题|内容/.test(l)) return '题干';
-            if (/答案|正确/.test(l)) return '答案';
-            if (/解析|解释/.test(l)) return '解析';
-            return '忽略';
-        }
+        function autoGuess(col) { var t = col.trim(),
+                l = t.toLowerCase(); if (/^[a-g]$/i.test(t)) return '选项' + t.toUpperCase();
+            var m = l.match(/^选项\s*([a-g])$/); if (m) return '选项' + m[1].toUpperCase();
+            m = l.match(/^([a-g])\s*选项$/); if (m) return '选项' + m[1].toUpperCase(); if (/知识|类别|章|节|模块|分类|标签/.test(l))
+                return '知识类型（题目标签）'; if (/题型|类型/.test(l)) return '题型'; if (/题干|题目|问题|内容/.test(l)) return '题干'; if (
+                /答案|正确/.test(l)) return '答案'; if (/解析|解释/.test(l)) return '解析'; return '忽略'; }
 
-        function showMappingUI() {
-            var c = document.getElementById('mappingList'),
+        function showMappingUI() { var c = document.getElementById('mappingList'),
                 h =
                 '<div class="import-help"><strong>📌导入说明：</strong><br>①<strong>必须映射：题型、题干、知识类型（题目标签）、答案</strong><br>②选项A-G建议映射，其他列选"忽略"<br>③确认无误后点"确认导入"</div>';
             h += '<p style="color:var(--text2);margin-bottom:10px">请为每列选择对应含义：</p>';
-            for (var i = 0; i < pendingHeaders.length; i++) {
-                var col = pendingHeaders[i],
+            for (var i = 0; i < pendingHeaders.length; i++) { var col = pendingHeaders[i],
                     g = autoGuess(col);
                 h += '<div class="mapping-row"><span style="flex:1;word-break:break-all">' + col +
-                    '</span><select id="mapSelect_' + i + '" style="width:130px;font-size:16px">';
-                for (var j = 0; j < FIELDS.length; j++) {
-                    h += '<option value="' + FIELDS[j] + '"' + (FIELDS[j] === g ? ' selected' : '') + '>' + FIELDS[j] +
-                        '</option>';
-                }
-                h += '</select></div>';
-            }
+                    '</span><select id="mapSelect_' + i + '" style="width:130px;font-size:16px">'; for (var j = 0; j < FIELDS
+                    .length; j++) { h += '<option value="' + FIELDS[j] + '"' + (FIELDS[j] === g ? ' selected' : '') + '>' +
+                        FIELDS[j] + '</option>'; }
+                h += '</select></div>'; }
             c.innerHTML = h;
             document.getElementById('modalConfirmBtn').textContent = '确认导入';
-            document.getElementById('modalConfirmBtn').onclick = applyMapping;
-        }
-        window.applyMapping = function() {
-            var mapping = {},
+            document.getElementById('modalConfirmBtn').onclick = applyMapping; }
+        window.applyMapping = function() { var mapping = {},
                 hq = false,
-                ha = false;
-            for (var i = 0; i < pendingHeaders.length; i++) {
-                var sel = document.getElementById('mapSelect_' + i);
-                if (!sel) continue;
-                var f = sel.value;
-                if (f === '忽略') continue;
-                mapping[f] = i;
-                if (f === '题干') hq = true;
-                if (f === '答案') ha = true;
-            }
-            if (!hq || !ha) { alert('必须指定"题干"和"答案"！');
-                return; }
+                ha = false; for (var i = 0; i < pendingHeaders.length; i++) { var sel = document.getElementById(
+                    'mapSelect_' + i); if (!sel) continue;
+                var f = sel.value; if (f === '忽略') continue;
+                mapping[f] = i; if (f === '题干') hq = true; if (f === '答案') ha = true; } if (!hq || !ha) { alert(
+                    '必须指定"题干"和"答案"！'); return; }
             document.getElementById('mappingModal').classList.remove('show');
             document.body.style.overflow = '';
-            var qs = [];
-            for (var r = 0; r < pendingRows.length; r++) {
-                var row = pendingRows[r];
-                if (!row) continue;
-                var qt = String(row[mapping['题干']] || '').trim();
-                if (!qt) continue;
+            var qs = []; for (var r = 0; r < pendingRows.length; r++) { var row = pendingRows[r]; if (!row)
+            continue;
+                var qt = String(row[mapping['题干']] || '').trim(); if (!qt) continue;
                 var ans = String(row[mapping['答案']] || '').trim().toUpperCase().replace(/,/g, '').replace(/，/g, '')
                     .replace(/\s/g, '');
-                var tp = (mapping['题型'] !== undefined) ? String(row[mapping['题型']] || '').trim() : '';
-                if (!tp || ['单选题', '多选题', '判断题'].indexOf(tp) < 0) {
-                    if (ans === '正确' || ans === '错误' || ans === '对' || ans === '错') tp = '判断题';
+                var tp = (mapping['题型'] !== undefined) ? String(row[mapping['题型']] || '').trim() : ''; if (!tp || [
+                        '单选题', '多选题', '判断题'].indexOf(tp) < 0) { if (ans === '正确' || ans === '错误' || ans === '对' ||
+                        ans === '错') tp = '判断题';
                     else if (ans.length > 1 && /^[A-G]+$/.test(ans)) tp = '多选题';
-                    else tp = '单选题';
-                }
-                if (tp === '判断题') {
-                    if (ans === 'A' || ans === '对') ans = '正确';
-                    else if (ans === 'B' || ans === '错') ans = '错误';
-                }
-                var opts = {};
-                for (var k in mapping) {
-                    if (k.indexOf('选项') === 0) opts[k.replace('选项', '')] = String(row[mapping[k]] || '').trim();
-                }
-                qs.push({
-                    id: 0,
-                    '知识类型': mapping['知识类型（题目标签）'] !== undefined ? String(row[mapping['知识类型（题目标签）']] ||
-                        '').trim() : '',
-                    题型: tp,
-                    题干: qt,
-                    答案: ans,
-                    解析: mapping['解析'] !== undefined ? String(row[mapping['解析']] || '').trim() : '',
-                    选项: opts
-                });
-            }
-            var mid = 0;
-            for (var bn2 in banks) {
-                var bq = banks[bn2].questions;
-                for (var qi = 0; qi < bq.length; qi++) {
-                    if (bq[qi].id > mid) mid = bq[qi].id;
-                }
-            }
-            for (var qi2 = 0; qi2 < qs.length; qi2++) { mid++;
+                    else tp = '单选题'; } if (tp === '判断题') { if (ans === 'A' || ans === '对') ans = '正确';
+                    else if (ans === 'B' || ans === '错') ans = '错误'; }
+                var opts = {}; for (var k in mapping) { if (k.indexOf('选项') === 0) opts[k.replace('选项', '')] = String(
+                        row[mapping[k]] || '').trim(); }
+                qs.push({ id: 0, '知识类型': mapping['知识类型（题目标签）'] !== undefined ? String(row[mapping[
+                            '知识类型（题目标签）']] || '').trim() : '', 题型: tp, 题干: qt, 答案: ans, 解析: mapping[
+                        '解析'] !== undefined ? String(row[mapping['解析']] || '').trim() : '', 选项: opts }); }
+            var mid = 0; for (var bn2 in banks) { var bq = banks[bn2].questions; for (var qi = 0; qi < bq.length; qi++) { if (
+                        bq[qi].id > mid) mid = bq[qi].id; } } for (var qi2 = 0; qi2 < qs.length; qi2++) { mid++;
                 qs[qi2].id = mid; }
             var bn = pendingFileName.replace(/\.(xlsx|xls)$/i, '');
-            banks[bn] = { questions: qs, fileName: pendingFileName };
-            if (!currentBankName) currentBankName = bn;
+            banks[bn] = { questions: qs, fileName: pendingFileName }; if (!currentBankName) currentBankName = bn;
             saveAll();
             pendingRows = null;
             pendingHeaders = [];
@@ -1443,47 +1350,34 @@
             document.getElementById('tabPracticeBtn').classList.add('active');
             document.getElementById('tabManageBtn').classList.remove('active');
             render();
-            showToast('成功导入 ' + qs.length + ' 题');
-        };
-        window.closeMappingModal = function() {
-            document.getElementById('mappingModal').classList.remove('show');
+            showToast('成功导入 ' + qs.length + ' 题'); };
+        window.closeMappingModal = function() { document.getElementById('mappingModal').classList.remove('show');
             pendingRows = null;
-            document.body.style.overflow = '';
-        };
-        window.handleFileSelect = function(input) {
-            if (input.files && input.files.length > 0) { importFile(input.files[0]);
-                input.value = ''; }
-        };
+            document.body.style.overflow = ''; };
+        window.handleFileSelect = function(input) { if (input.files && input.files.length > 0) { importFile(input.files[
+            0]);
+            input.value = ''; } };
 
-        function render() {
-            var m = document.getElementById('mainContent');
-            if (currentPage === 'quiz') m.innerHTML = renderQuiz() + FOOTER;
+        function render() { var m = document.getElementById('mainContent'); if (currentPage === 'quiz') m.innerHTML =
+                renderQuiz() + FOOTER;
             else if (currentPage === 'manage') m.innerHTML = renderManage() + FOOTER;
             else if (currentPage === 'wrongManage') m.innerHTML = renderWrongMgr() + FOOTER;
             else if (currentPage === 'favManage') m.innerHTML = renderFavMgr() + FOOTER;
-            else m.innerHTML = renderHome() + FOOTER;
-        }
+            else m.innerHTML = renderHome() + FOOTER; }
 
-        function renderHome() {
-            var names = Object.keys(banks),
-                h = '';
-            if (names.length === 0) {
-                h +=
-                    '<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">📁</div><div style="color:var(--text2);margin-bottom:12px">还没有题库</div><div class="format-hint"><strong>📌题库格式要求：</strong><br>表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong></div><input type="file" id="mainInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-submit" onclick="document.getElementById(\'mainInput\').click()" style="width:100%">选择题库文件</button></div>';
-                return h;
-            }
+        function renderHome() { var names = Object.keys(banks),
+                h = ''; if (names.length === 0) { h +=
+                    '<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">📁</div><div style="color:var(--text2);margin-bottom:12px">还没有题库</div><div class="format-hint"><strong>📌题库格式要求：</strong><br>表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong></div><input type="file" id="mainInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-submit" onclick="document.getElementById(\'mainInput\').click()" style="width:100%">选择题库文件</button></div>'; return h; }
             h +=
                 '<div class="card"><div class="card-title">当前题库</div><select onchange="switchBank(this.options[this.selectedIndex].getAttribute(\'data-full\'))" style="font-size:16px">';
-            for (var i = 0; i < names.length; i++) {
-                h += '<option data-full="' + names[i] + '"' + (names[i] === currentBankName ? ' selected' : '') + '>' + (
-                    names[i].length > 25 ? names[i].substring(0, 25) + '…' : names[i]) + '</option>';
-            }
+            for (var i = 0; i < names.length; i++) { h += '<option data-full="' + names[i] + '"' + (names[i] ===
+                    currentBankName ? ' selected' : '') + '>' + (names[i].length > 25 ? names[i].substring(0, 25) + '…' :
+                    names[i]) + '</option>'; }
             h += '</select><div style="font-size:12px;color:var(--text2)">题目数：' + (banks[currentBankName] ? banks[
                 currentBankName].questions.length : 0) + '</div></div>';
             h += '<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
-            [{ i: 'sequence', l: '📖顺序' }, { i: 'random', l: '🔀随机' }, { i: 'exam', l: '📝考试' }, { i: 'wrong',
-                l: '❌错题' }, { i: 'fav', l: '⭐收藏' }].forEach(function(m) { h += '<div class="mode-btn" onclick="startMode(\'' +
-                    m.i + '\')">' + m.l + '</div>'; });
+            [{ i: 'sequence', l: '📖顺序' }, { i: 'random', l: '🔀随机' }, { i: 'exam', l: '📝考试' }].forEach(function(m) { h +=
+                '<div class="mode-btn" onclick="startMode(\'' + m.i + '\')">' + m.l + '</div>'; });
             h += '</div></div><div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
             h += '<div class="mode-btn" onclick="startMode(\'single_choice\')">单选题</div><div class="mode-btn" onclick="startMode(\'multi_choice\')">多选题</div><div class="mode-btn" onclick="startMode(\'judge\')">判断题</div>';
             h +=
@@ -1493,87 +1387,61 @@
                 l: '只背单选' }, { i: 'memorize_multi', l: '只背多选' }, { i: 'memorize_judge', l: '只背判断' }].forEach(
                 function(m) { h += '<div class="mode-btn" onclick="startMode(\'' + m.i + '\')">' + m.l + '</div>'; });
             h +=
-                '</div></div><div class="card"><div class="card-title">📊错题管理</div><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="goPage(\'wrongManage\')">📋管理错题</button><button class="btn btn-nav" onclick="clearWrong()">🗑清空错题</button></div></div>';
+                '</div></div><div class="card"><div class="card-title">❌ 错题管理</div><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="goPage(\'wrongManage\')">📋管理错题</button><button class="btn btn-nav" onclick="startMode(\'wrong\')">练习错题</button><button class="btn btn-danger" onclick="clearWrong()">🗑清空错题</button></div></div>';
             h +=
-                '<div class="card"><div class="card-title">⭐收藏管理</div><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="goPage(\'favManage\')">📋管理收藏</button><button class="btn btn-nav" onclick="clearFavs()">🗑清空收藏</button></div></div>';
+                '</div></div><div class="card"><div class="card-title">⭐ 收藏管理</div><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="goPage(\'favManage\')">📋管理收藏</button><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button><button class="btn btn-danger" onclick="clearFavs()">🗑清空收藏</button></div></div>';
             h +=
                 '<div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-nav" onclick="openSettings()">⚙️设置</button><input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥导入更多</button></div>';
-            return h;
-        }
+            return h; }
 
-        function renderQuiz() {
-            if (!currentMode || currentQuestions.length === 0)
-                return '<div class="card" style="text-align:center;padding:20px">当前模式没有题目</div>';
+        function renderQuiz() { if (!currentMode || currentQuestions.length === 0) return '<div class="card" style="text-align:center;padding:20px">当前模式没有题目</div>';
             var q = currentQuestions[currentIndex],
                 isMem = currentMode.indexOf('memorize') === 0,
                 h = '<div class="card">';
-            h += '<div style="margin-bottom:12px"><button class="back-btn" onclick="goHome()">←返回</button></div>';
-            if (!isMem) {
+            h += '<div style="margin-bottom:12px"><button class="back-btn" onclick="goHome()">←返回</button></div>'; if (!isMem) {
                 h += '<div class="auto-skip-row"><input type="checkbox" id="autoSkipCheck" onchange="toggleAutoSkip(this)" ' +
-                    (autoSkip ? 'checked' : '') + '><label for="autoSkipCheck">✓答对自动下一题</label></div>';
-            }
+                    (autoSkip ? 'checked' : '') + '><label for="autoSkipCheck">✓答对自动下一题</label></div>'; }
             h += '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">' + (q['知识类型'] || '') + ' | ' + q['题型'] +
                 '</div><div class="question-text">' + q['题干'] + '</div>';
-            var labels = Object.keys(q['选项']).filter(function(k) { return q['选项'][k]; });
-            if (q['题型'] === '判断题') { labels = ['A', 'B'];
+            var labels = Object.keys(q['选项']).filter(function(k) { return q['选项'][k]; }); if (q['题型'] === '判断题') { labels = [
+                    'A', 'B'
+                ];
                 q['选项'] = { A: '正确', B: '错误' }; }
-            var correctL = [];
-            if (isMem) correctL = (q['题型'] === '判断题') ? ((q['答案'] === '正确') ? ['A'] : ['B']) : q['答案'].split('');
-            for (var i = 0; i < labels.length; i++) {
-                var l = labels[i];
+            var correctL = []; if (isMem) correctL = (q['题型'] === '判断题') ? ((q['答案'] === '正确') ? ['A'] : ['B']) : q['答案']
+                .split(''); for (var i = 0; i < labels.length; i++) { var l = labels[i];
                 var sel = selectedOptions.has(l) ? ' selected' : '',
                     isC = correctL.indexOf(l) >= 0,
-                    oc = sel;
-                if (isMem && isC) oc += ' correct-highlight';
+                    oc = sel; if (isMem && isC) oc += ' correct-highlight';
                 h += '<div class="option-item' + oc + '" onclick="' + (isMem ? '' : 'toggleOption(\'' + l + '\',\'' + (q[
                     '题型'] === '多选题' ? 'multi' : 'single') + '\')') + '"><div class="letter">' + l + '</div>' + q['选项'][
                     l
-                ] + '</div>';
-            }
+                ] + '</div>'; }
             h += '<div class="progress-text">' + (currentIndex + 1) + '/' + currentQuestions.length +
                 '</div><div class="progress-bar"><div class="progress-fill" style="width:' + ((currentIndex + 1) /
-                    currentQuestions.length * 100) + '%"></div></div>';
-            if (isMem) {
-                h +=
+                    currentQuestions.length * 100) + '%"></div></div>'; if (isMem) { h +=
                     '<div class="btn-row" style="justify-content:center"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:16px 24px;font-size:18px">◀上一题</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:16px 24px;font-size:18px">▶下一题</button></div>';
                 h += '<div style="text-align:center;margin-top:8px"><button class="btn btn-nav" onclick="toggleFav()">' + (
-                    favSet.has(q.id) ? '★已收藏' : '☆收藏') + '</button></div>';
-                if (q['解析']) h += '<div class="analysis info" style="display:block">📖解析：' + q['解析'] + '</div>';
-            } else {
-                h +=
+                    favSet.has(q.id) ? '★已收藏' : '☆收藏') + '</button></div>'; if (q['解析']) h +=
+                    '<div class="analysis info" style="display:block">📖解析：' + q['解析'] + '</div>'; } else { h +=
                     '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:14px 18px;font-size:16px">◀</button><button class="btn btn-submit" onclick="submitAnswer()" style="padding:14px 18px;font-size:16px">提交</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:14px 18px;font-size:16px">▶</button><button class="btn btn-nav" onclick="toggleFav()" style="padding:14px 18px;font-size:16px">' + (
-                        favSet.has(q.id) ? '★' : '☆') + '</button></div>';
-                if (feedbackInfo) h += '<div class="analysis ' + (feedbackInfo.correct ? 'correct' : 'wrong') + '">' +
-                    feedbackInfo.message + '</div>';
-            }
+                        favSet.has(q.id) ? '★' : '☆') + '</button></div>'; if (feedbackInfo) h += '<div class="analysis ' + (
+                        feedbackInfo.correct ? 'correct' : 'wrong') + '">' + feedbackInfo.message + '</div>'; }
             h +=
                 '<div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="showAnswerSheet()">📋答题卡</button></div></div>';
-            return h;
-        }
+            return h; }
 
-        function renderManage() {
-            var names = Object.keys(banks),
-                h = '';
-            if (names.length === 0) {
-                h +=
-                    '<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px">📁</div><div style="color:var(--text2)">还没有题库</div><input type="file" id="manageInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-submit" onclick="document.getElementById(\'manageInput\').click()">导入题库</button></div>';
-                return h;
-            }
-            h += '<div class="card"><div class="card-title">已导入题库</div>';
-            for (var i = 0; i < names.length; i++) {
-                h +=
+        function renderManage() { var names = Object.keys(banks),
+                h = ''; if (names.length === 0) { h +=
+                    '<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px">📁</div><div style="color:var(--text2)">还没有题库</div><input type="file" id="manageInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-submit" onclick="document.getElementById(\'manageInput\').click()">导入题库</button></div>'; return h; }
+            h += '<div class="card"><div class="card-title">已导入题库</div>'; for (var i = 0; i < names.length; i++) { h +=
                     '<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);align-items:center"><span>' +
-                    names[i] + ' (' + banks[names[i]].questions.length +
-                    '题)</span><button class="btn btn-nav" onclick="deleteBank(\'' + names[i] +
-                    '\')" style="padding:6px 12px;font-size:12px;min-height:auto">删除</button></div>';
-            }
+                    names[i] + ' (' + banks[names[i]].questions.length + '题)</span><button class="btn btn-nav" onclick="deleteBank(\'' +
+                    names[i] + '\')" style="padding:6px 12px;font-size:12px;min-height:auto">删除</button></div>'; }
             h +=
                 '<div style="text-align:center;margin-top:12px"><input type="file" id="manageInput2" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-nav" onclick="document.getElementById(\'manageInput2\').click()">📥导入更多</button></div></div>';
-            return h;
-        }
+            return h; }
 
-        function renderWrongMgr() {
-            var ids = Object.keys(wrongInfo).filter(function(id) { return wrongInfo[id]; }),
+        function renderWrongMgr() { var ids = Object.keys(wrongInfo).filter(function(id) { return wrongInfo[id]; }),
                 all = ids.length,
                 today = new Date().toISOString().slice(0, 10),
                 tdy = ids.filter(function(id) { return wrongInfo[id].lastDate === today; }).length;
@@ -1582,115 +1450,78 @@
             var td = {},
                 cd = {},
                 cntd = {};
-            ids.forEach(function(id) {
-                var q = findQ(id);
-                if (!q) return;
+            ids.forEach(function(id) { var q = findQ(id); if (!q) return;
                 var t = q['题型'];
                 td[t] = (td[t] || 0) + 1;
                 var c = q['知识类型'] || '未分类';
                 cd[c] = (cd[c] || 0) + 1;
                 var ct = wrongInfo[id].count || 1,
                     ck = ct >= 5 ? '5次+' : ct + '次';
-                cntd[ck] = (cntd[ck] || 0) + 1;
-            });
+                cntd[ck] = (cntd[ck] || 0) + 1; });
             h += '<div style="font-size:12px;margin-top:8px"><strong>按题型：</strong>' + Object.entries(td).map(function(e) {
                 return e[0] + ' ' + e[1]; }).join('，') + '</div><div style="font-size:12px"><strong>按知识类型：</strong>' +
                 Object.entries(cd).map(function(e) { return e[0] + ' ' + e[1]; }).join('，') +
                 '</div><div style="font-size:12px"><strong>按错误次数：</strong>' + Object.entries(cntd).map(function(e) {
                     return e[0] + ' ' + e[1]; }).join('，') + '</div></div>';
             h += '<div class="card"><div class="card-title">📋错题列表</div><div class="manage-list">';
-            ids.forEach(function(id) {
-                var q = findQ(id);
-                if (!q) return;
+            ids.forEach(function(id) { var q = findQ(id); if (!q) return;
                 var info = wrongInfo[id];
                 h += '<div class="manage-item"><span>[' + q['题型'] + '] ' + q['题干'].substring(0, 25) +
                     '...</span><br><small>错误' + info.count + '次，最近：' + info.lastDate +
                     '</small><button class="btn btn-nav" style="padding:4px 8px;font-size:11px;margin-left:8px;min-height:auto" onclick="removeWrong(\'' +
-                    id + '\')">移出</button></div>';
-            });
+                    id + '\')">移出</button></div>'; });
             h +=
-                '</div></div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'wrong\')">练习错题</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
-            return h;
-        }
+                '</div></div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'wrong\')">练习错题</button> <button class="btn btn-danger" onclick="clearWrong()">🗑清空全部错题</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
+            return h; }
 
-        function renderFavMgr() {
-            var ids = [].slice.call(favSet),
-                h = '<div class="card"><div class="card-title">⭐收藏管理</div>';
-            if (ids.length === 0) { h += '<p style="color:var(--text2)">暂无收藏</p>'; } else {
-                var tg = {},
+        function renderFavMgr() { var ids = [].slice.call(favSet),
+                h = '<div class="card"><div class="card-title">⭐收藏管理</div>'; if (ids.length === 0) { h +=
+                    '<p style="color:var(--text2)">暂无收藏</p>'; } else { var tg = {},
                     cg = {};
-                ids.forEach(function(id) {
-                    var q = findQ(id);
-                    if (!q) return;
-                    var t = q['题型'];
-                    if (!tg[t]) tg[t] = [];
+                ids.forEach(function(id) { var q = findQ(id); if (!q) return;
+                    var t = q['题型']; if (!tg[t]) tg[t] = [];
                     tg[t].push(q);
-                    var c = q['知识类型'] || '未分类';
-                    if (!cg[c]) cg[c] = [];
-                    cg[c].push(q);
-                });
-                h += '<div class="card-title">按题型</div>';
-                for (var t2 in tg) {
-                    h += '<div style="font-weight:500;margin-top:8px">' + t2 + ' (' + tg[t2].length + ')</div>';
-                    tg[t2].forEach(function(q) {
-                        h += '<div class="manage-item"><span>' + q['题干'].substring(0, 30) +
+                    var c = q['知识类型'] || '未分类'; if (!cg[c]) cg[c] = [];
+                    cg[c].push(q); });
+                h += '<div class="card-title">按题型</div>'; for (var t2 in tg) { h +=
+                        '<div style="font-weight:500;margin-top:8px">' + t2 + ' (' + tg[t2].length + ')</div>';
+                    tg[t2].forEach(function(q) { h += '<div class="manage-item"><span>' + q['题干'].substring(0, 30) +
                             '...</span><button class="btn btn-nav" style="padding:4px 8px;font-size:11px;margin-left:8px;min-height:auto" onclick="toggleFavQ(\'' +
-                            q.id + '\')">取消收藏</button></div>';
-                    });
-                }
-                h += '<div class="card-title" style="margin-top:12px">按知识类型</div>';
-                for (var c2 in cg) {
-                    h += '<div style="font-weight:500;margin-top:8px">' + c2 + ' (' + cg[c2].length + ')</div>';
-                    cg[c2].forEach(function(q) {
-                        h += '<div class="manage-item"><span>' + q['题干'].substring(0, 30) +
+                            q.id + '\')">取消收藏</button></div>'; }); }
+                h += '<div class="card-title" style="margin-top:12px">按知识类型</div>'; for (var c2 in cg) { h +=
+                        '<div style="font-weight:500;margin-top:8px">' + c2 + ' (' + cg[c2].length + ')</div>';
+                    cg[c2].forEach(function(q) { h += '<div class="manage-item"><span>' + q['题干'].substring(0, 30) +
                             '...</span><button class="btn btn-nav" style="padding:4px 8px;font-size:11px;margin-left:8px;min-height:auto" onclick="toggleFavQ(\'' +
-                            q.id + '\')">取消收藏</button></div>';
-                    });
-                }
-            }
+                            q.id + '\')">取消收藏</button></div>'; }); } }
             h +=
-                '</div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
-            return h;
-        }
+                '</div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button> <button class="btn btn-danger" onclick="clearFavs()">🗑清空全部收藏</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
+            return h; }
 
-        window.removeWrong = function(id) {
-            delete wrongInfo[id];
-            saveAll();
-            if (currentPage === 'wrongManage') render();
-            showToast('已移出错题');
-        };
-        window.clearWrong = function() {
-            if (confirm('确定清空所有错题？')) { wrongInfo = {};
-                saveAll(); if (currentPage === 'home') render();
-                showToast('错题已清空'); }
-        };
-        window.clearFavs = function() {
-            if (confirm('确定清空所有收藏？')) { favSet.clear();
-                saveAll(); if (currentPage === 'home') render();
-                showToast('收藏已清空'); }
-        };
-        window.toggleFavQ = function(id) {
-            if (favSet.has(id)) favSet.delete(id);
+        window.removeWrong = function(id) { delete wrongInfo[id];
+            saveAll(); if (currentPage === 'wrongManage') render();
+            showToast('已移出错题'); };
+        window.clearWrong = function() { showDangerConfirm('清空全部错题', '将删除所有错题记录（共' + Object.keys(wrongInfo).filter(function(
+                    id) { return wrongInfo[id]; }).length + '题），此操作不可恢复。', function() { wrongInfo = {};
+                saveAll(); if (currentPage === 'home') render(); if (currentPage === 'wrongManage') render();
+                showToast('错题已清空'); }); };
+        window.clearFavs = function() { var count = favSet.size;
+            showDangerConfirm('清空全部收藏', '将删除所有收藏（共' + count + '题），此操作不可恢复。', function() { favSet.clear();
+                saveAll(); if (currentPage === 'home') render(); if (currentPage === 'favManage') render();
+                showToast('收藏已清空'); }); };
+        window.toggleFavQ = function(id) { if (favSet.has(id)) favSet.delete(id);
             else favSet.add(id);
-            saveAll();
-            if (currentPage === 'favManage') render();
-        };
+            saveAll(); if (currentPage === 'favManage') render(); };
 
-        window.startMode = function(mode) {
-            if (!currentBankName || !banks[currentBankName]) return;
+        window.startMode = function(mode) { if (!currentBankName || !banks[currentBankName]) return;
             var pool = banks[currentBankName].questions;
             currentMode = mode;
             selectedOptions.clear();
             feedbackInfo = null;
             currentIndex = 0;
-            questionStatus = [];
-            if (savedProgress[currentBankName] && savedProgress[currentBankName].mode === mode) {
-                if (restoreProgress(currentBankName)) { currentPage = 'quiz';
-                    render();
-                    return; }
-            }
-            if (mode === 'wrong') currentQuestions = Object.keys(wrongInfo).filter(function(id) { return wrongInfo[
-                id]; }).map(function(id) { return findQ(id); }).filter(Boolean);
+            questionStatus = []; if (savedProgress[currentBankName] && savedProgress[currentBankName].mode === mode) { if (
+                    restoreProgress(currentBankName)) { currentPage = 'quiz';
+                    render(); return; } } if (mode === 'wrong') currentQuestions = Object.keys(wrongInfo).filter(function(
+                    id) { return wrongInfo[id]; }).map(function(id) { return findQ(id); }).filter(Boolean);
             else if (mode === 'fav') currentQuestions = [].slice.call(favSet).map(function(id) { return findQ(id); })
                 .filter(Boolean);
             else if (mode === 'judge_true') currentQuestions = pool.filter(function(q) { return q['题型'] === '判断题' && q[
@@ -1708,171 +1539,107 @@
             else if (mode === 'memorize_seq') currentQuestions = [].concat(pool);
             else if (mode === 'memorize_single') currentQuestions = pool.filter(function(q) { return q['题型'] === '单选题'; });
             else if (mode === 'memorize_multi') currentQuestions = pool.filter(function(q) { return q['题型'] === '多选题'; });
-            else if (mode === 'memorize_judge') currentQuestions = pool.filter(function(q) { return q['题型'] === '判断题'; });
-            if (hideDone && (mode === 'sequence' || mode === 'random')) {
-                var prog = savedProgress[currentBankName];
-                if (prog && prog.status && prog.questionIds) {
-                    var doneMap = {};
-                    prog.questionIds.forEach(function(id, i) {
-                        if (prog.status[i] && prog.status[i].answered && prog.status[i].correct) {
-                            doneMap[id] = true;
-                        }
-                    });
-                    currentQuestions = currentQuestions.filter(function(q) { return !doneMap[q.id]; });
-                }
-            }
-            if (currentQuestions.length === 0) { alert('没有符合条件的题目');
-                currentMode = null;
-                return; }
+            else if (mode === 'memorize_judge') currentQuestions = pool.filter(function(q) { return q['题型'] === '判断题'; }); if (
+                hideDone && (mode === 'sequence' || mode === 'random')) { var prog = savedProgress[currentBankName]; if (
+                    prog && prog.status && prog.questionIds) { var doneMap = {};
+                prog.questionIds.forEach(function(id, i) { if (prog.status[i] && prog.status[i].answered && prog
+                        .status[i].correct) { doneMap[id] = true; } });
+                currentQuestions = currentQuestions.filter(function(q) { return !doneMap[q.id]; }); } } if (currentQuestions
+                .length === 0) { alert('没有符合条件的题目');
+                currentMode = null; return; }
             questionStatus = currentQuestions.map(function() { return { answered: false, correct: false }; });
             saveProgress();
             currentPage = 'quiz';
-            render();
-        };
+            render(); };
 
-        window.submitAnswer = function() {
-            if (!currentQuestions.length || currentIndex >= currentQuestions.length) return;
+        window.submitAnswer = function() { if (!currentQuestions.length || currentIndex >= currentQuestions.length)
+            return;
             var q = currentQuestions[currentIndex],
                 ua = q['题型'] === '多选题' ? [].slice.call(selectedOptions).sort().join('') : ([].slice.call(
-                    selectedOptions)[0] || '');
-            if (!ua) { alert('请选择答案');
-                return; }
+                    selectedOptions)[0] || ''); if (!ua) { alert('请选择答案'); return; }
             var ok = ua.toUpperCase() === q['答案'].toUpperCase();
-            feedbackInfo = {
-                correct: ok,
-                message: ok ? '✓正确！' : '✗错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>解析：' + q['解析'] : '')
-            };
-            if (!ok) {
-                var info = wrongInfo[q.id] || { count: 0, lastDate: '', dates: [], correctStreak: 0 };
+            feedbackInfo = { correct: ok, message: ok ? '✓正确！' : '✗错误！正确答案：' + q['答案'] + (q['解析'] ? '<br>解析：' + q[
+                    '解析'] : '') }; if (!ok) { var info = wrongInfo[q.id] || { count: 0, lastDate: '', dates: [],
+                    correctStreak: 0 };
                 info.count = (info.count || 0) + 1;
                 info.lastDate = new Date().toISOString().slice(0, 10);
-                info.dates.push(info.lastDate);
-                if (info.dates.length > 20) info.dates = info.dates.slice(-20);
+                info.dates.push(info.lastDate); if (info.dates.length > 20) info.dates = info.dates.slice(-20);
                 info.correctStreak = 0;
-                wrongInfo[q.id] = info;
-            } else {
-                if (wrongInfo[q.id]) {
-                    wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak || 0) + 1;
-                    if (autoRemoveWrongCount > 0 && wrongInfo[q.id].correctStreak >= autoRemoveWrongCount)
-                        delete wrongInfo[q.id];
-                }
-            }
-            if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered = true;
+                wrongInfo[q.id] = info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id]
+                        .correctStreak || 0) + 1; if (autoRemoveWrongCount > 0 && wrongInfo[q.id].correctStreak >=
+                        autoRemoveWrongCount) delete wrongInfo[q.id]; } } if (questionStatus[currentIndex]) {
+                questionStatus[currentIndex].answered = true;
                 questionStatus[currentIndex].correct = ok; }
             saveAll();
-            render();
-            if (ok && autoSkip && currentIndex < currentQuestions.length - 1) setTimeout(function() { currentIndex++;
+            render(); if (ok && autoSkip && currentIndex < currentQuestions.length - 1) setTimeout(function() { currentIndex++;
                 selectedOptions.clear();
                 feedbackInfo = null;
                 saveProgress();
-                render(); }, 800);
-        };
-
-        window.nextQuestion = function() {
-            if (currentIndex < currentQuestions.length - 1) { currentIndex++;
+                render(); }, 800); };
+        window.nextQuestion = function() { if (currentIndex < currentQuestions.length - 1) { currentIndex++;
                 selectedOptions.clear();
                 feedbackInfo = null;
                 saveProgress();
-                render(); } else alert('已是最后一题');
-        };
-        window.prevQuestion = function() {
-            if (currentIndex > 0) { currentIndex--;
+                render(); } else alert('已是最后一题'); };
+        window.prevQuestion = function() { if (currentIndex > 0) { currentIndex--;
                 selectedOptions.clear();
                 feedbackInfo = null;
                 saveProgress();
-                render(); }
-        };
-        window.toggleOption = function(l, t) {
-            if (t === 'single') { selectedOptions.clear();
+                render(); } };
+        window.toggleOption = function(l, t) { if (t === 'single') { selectedOptions.clear();
                 selectedOptions.add(l); } else selectedOptions.has(l) ? selectedOptions.delete(l) : selectedOptions.add(l);
-            render();
-        };
-        window.toggleFav = function() {
-            var q = currentQuestions[currentIndex];
-            if (q) { favSet.has(q.id) ? favSet.delete(q.id) : favSet.add(q.id);
+            render(); };
+        window.toggleFav = function() { var q = currentQuestions[currentIndex]; if (q) { favSet.has(q.id) ? favSet.delete(q
+                    .id) : favSet.add(q.id);
                 saveAll();
-                render(); }
-        };
+                render(); } };
 
-        window.showAnswerSheet = function() {
-            var modal = document.getElementById('answerSheetModal');
+        window.showAnswerSheet = function() { var modal = document.getElementById('answerSheetModal');
             document.getElementById('sheetTotal').textContent = currentQuestions.length;
             var ac = 0,
                 cc = 0,
                 grid = document.getElementById('answerGrid');
-            grid.innerHTML = '';
-            for (var i = 0; i < currentQuestions.length; i++) {
-                var s = questionStatus[i] || { answered: false, correct: false };
-                if (s.answered) ac++;
-                if (s.correct) cc++;
+            grid.innerHTML = ''; for (var i = 0; i < currentQuestions.length; i++) { var s = questionStatus[i] || { answered: false,
+                    correct: false }; if (s.answered) ac++; if (s.correct) cc++;
                 var cell = document.createElement('div');
-                cell.className = 'answer-cell';
-                if (i === currentIndex) cell.classList.add('current');
+                cell.className = 'answer-cell'; if (i === currentIndex) cell.classList.add('current');
                 else if (s.answered) cell.classList.add(s.correct ? 'correct' : 'wrong');
                 cell.innerHTML = '<span>' + (i + 1) + '</span>';
-                (function(idx) {
-                    cell.onclick = function() { currentIndex = idx;
+                (function(idx) { cell.onclick = function() { currentIndex = idx;
                         closeAnswerSheet();
-                        render(); };
-                })(i);
-                grid.appendChild(cell);
-            }
+                        render(); }; })(i);
+                grid.appendChild(cell); }
             document.getElementById('sheetAnswered').textContent = ac;
             document.getElementById('sheetCorrect').textContent = cc;
             document.getElementById('sheetWrong').textContent = ac - cc;
             modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        };
-        window.closeAnswerSheet = function() {
-            document.getElementById('answerSheetModal').classList.remove('show');
-            document.body.style.overflow = '';
-        };
-        window.switchBank = function(name) {
-            if (!name) return;
-            currentBankName = name;
-            if (savedProgress[name]) restoreProgress(name);
+            document.body.style.overflow = 'hidden'; };
+        window.closeAnswerSheet = function() { document.getElementById('answerSheetModal').classList.remove('show');
+            document.body.style.overflow = ''; };
+        window.switchBank = function(name) { if (!name) return;
+            currentBankName = name; if (savedProgress[name]) restoreProgress(name);
             else { currentMode = null;
                 currentQuestions = [];
                 currentIndex = 0;
                 questionStatus = [];
                 selectedOptions.clear();
                 feedbackInfo = null; }
-            render();
-        };
-        window.deleteBank = function(name) {
-            if (confirm('删除题库"' + name + '"？')) { delete banks[name];
+            render(); };
+        window.deleteBank = function(name) { if (confirm('删除题库"' + name + '"？')) { delete banks[name];
                 saveAll(); if (currentBankName === name) currentBankName = Object.keys(banks)[0] || '';
-                render(); }
-        };
+                render(); } };
 
-        // 键盘快捷键支持
-        document.addEventListener('keydown', function(e) {
-            if (currentPage !== 'quiz' || !currentQuestions.length) return;
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName ===
-                'SELECT') return;
-            if (e.key === 'ArrowLeft') { e.preventDefault();
-                prevQuestion();
-                return; }
-            if (e.key === 'ArrowRight') { e.preventDefault();
-                nextQuestion();
-                return; }
-            if (e.key === 'Enter') { e.preventDefault();
-                submitAnswer();
-                return; }
-            var num = parseInt(e.key);
-            if (num >= 1 && num <= 7) {
-                e.preventDefault();
-                var q = currentQuestions[currentIndex];
-                if (!q) return;
-                var labels = Object.keys(q['选项'] || {}).filter(function(k) { return q['选项'][k]; });
-                if (q['题型'] === '判断题') labels = ['A', 'B'];
-                if (labels[num - 1]) {
-                    toggleOption(labels[num - 1], q['题型'] === '多选题' ? 'multi' : 'single');
-                }
-            }
-        });
-
-        // 防止 iOS 橡皮筋效果导致弹窗背景滚动
+        document.addEventListener('keydown', function(e) { if (currentPage !== 'quiz' || !currentQuestions.length)
+            return; if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')
+                return; if (e.key === 'ArrowLeft') { e.preventDefault();
+                prevQuestion(); return; } if (e.key === 'ArrowRight') { e.preventDefault();
+                nextQuestion(); return; } if (e.key === 'Enter') { e.preventDefault();
+                submitAnswer(); return; }
+            var num = parseInt(e.key); if (num >= 1 && num <= 7) { e.preventDefault();
+                var q = currentQuestions[currentIndex]; if (!q) return;
+                var labels = Object.keys(q['选项'] || {}).filter(function(k) { return q['选项'][k]; }); if (q['题型'] === '判断题')
+                    labels = ['A', 'B']; if (labels[num - 1]) { toggleOption(labels[num - 1], q['题型'] === '多选题' ? 'multi' :
+                        'single'); } } });
         document.addEventListener('touchmove', function(e) {}, { passive: true });
 
         loadData();
