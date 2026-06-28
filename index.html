@@ -49,7 +49,7 @@
         .mode-btn{padding:12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;cursor:pointer;text-align:center}
         .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:200;justify-content:center;align-items:center}
         .modal-overlay.show{display:flex}
-        .modal-box{background:var(--card);border-radius:var(--r);padding:20px;width:92%;max-width:600px;max-height:85vh;overflow-y:auto;color:var(--text)}
+        .modal-box{background:var(--card);border-radius:var(--r);padding:20px;width:92%;max-width:600px;max-height:85vh;overflow-y:auto;color:var(--text);-webkit-overflow-scrolling:touch}
         .modal-box h3{margin-bottom:12px;color:var(--primary);text-align:center}
         .footer{text-align:center;padding:20px 12px;color:var(--text2);font-size:13px;border-top:1px solid var(--border);margin-top:24px}
         .import-help{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#166534;line-height:1.6}
@@ -75,6 +75,12 @@
         .settings-row label{display:block;margin-bottom:6px;font-weight:500;color:var(--text)}
         .settings-row .hint{font-size:12px;color:var(--text2);margin-top:4px}
         select{width:100%;padding:12px;border-radius:var(--r);border:1px solid var(--border);font-size:14px;margin-bottom:8px;background:var(--input-bg);color:var(--text);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        /* 主题按钮组 */
+        .theme-btn-group{display:flex;gap:8px}
+        .theme-btn{flex:1;padding:10px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:13px;cursor:pointer;text-align:center;transition:.2s}
+        .theme-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+        /* 设置按钮统一 */
+        .settings-reset-btn{padding:12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;cursor:pointer;text-align:center;width:100%;display:block}
     </style>
 </head>
 <body>
@@ -98,13 +104,17 @@
 
 <div class="modal-overlay" id="settingsModal"><div class="modal-box">
     <h3>⚙️设置</h3>
-    <div class="settings-row"><label>随机抽取题数</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="settingsRandomCount" min="1" value="50" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;background:var(--input-bg);color:var(--text)"><span>题</span></div></div>
+    <div class="settings-row"><label>随机抽取题数（随机练习/背题）</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="settingsRandomCount" min="1" value="50" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;background:var(--input-bg);color:var(--text)"><span>题</span></div></div>
     <div class="settings-row"><label>答对几次自动移出错题</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="settingsAutoRemoveCount" min="0" value="1" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;background:var(--input-bg);color:var(--text)"><span>次</span></div><div class="hint">达到此次数后自动移出错题。0=不自动移除</div></div>
     <div class="settings-row"><label><input type="checkbox" id="settingsHideDone"> 已做题不显示</label><div class="hint">顺序/随机练习中，已答对的题目将不再出现</div></div>
-    <div class="settings-row"><button class="btn btn-nav" onclick="resetProgress()">🔄重新练习</button><div class="hint">清空当前题库的练习记录，从第一题开始</div></div>
-    <div class="settings-row"><label>主题模式</label><select id="settingsTheme" style="width:100%"><option value="day">日间模式</option><option value="night">夜间模式</option><option value="eye">护眼模式</option></select></div>
+    <div class="settings-row"><label>主题模式</label><div class="theme-btn-group">
+        <div class="theme-btn active" data-theme="day" onclick="setTheme('day')">☀️ 日间</div>
+        <div class="theme-btn" data-theme="night" onclick="setTheme('night')">🌙 夜间</div>
+        <div class="theme-btn" data-theme="eye" onclick="setTheme('eye')">👁 护眼</div>
+    </div></div>
     <div class="settings-row"><label>字体大小</label><input type="range" id="settingsFontSize" min="13" max="22" value="15" style="width:100%"></div>
     <div class="settings-row"><label>选项间距</label><input type="range" id="settingsOptGap" min="4" max="20" value="8" style="width:100%"></div>
+    <div class="settings-row"><button class="settings-reset-btn" onclick="resetProgress()">🔄重新练习</button><div class="hint">清空当前题库的练习记录，从第一题开始</div></div>
     <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
 </div></div>
 
@@ -146,14 +156,19 @@ function hardUpdate(){
 
 function showToast(msg){const t=document.getElementById('updateToast');t.classList.add('show');t.textContent=msg;setTimeout(()=>t.classList.remove('show'),2000)}
 
+// ========== 主题管理 ==========
 function applyTheme(theme){
     document.body.classList.remove('theme-night','theme-eye');
     if(theme==='night')document.body.classList.add('theme-night');
     if(theme==='eye')document.body.classList.add('theme-eye');
+    // 同步主题按钮状态
+    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===theme));
 }
+window.setTheme=function(t){theme=t;applyTheme(t)};
 function applyFontSize(size){document.documentElement.style.setProperty('--fs',size+'px')}
 function applyOptGap(gap){document.documentElement.style.setProperty('--opt-gap',gap+'px');document.documentElement.style.setProperty('--opt-pad',(gap+4)+'px')}
 
+// ========== 全局数据 ==========
 let banks={},currentBankName='',wrongInfo={},favSet=new Set;
 let currentTab='practice',currentPage='home',currentMode=null,currentQuestions=[],currentIndex=0;
 let selectedOptions=new Set,feedbackInfo=null,savedProgress={};
@@ -180,7 +195,6 @@ function findQ(id){for(let bn in banks)for(let q of banks[bn].questions)if(q.id=
 function saveSettings(){
     randomCount=parseInt(document.getElementById('settingsRandomCount').value);autoRemoveWrongCount=parseInt(document.getElementById('settingsAutoRemoveCount').value);
     hideDone=document.getElementById('settingsHideDone').checked;
-    theme=document.getElementById('settingsTheme').value;
     fontSize=parseInt(document.getElementById('settingsFontSize').value);
     optGap=parseInt(document.getElementById('settingsOptGap').value);
     if(isNaN(randomCount)||randomCount<1)randomCount=50;if(isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0)autoRemoveWrongCount=1;
@@ -206,9 +220,9 @@ window.openSettings=function(){
     document.getElementById('settingsRandomCount').value=randomCount;
     document.getElementById('settingsAutoRemoveCount').value=autoRemoveWrongCount;
     document.getElementById('settingsHideDone').checked=hideDone;
-    document.getElementById('settingsTheme').value=theme;
     document.getElementById('settingsFontSize').value=fontSize;
     document.getElementById('settingsOptGap').value=optGap;
+    applyTheme(theme);
     document.getElementById('settingsModal').classList.add('show')
 };
 
@@ -217,6 +231,7 @@ window.goHome=function(){currentPage='home';render()};
 window.goPage=function(page){currentPage=page;render()};
 window.toggleAutoSkip=function(cb){autoSkip=cb.checked;saveAll()};
 
+// ========== 文件导入 ==========
 window.importFile=function(file){
     if(!file)return;let reader=new FileReader();
     reader.onload=function(e){let data=new Uint8Array(e.target.result);let wb=XLSX.read(data,{type:'array'});let rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});if(rows.length<2){alert('文件内容太少');return}pendingRows=rows;pendingFileName=file.name;showHeaderSelection()};
