@@ -236,11 +236,6 @@
             color: var(--text);
             border: 1px solid var(--border)
         }
-        .btn-danger {
-            background: var(--card);
-            color: #EF4444;
-            border: 1.5px solid #EF4444
-        }
         .btn-row {
             display: flex;
             gap: 8px;
@@ -292,6 +287,9 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 8px
+        }
+        .mode-grid.col2 {
+            grid-template-columns: 1fr 1fr
         }
         .mode-btn {
             padding: 12px;
@@ -766,7 +764,7 @@
             width: 90%;
             max-width: 400px;
             text-align: center;
-            border: 2px solid #EF4444
+            border: 2px solid var(--border)
         }
         .danger-confirm-box .icon {
             font-size: 40px;
@@ -775,7 +773,7 @@
         .danger-confirm-box .title {
             font-size: 17px;
             font-weight: 700;
-            color: #EF4444;
+            color: var(--text);
             margin-bottom: 4px
         }
         .danger-confirm-box .desc {
@@ -815,7 +813,7 @@
             padding: 12px;
             border-radius: var(--r);
             border: none;
-            background: #EF4444;
+            background: var(--primary);
             color: #fff;
             font-size: 14px;
             font-weight: 600;
@@ -1381,15 +1379,17 @@
             h += '</div></div><div class="card"><div class="card-title">题型练习</div><div class="mode-grid">';
             h += '<div class="mode-btn" onclick="startMode(\'single_choice\')">单选题</div><div class="mode-btn" onclick="startMode(\'multi_choice\')">多选题</div><div class="mode-btn" onclick="startMode(\'judge\')">判断题</div>';
             h +=
-                '</div><div style="margin-top:8px;font-size:13px;color:var(--text2)">判断题对错练习</div><div class="mode-grid"><div class="mode-btn" onclick="startMode(\'judge_true\')">只练对</div><div class="mode-btn" onclick="startMode(\'judge_false\')">只练错</div></div></div>';
+                '</div><div style="margin-top:8px;font-size:13px;color:var(--text2)">判断题对错练习</div><div class="mode-grid col2"><div class="mode-btn" onclick="startMode(\'judge_true\')">只练对</div><div class="mode-btn" onclick="startMode(\'judge_false\')">只练错</div></div></div>';
             h += '<div class="card"><div class="card-title">📖背题模式</div><div class="mode-grid">';
             [{ i: 'memorize_seq', l: '顺序背题' }, { i: 'memorize_random', l: '随机背题' }, { i: 'memorize_single',
                 l: '只背单选' }, { i: 'memorize_multi', l: '只背多选' }, { i: 'memorize_judge', l: '只背判断' }].forEach(
                 function(m) { h += '<div class="mode-btn" onclick="startMode(\'' + m.i + '\')">' + m.l + '</div>'; });
             h +=
-                '</div></div><div class="card"><div class="card-title">❌ 错题管理</div><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="goPage(\'wrongManage\')">📋管理错题</button><button class="btn btn-nav" onclick="startMode(\'wrong\')">练习错题</button><button class="btn btn-danger" onclick="clearWrong()">🗑清空错题</button></div></div>';
-            h +=
-                '</div></div><div class="card"><div class="card-title">⭐ 收藏管理</div><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="goPage(\'favManage\')">📋管理收藏</button><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button><button class="btn btn-danger" onclick="clearFavs()">🗑清空收藏</button></div></div>';
+                '</div></div><div class="card"><div class="card-title">错题与收藏</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="border:1px solid var(--border);border-radius:var(--r);padding:12px"><div style="font-weight:600;font-size:14px;margin-bottom:8px">❌ 错题</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">' +
+                Object.keys(wrongInfo).filter(function(id) { return wrongInfo[id]; }).length +
+                ' 题</div><div style="display:flex;gap:6px"><button class="btn btn-nav" onclick="goPage(\'wrongManage\')" style="flex:1;font-size:12px;padding:8px;min-height:auto">管理</button><button class="btn btn-nav" onclick="startMode(\'wrong\')" style="flex:1;font-size:12px;padding:8px;min-height:auto">练习</button></div></div><div style="border:1px solid var(--border);border-radius:var(--r);padding:12px"><div style="font-weight:600;font-size:14px;margin-bottom:8px">⭐ 收藏</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">' +
+                favSet.size +
+                ' 题</div><div style="display:flex;gap:6px"><button class="btn btn-nav" onclick="goPage(\'favManage\')" style="flex:1;font-size:12px;padding:8px;min-height:auto">管理</button><button class="btn btn-nav" onclick="startMode(\'fav\')" style="flex:1;font-size:12px;padding:8px;min-height:auto">练习</button></div></div></div></div>';
             h +=
                 '<div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-nav" onclick="openSettings()">⚙️设置</button><input type="file" id="extraInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-nav" onclick="document.getElementById(\'extraInput\').click()">📥导入更多</button></div>';
             return h; }
@@ -1471,7 +1471,7 @@
                     '</small><button class="btn btn-nav" style="padding:4px 8px;font-size:11px;margin-left:8px;min-height:auto" onclick="removeWrong(\'' +
                     id + '\')">移出</button></div>'; });
             h +=
-                '</div></div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'wrong\')">练习错题</button> <button class="btn btn-danger" onclick="clearWrong()">🗑清空全部错题</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
+                '</div></div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'wrong\')">练习错题</button> <button class="btn btn-nav" onclick="clearWrong()">🗑清空全部错题</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
             return h; }
 
         function renderFavMgr() { var ids = [].slice.call(favSet),
@@ -1494,7 +1494,7 @@
                             '...</span><button class="btn btn-nav" style="padding:4px 8px;font-size:11px;margin-left:8px;min-height:auto" onclick="toggleFavQ(\'' +
                             q.id + '\')">取消收藏</button></div>'; }); } }
             h +=
-                '</div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button> <button class="btn btn-danger" onclick="clearFavs()">🗑清空全部收藏</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
+                '</div><div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="startMode(\'fav\')">练习收藏</button> <button class="btn btn-nav" onclick="clearFavs()">🗑清空全部收藏</button> <button class="btn btn-nav" onclick="goHome()">返回主页</button></div>';
             return h; }
 
         window.removeWrong = function(id) { delete wrongInfo[id];
