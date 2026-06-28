@@ -261,11 +261,17 @@ window.applyMapping=function(){
     for(let i=0;i<pendingHeaders.length;i++){let sel=document.getElementById('mapSelect_'+i);if(!sel)continue;let f=sel.value;if(f==='忽略')continue;mapping[f]=i;if(f==='题干')hq=true;if(f==='答案')ha=true}
     if(!hq||!ha){alert('必须指定"题干"和"答案"！');return}
     document.getElementById('mappingModal').classList.remove('show');
+    document.body.style.overflow='';
     let qs=[];
     for(let r=0;r<pendingRows.length;r++){let row=pendingRows[r];if(!row)continue;let qt=String(row[mapping['题干']]||'').trim();if(!qt)continue;let ans=String(row[mapping['答案']]||'').trim().toUpperCase().replace(/,/g,'').replace(/，/g,'').replace(/\s/g,'');let tp=(mapping['题型']!==undefined)?String(row[mapping['题型']]||'').trim():'';if(!tp||['单选题','多选题','判断题'].indexOf(tp)<0){if(ans==='正确'||ans==='错误'||ans==='对'||ans==='错')tp='判断题';else if(ans.length>1&&/^[A-G]+$/.test(ans))tp='多选题';else tp='单选题'}if(tp==='判断题'){if(ans==='A'||ans==='对')ans='正确';else if(ans==='B'||ans==='错')ans='错误'}let opts={};for(let k in mapping)if(k.startsWith('选项'))opts[k.replace('选项','')]=String(row[mapping[k]]||'').trim();qs.push({id:0,'知识类型':mapping['知识类型（题目标签）']!==undefined?String(row[mapping['知识类型（题目标签）']]||'').trim():'',题型:tp,题干:qt,答案:ans,解析:mapping['解析']!==undefined?String(row[mapping['解析']]||'').trim():'',选项:opts})}
     let mid=0;for(let bn in banks)for(let q of banks[bn].questions)if(q.id>mid)mid=q.id;qs.forEach(q=>{mid++;q.id=mid});
     let bn=pendingFileName.replace(/\.(xlsx|xls)$/i,'');banks[bn]={questions:qs,fileName:pendingFileName};if(!currentBankName)currentBankName=bn;
-    saveAll();pendingRows=null;pendingHeaders=[];render()
+    saveAll();pendingRows=null;pendingHeaders=[];
+    currentTab='practice';currentPage='home';
+    document.getElementById('tabPracticeBtn').classList.add('active');
+    document.getElementById('tabManageBtn').classList.remove('active');
+    render();
+    showToast('成功导入 '+qs.length+' 题');
 };
 window.closeMappingModal=function(){document.getElementById('mappingModal').classList.remove('show');pendingRows=null;document.body.style.overflow=''};
 window.handleFileSelect=function(input){if(input.files&&input.files.length>0){importFile(input.files[0]);input.value=''}};
@@ -275,7 +281,7 @@ function render(){let m=document.getElementById('mainContent');if(currentPage===
 function renderHome(){
     let names=Object.keys(banks),h='';
     if(names.length===0){h+='<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">📁</div><div style="color:var(--text2);margin-bottom:12px">还没有题库</div><div class="format-hint"><strong>📌题库格式要求：</strong><br>表头需包含：<strong>题型、题干、知识类型、解析、答案、选项A-G</strong></div><input type="file" id="mainInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)"><button class="btn btn-submit" onclick="document.getElementById(\'mainInput\').click()" style="width:100%">选择题库文件</button></div>';return h}
-    h+='<div class="card"><div class="card-title">当前题库</div><select onchange="switchBank(this.value)">';
+    h+='<div class="card"><div class="card-title">当前题库</div><select id="bankSelect" onchange="switchBank(this.options[this.selectedIndex].value)">';
     for(let n of names)h+='<option'+(n===currentBankName?' selected':'')+'>'+(n.length>25?n.substring(0,25)+'…':n)+'</option>';
     h+='</select><div style="font-size:12px;color:var(--text2)">题目数：'+(banks[currentBankName]?.questions.length||0)+'</div></div>';
     h+='<div class="card"><div class="card-title">练习模式</div><div class="mode-grid">';
@@ -394,7 +400,13 @@ window.closeAnswerSheet=function(){
     document.getElementById('answerSheetModal').classList.remove('show');
     document.body.style.overflow='';
 };
-window.switchBank=function(name){currentBankName=name;if(savedProgress[name])restoreProgress(name);else{currentMode=null;currentQuestions=[];currentIndex=0;questionStatus=[];selectedOptions.clear();feedbackInfo=null}render()};
+window.switchBank=function(name){
+    if(!name)return;
+    currentBankName=name;
+    if(savedProgress[name])restoreProgress(name);
+    else{currentMode=null;currentQuestions=[];currentIndex=0;questionStatus=[];selectedOptions.clear();feedbackInfo=null}
+    render();
+};
 window.deleteBank=function(name){if(confirm('删除题库"'+name+'"？')){delete banks[name];saveAll();if(currentBankName===name)currentBankName=Object.keys(banks)[0]||'';render()}};
 
 loadData();render();
