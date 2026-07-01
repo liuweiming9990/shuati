@@ -341,7 +341,6 @@
         }
         .danger-confirm-box .btn-confirm.active { opacity: 1; pointer-events: auto }
 
-        /* 考试配置弹窗样式 */
         .exam-config-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px }
         .exam-config-row label { width: 70px; font-weight: 500 }
         .exam-config-row input { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 14px }
@@ -466,7 +465,6 @@
         </div>
     </div>
 
-    <!-- 考试配置弹窗 -->
     <div class="modal-overlay" id="examConfigModal">
         <div class="modal-box">
             <h3>考试配置</h3>
@@ -566,9 +564,7 @@
         var hideDone=false, theme='day', fontSize=15, optGap=8;
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
-
-        // 考试配置相关变量
-        var examGroupInfo = null; // { single: [], multi: [], judge: [] } 存储全局索引或题目对象
+        var examGroupInfo = null;
 
         function setToArray(s) { var arr=[]; s.forEach(function(v){ arr.push(v); }); return arr; }
 
@@ -585,6 +581,16 @@
                 }
             }
             if (updated) { localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
+        }
+
+        // 确保 questionStatus 结构兼容：添加 selected 字段
+        function normalizeStatus() {
+            if (questionStatus && questionStatus.length) {
+                for (var i=0; i<questionStatus.length; i++) {
+                    if (!questionStatus[i]) questionStatus[i] = { answered: false, correct: false, selected: [] };
+                    if (!questionStatus[i].selected) questionStatus[i].selected = [];
+                }
+            }
         }
 
         function loadData() {
@@ -615,10 +621,12 @@
         function saveProgress() {
             if (currentBankName && currentMode && currentQuestions.length>0) {
                 if (!savedProgress[currentBankName]) { savedProgress[currentBankName] = {}; }
+                // 复制状态时保留 selected
+                var statusCopy = questionStatus.map(function(s){ return { answered: s.answered, correct: s.correct, selected: s.selected ? s.selected.slice() : [] }; });
                 savedProgress[currentBankName][currentMode] = {
                     questionIds: currentQuestions.map(function(q){ return q.id; }),
                     index: currentIndex,
-                    status: questionStatus
+                    status: statusCopy
                 };
             }
             localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
@@ -634,7 +642,8 @@
             currentQuestions = p.questionIds.map(function(id){ return qm[id]; }).filter(Boolean);
             if (currentQuestions.length===0) { delete bankProgress[mode]; saveProgress(); return false; }
             currentIndex = Math.min(p.index, currentQuestions.length-1);
-            questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false}; });
+            questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
+            normalizeStatus();
             selectedOptions.clear(); feedbackInfo = null;
             return true;
         }
@@ -657,9 +666,7 @@
 
         window.restartCurrentMode = function() {
             if (!currentBankName || !currentMode) return;
-            if (currentMode === 'exam') {
-                showExamConfig(); return;
-            }
+            if (currentMode === 'exam') { showExamConfig(); return; }
             if (!confirm('确定重新开始当前模式吗？这将清除当前进度。')) return;
             if (savedProgress[currentBankName] && savedProgress[currentBankName][currentMode]) {
                 delete savedProgress[currentBankName][currentMode];
@@ -766,7 +773,7 @@
         window.closeMappingModal = function() { document.getElementById('mappingModal').classList.remove('show'); pendingRows=null; document.body.style.overflow=''; };
         window.handleFileSelect = function(input) { if (input.files && input.files.length>0) { importFile(input.files[0]); input.value=''; } };
 
-        function render() { var m = document.getElementById('mainContent'); if (currentPage==='quiz') m.innerHTML = renderQuiz()+FOOTER; else if (currentPage==='manage') m.innerHTML = renderManage()+FOOTER; else if (currentPage==='wrongManage') m.innerHTML = renderWrongMgr()+FOOTER; else if (currentPage==='favManage') m.innerHTML = renderFavMgr()+FOOTER; else m.innerHTML = renderHome()+FOOTER; }
+        function render() { var m = document.getElementById('mainContent'); if (currentPage==='quiz') m.innerHTML = renderQuiz()+FOOTER; else if (currentPage==='manage') m.innerHTML = renderManage()+FOOTER; else if (currentPage==='wrongManage') m.innerHTML = renderWrongMgr()+FOOTER; else if (currentPage==='favManage') m.innerHTML = renderFavMgr()+FOOTER; else if (currentPage==='examSummary') m.innerHTML = renderExamSummary()+FOOTER; else m.innerHTML = renderHome()+FOOTER; }
 
         function renderHome() {
             var names = Object.keys(banks), h = '';
@@ -804,7 +811,43 @@
                 h += '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:14px 18px;font-size:16px">◀</button><button class="btn btn-submit" onclick="submitAnswer()" style="padding:14px 18px;font-size:16px">提交</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:14px 18px;font-size:16px">▶</button><button class="btn btn-nav" onclick="toggleFav()" style="padding:14px 18px;font-size:16px">'+(favSet.has(q.id)?'★':'☆')+'</button></div>';
                 if (feedbackInfo) h += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
             }
+            if (currentMode === 'exam' && questionStatus.every(function(s){ return s.answered; })) {
+                h += '<div style="text-align:center;margin-top:12px"><button class="btn btn-submit" onclick="showExamSummary()">提交考试</button></div>';
+            }
             h += '<div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="showAnswerSheet()">答题卡</button></div></div>';
+            return h;
+        }
+
+        function renderExamSummary() {
+            var total = currentQuestions.length;
+            var ac = 0; var cc = 0; var wc = 0;
+            var typeStats = { '单选题': { total:0, correct:0 }, '多选题': { total:0, correct:0 }, '判断题': { total:0, correct:0 } };
+            for (var i=0; i<total; i++) {
+                var s = questionStatus[i] || { answered: false, correct: false };
+                var q = currentQuestions[i];
+                if (s.answered) {
+                    ac++;
+                    if (s.correct) cc++; else wc++;
+                    if (typeStats[q['题型']]) {
+                        typeStats[q['题型']].total++;
+                        if (s.correct) typeStats[q['题型']].correct++;
+                    }
+                }
+            }
+            var accuracy = total>0 ? (cc/total*100).toFixed(1) : 0;
+            var h = '<div class="card"><div class="card-title">考试汇总</div>';
+            h += '<p>总题数：<strong>'+total+'</strong></p>';
+            h += '<p>已答：<strong>'+ac+'</strong> 正确：<strong style="color:#10B981">'+cc+'</strong> 错误：<strong style="color:#EF4444">'+wc+'</strong></p>';
+            h += '<p>正确率：<strong>'+accuracy+'%</strong></p>';
+            h += '<div style="margin-top:12px"><strong>按题型：</strong></div>';
+            for (var type in typeStats) {
+                var ts = typeStats[type];
+                if (ts.total > 0) {
+                    var tacc = (ts.correct/ts.total*100).toFixed(1);
+                    h += '<div style="font-size:13px; margin:4px 0">'+type+'：'+ts.total+'题 / 正确'+ts.correct+' ('+tacc+'%)</div>';
+                }
+            }
+            h += '<div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-nav" onclick="goHome()">返回主页</button><button class="btn btn-submit" onclick="restartCurrentMode()">重新考试</button></div></div>';
             return h;
         }
 
@@ -819,7 +862,6 @@
         window.clearFavs = function() { var count = favSet.size; showDangerConfirm('清空全部收藏','将删除所有收藏（共'+count+'题），此操作不可恢复。', function(){ favSet.clear(); saveAll(); if (currentPage==='home') render(); if (currentPage==='favManage') render(); showToast('收藏已清空'); }); };
         window.toggleFavQ = function(id) { if (favSet.has(id)) favSet.delete(id); else favSet.add(id); saveAll(); if (currentPage==='favManage') render(); };
 
-        // 考试配置相关函数
         function showExamConfig() {
             if (!currentBankName || !banks[currentBankName]) { showToast('请先选择题库'); return; }
             var pool = banks[currentBankName].questions;
@@ -858,7 +900,6 @@
             var judgeCnt = parseInt(document.getElementById('examJudgeCount').value)||0;
             if (singleCnt+multiCnt+judgeCnt === 0) { alert('请至少选择一个题型'); return; }
             var pool = banks[currentBankName].questions;
-            // 按题型分组
             var singles = pool.filter(function(q){ return q['题型']==='单选题'; });
             var multis = pool.filter(function(q){ return q['题型']==='多选题'; });
             var judges = pool.filter(function(q){ return q['题型']==='判断题'; });
@@ -868,16 +909,13 @@
                 var selected = [];
                 var remaining = arr.slice();
                 if (window._examPriority === 'wrong') {
-                    // 错题优先：先取错题，再随机补充
                     var wrongIds = Object.keys(wrongInfo);
                     var wrongQs = remaining.filter(function(q){ return wrongIds.indexOf(String(q.id))!==-1; });
                     var normalQs = remaining.filter(function(q){ return wrongIds.indexOf(String(q.id))===-1; });
-                    // 随机打乱
                     wrongQs.sort(function(){ return Math.random()-0.5; });
                     normalQs.sort(function(){ return Math.random()-0.5; });
                     selected = wrongQs.concat(normalQs).slice(0, count);
                 } else if (window._examPriority === 'undone') {
-                    // 未做优先：排除所有进度中已答对的题目
                     var doneMap = {};
                     var bankProgress = savedProgress[currentBankName];
                     if (bankProgress) {
@@ -893,7 +931,6 @@
                     done.sort(function(){ return Math.random()-0.5; });
                     selected = undone.concat(done).slice(0, count);
                 } else {
-                    // 无优先：随机
                     remaining.sort(function(){ return Math.random()-0.5; });
                     selected = remaining.slice(0, count);
                 }
@@ -906,35 +943,29 @@
 
             currentQuestions = selectedSingle.concat(selectedMulti, selectedJudge);
             if (currentQuestions.length === 0) { alert('没有符合条件的题目'); return; }
-
-            // 存储分组信息用于答题卡
-            examGroupInfo = {
-                single: selectedSingle,
-                multi: selectedMulti,
-                judge: selectedJudge
-            };
-
+            examGroupInfo = { single: selectedSingle, multi: selectedMulti, judge: selectedJudge };
             currentMode = 'exam';
             currentIndex = 0;
             selectedOptions.clear();
             feedbackInfo = null;
-            questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false}; });
-            // 考试模式不保存进度（或可选择性保存？这里不保存）
+            questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
             currentPage = 'quiz';
             closeExamConfig();
             render();
         };
 
+        window.showExamSummary = function() {
+            currentPage = 'examSummary';
+            render();
+        };
+
         window.startMode = function(mode) {
             if (!currentBankName || !banks[currentBankName]) return;
-            if (mode === 'exam') {
-                showExamConfig();
-                return;
-            }
+            if (mode === 'exam') { showExamConfig(); return; }
             var pool = banks[currentBankName].questions;
             if (currentMode && currentQuestions.length>0) { saveProgress(); }
             currentMode = mode; selectedOptions.clear(); feedbackInfo = null; currentIndex = 0; questionStatus = [];
-            if (restoreProgress(currentBankName, mode)) { examGroupInfo = null; currentPage='quiz'; render(); return; }
+            if (restoreProgress(currentBankName, mode)) { examGroupInfo = null; normalizeStatus(); restoreCurrentSelection(); currentPage='quiz'; render(); return; }
             examGroupInfo = null;
             if (mode==='wrong') currentQuestions = Object.keys(wrongInfo).filter(function(id){ return wrongInfo[id]; }).map(function(id){ return findQ(id); }).filter(Boolean);
             else if (mode==='fav') currentQuestions = setToArray(favSet).map(function(id){ return findQ(id); }).filter(Boolean);
@@ -966,13 +997,28 @@
                 }
             }
             if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; return; }
-            questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false}; });
+            questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
             saveProgress(); currentPage='quiz'; render();
         };
 
-        window.submitAnswer = function() { if (!currentQuestions.length||currentIndex>=currentQuestions.length) return; var q = currentQuestions[currentIndex]; var selectedArr = setToArray(selectedOptions); var ua = q['题型']==='多选题'?selectedArr.sort().join(''):(selectedArr[0]||''); if (!ua) { alert('请选择答案'); return; } var ok; if (q['题型']==='判断题') { var uaText = ua==='A'?'正确':(ua==='B'?'错误':''); ok = uaText===q['答案']; } else { ok = ua.toUpperCase()===q['答案'].toUpperCase(); } feedbackInfo = { correct:ok, message:ok?'正确！':'错误！正确答案：'+q['答案']+(q['解析']?'<br>解析：'+q['解析']:'') }; if (!ok) { var info = wrongInfo[q.id]||{count:0,lastDate:'',dates:[],correctStreak:0}; info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate); if (info.dates.length>20) info.dates = info.dates.slice(-20); info.correctStreak=0; wrongInfo[q.id]=info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak||0)+1; if (autoRemoveWrongCount>0 && wrongInfo[q.id].correctStreak>=autoRemoveWrongCount) delete wrongInfo[q.id]; } } if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered=true; questionStatus[currentIndex].correct=ok; } saveAll(); render(); if (ok && autoSkip && currentIndex<currentQuestions.length-1) setTimeout(function(){ currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); },800); };
-        window.nextQuestion = function() { if (currentIndex<currentQuestions.length-1) { currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); } else alert('已是最后一题'); };
-        window.prevQuestion = function() { if (currentIndex>0) { currentIndex--; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); } };
+        function restoreCurrentSelection() {
+            var status = questionStatus[currentIndex];
+            if (status && status.selected && status.selected.length) {
+                selectedOptions.clear();
+                status.selected.forEach(function(v){ selectedOptions.add(v); });
+                feedbackInfo = {
+                    correct: status.correct,
+                    message: status.correct ? '正确！' : '错误！正确答案：' + currentQuestions[currentIndex]['答案'] + (currentQuestions[currentIndex]['解析'] ? '<br>解析：' + currentQuestions[currentIndex]['解析'] : '')
+                };
+            } else {
+                selectedOptions.clear();
+                feedbackInfo = null;
+            }
+        }
+
+        window.submitAnswer = function() { if (!currentQuestions.length||currentIndex>=currentQuestions.length) return; var q = currentQuestions[currentIndex]; var selectedArr = setToArray(selectedOptions); var ua = q['题型']==='多选题'?selectedArr.sort().join(''):(selectedArr[0]||''); if (!ua) { alert('请选择答案'); return; } var ok; if (q['题型']==='判断题') { var uaText = ua==='A'?'正确':(ua==='B'?'错误':''); ok = uaText===q['答案']; } else { ok = ua.toUpperCase()===q['答案'].toUpperCase(); } feedbackInfo = { correct:ok, message:ok?'正确！':'错误！正确答案：'+q['答案']+(q['解析']?'<br>解析：'+q['解析']:'') }; if (!ok) { var info = wrongInfo[q.id]||{count:0,lastDate:'',dates:[],correctStreak:0}; info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate); if (info.dates.length>20) info.dates = info.dates.slice(-20); info.correctStreak=0; wrongInfo[q.id]=info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak||0)+1; if (autoRemoveWrongCount>0 && wrongInfo[q.id].correctStreak>=autoRemoveWrongCount) delete wrongInfo[q.id]; } } if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered=true; questionStatus[currentIndex].correct=ok; questionStatus[currentIndex].selected = selectedArr.slice(); } saveAll(); render(); if (ok && autoSkip && currentIndex<currentQuestions.length-1) setTimeout(function(){ currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); },800); };
+        window.nextQuestion = function() { if (currentIndex<currentQuestions.length-1) { currentIndex++; restoreCurrentSelection(); saveProgress(); render(); } else alert('已是最后一题'); };
+        window.prevQuestion = function() { if (currentIndex>0) { currentIndex--; restoreCurrentSelection(); saveProgress(); render(); } };
         window.toggleOption = function(l,t) { if (t==='single') { selectedOptions.clear(); selectedOptions.add(l); } else selectedOptions.has(l)?selectedOptions.delete(l):selectedOptions.add(l); render(); };
         window.toggleFav = function() { var q = currentQuestions[currentIndex]; if (q) { favSet.has(q.id)?favSet.delete(q.id):favSet.add(q.id); saveAll(); render(); } };
 
@@ -988,7 +1034,6 @@
             document.getElementById('sheetWrong').textContent = ac-cc;
 
             if (currentMode === 'exam' && examGroupInfo) {
-                // 按题型分组显示
                 var html = '';
                 var types = [
                     { label: '单选题', key: 'single', color: '#3B82F6' },
@@ -1002,7 +1047,6 @@
                     var cellsHtml = '';
                     for (var j=0; j<group.length; j++) {
                         var q = group[j];
-                        // 找到该题在 currentQuestions 中的全局索引
                         var globalIdx = currentQuestions.indexOf(q);
                         if (globalIdx === -1) continue;
                         var status = questionStatus[globalIdx] || {answered:false, correct:false};
@@ -1017,9 +1061,6 @@
                 }
                 container.innerHTML = html;
             } else {
-                // 普通网格
-                var grid = document.createElement('div');
-                grid.className = 'answer-grid';
                 var gridHtml = '';
                 for (var i=0; i<total; i++) {
                     var s = questionStatus[i]||{answered:false,correct:false};
@@ -1033,9 +1074,7 @@
             modal.classList.add('show');
             document.body.style.overflow = 'hidden';
         };
-        window.answerSheetJump = function(idx) {
-            currentIndex = idx; closeAnswerSheet(); render();
-        };
+        window.answerSheetJump = function(idx) { currentIndex = idx; restoreCurrentSelection(); closeAnswerSheet(); render(); };
         window.closeAnswerSheet = function() { document.getElementById('answerSheetModal').classList.remove('show'); document.body.style.overflow=''; };
         window.switchBank = function(name) { if (!name) return; if (currentMode && currentQuestions.length>0) { saveProgress(); } currentBankName=name; localStorage.setItem('lastBankName',name); currentMode=null; currentQuestions=[]; currentIndex=0; questionStatus=[]; selectedOptions.clear(); feedbackInfo=null; examGroupInfo=null; render(); };
         window.deleteBank = function(name) { if (confirm('删除题库"'+name+'"？')) { delete banks[name]; if (savedProgress[name]) { delete savedProgress[name]; saveProgress(); } saveAll(); if (currentBankName===name) { currentBankName=Object.keys(banks)[0]||''; localStorage.setItem('lastBankName',currentBankName); } render(); } };
