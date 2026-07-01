@@ -209,6 +209,12 @@
             border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px;
             cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none
         }
+        .restart-btn {
+            display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg);
+            border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px;
+            cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none;
+            margin-left: 8px
+        }
         .answer-grid {
             display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin: 16px 0;
             max-height: 55vh; max-height: calc(var(--vh,1vh)*55); overflow-y: auto; padding-right: 4px;
@@ -441,32 +447,6 @@
                 <button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button>
             </div>
             <div class="settings-row">
-                <label>重新练习</label>
-                <div class="hint">选择要清空的练习模式（考试模式无需清空，每次随机生成）</div>
-                <select id="settingsResetMode" style="width:100%;margin-bottom:8px;font-size:16px">
-                    <option value="all">全部模式</option>
-                    <optgroup label="练习模式">
-                        <option value="sequence">顺序练习</option>
-                        <option value="random">随机练习</option>
-                        <option value="judge">判断题</option>
-                        <option value="single_choice">单选题</option>
-                        <option value="multi_choice">多选题</option>
-                        <option value="multi_not_all">多选·不全选</option>
-                    </optgroup>
-                    <optgroup label="背题模式">
-                        <option value="memorize_seq">顺序背题</option>
-                        <option value="memorize_random">随机背题</option>
-                        <option value="memorize_single">只背单选</option>
-                        <option value="memorize_multi">只背多选</option>
-                        <option value="memorize_judge">只背判断</option>
-                        <option value="memorize_judge_true">背题·判断对</option>
-                        <option value="memorize_judge_false">背题·判断错</option>
-                        <option value="memorize_multi_not_all">背题·多选不全选</option>
-                    </optgroup>
-                </select>
-                <button class="settings-reset-btn" onclick="resetProgressWithMode()">清空选定模式</button>
-            </div>
-            <div class="settings-row">
                 <button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button>
                 <div class="hint">查看迭代更新记录</div>
             </div>
@@ -651,27 +631,22 @@
         window.adjustOptGap = function(delta) { var input=document.getElementById('settingsOptGap'); var display=document.getElementById('optGapDisplay'); if (!input||!display) return; var val=parseInt(input.value)+delta; val=Math.max(4,Math.min(20,val)); input.value=val; display.textContent=val+'px'; applyOptGap(val); };
         window.resetOptGap = function() { var input=document.getElementById('settingsOptGap'); var display=document.getElementById('optGapDisplay'); if (!input||!display) return; input.value=8; display.textContent='8px'; applyOptGap(8); };
 
-        window.resetProgressWithMode = function() {
-            if (!currentBankName) { showToast('请先选择题库'); return; }
-            var selectEl = document.getElementById('settingsResetMode'); if (!selectEl) { showToast('设置界面异常'); return; }
-            var selectedMode = selectEl.value;
-            if (selectedMode==='all') {
-                if (!confirm('确定清空当前题库【所有模式】的练习记录吗？\n此操作不可恢复。')) return;
-                delete savedProgress[currentBankName];
-                showToast('已清空所有练习记录');
-            } else {
-                if (!confirm('确定清空【' + getModeLabel(selectedMode) + '】的练习记录吗？')) return;
-                if (savedProgress[currentBankName] && savedProgress[currentBankName][selectedMode]) {
-                    delete savedProgress[currentBankName][selectedMode];
-                }
-                showToast('已清空【' + getModeLabel(selectedMode) + '】的练习记录');
+        // 重新开始当前模式
+        window.restartCurrentMode = function() {
+            if (!currentBankName || !currentMode) return;
+            if (!confirm('确定重新开始当前模式吗？这将清除当前进度。')) return;
+            // 删除当前模式的进度
+            if (savedProgress[currentBankName] && savedProgress[currentBankName][currentMode]) {
+                delete savedProgress[currentBankName][currentMode];
             }
-            var shouldExit = currentPage==='quiz' && (selectedMode==='all' || selectedMode===currentMode);
-            if (shouldExit) { currentMode=null; currentQuestions=[]; currentIndex=0; questionStatus=[]; selectedOptions.clear(); feedbackInfo=null; currentPage='home'; }
-            localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
-            document.getElementById('settingsModal').classList.remove('show');
-            document.body.style.overflow = '';
-            render();
+            // 清空状态，避免startMode保存旧进度
+            var mode = currentMode;
+            currentMode = null;
+            currentQuestions = [];
+            selectedOptions.clear();
+            feedbackInfo = null;
+            saveProgress(); // 持久化删除
+            startMode(mode);
         };
 
         (function bindSliderEvents() {
@@ -794,7 +769,7 @@
         function renderQuiz() {
             if (!currentMode || currentQuestions.length===0) return '<div class="card" style="text-align:center;padding:20px">当前模式没有题目</div>';
             var q = currentQuestions[currentIndex], isMem = currentMode.indexOf('memorize')===0, h = '<div class="card">';
-            h += '<div style="margin-bottom:12px"><button class="back-btn" onclick="goHome()">←返回</button></div>';
+            h += '<div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:12px"><button class="back-btn" onclick="goHome()">←返回</button><button class="restart-btn" onclick="restartCurrentMode()">重新开始</button></div>';
             if (!isMem) { h += '<div class="auto-skip-row"><input type="checkbox" id="autoSkipCheck" onchange="toggleAutoSkip(this)" '+(autoSkip?'checked':'')+'><label for="autoSkipCheck">答对自动下一题</label></div>'; }
             h += '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">'+(q['知识类型']||'')+' | '+q['题型']+'</div><div class="question-text">'+q['题干']+'</div>';
             var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; });
