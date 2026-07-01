@@ -98,52 +98,30 @@
         .nav-title { font-size: 18px; font-weight: 700; color: var(--primary) }
         .nav-right { display: flex; gap: 6px; align-items: center }
         .nav-btn {
-            background: var(--input-bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            font-weight: 500;
-            white-space: nowrap;
-            -webkit-appearance: none;
-            appearance: none
+            background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
+            padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500;
+            white-space: nowrap; -webkit-appearance: none; appearance: none
         }
         .nav-btn.active { background: var(--primary); color: #fff; border-color: var(--primary) }
         .main { padding: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 24px }
         .card {
-            background: var(--card);
-            border-radius: var(--r);
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,.05);
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0)
+            background: var(--card); border-radius: var(--r); padding: 16px; margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.05); -webkit-transform: translateZ(0); transform: translateZ(0)
         }
         .card-title { font-size: 14px; color: var(--text2); margin-bottom: 8px; font-weight: 500; word-break: break-word }
         .question-text { font-size: var(--fs); line-height: 1.6; margin-bottom: 16px; font-weight: 500; word-break: break-word }
         .option-item {
-            display: flex;
-            align-items: center;
-            padding: var(--opt-pad);
-            margin-bottom: var(--opt-gap);
-            background: var(--input-bg);
-            border-radius: var(--r);
-            cursor: pointer;
-            border: 1.5px solid var(--border);
-            font-size: var(--fs);
-            transition: .2s;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation
+            display: flex; align-items: center; padding: var(--opt-pad); margin-bottom: var(--opt-gap);
+            background: var(--input-bg); border-radius: var(--r); cursor: pointer; border: 1.5px solid var(--border);
+            font-size: var(--fs); transition: .2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation
         }
         .option-item:active { opacity: 0.8; transform: scale(0.98) }
         .option-item.selected { border-color: var(--primary); background: rgba(59,130,246,.05) }
         .option-item.correct-highlight { border-color: #10B981; background: rgba(16,185,129,.08) }
         .option-item .letter {
-            width: 28px; height: 28px; min-width: 28px; border-radius: 50%;
-            background: rgba(59,130,246,.1); display: flex; align-items: center; justify-content: center;
-            margin-right: 10px; font-weight: 700; font-size: 13px; flex-shrink: 0; color: var(--primary)
+            width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: rgba(59,130,246,.1);
+            display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;
+            font-size: 13px; flex-shrink: 0; color: var(--primary)
         }
         .option-item.selected .letter { background: var(--primary); color: #fff }
         .option-item.correct-highlight .letter { background: #10B981; color: #fff }
@@ -160,6 +138,17 @@
         .analysis.correct { background: #f0fdf4; color: #166534 }
         .analysis.wrong { background: #fee2e2; color: #b91c1c }
         .analysis.info { background: #f0fdf4; color: #166534 }
+        .ai-analysis {
+            margin-top: 8px; padding: 12px; border-radius: var(--r); background: #eff6ff; color: #1e40af;
+            font-size: 14px; line-height: 1.6; border: 1px solid #bfdbfe; display: none; word-break: break-word
+        }
+        .ai-analysis.show { display: block }
+        .ai-btn {
+            margin-top: 8px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--primary);
+            background: var(--card); color: var(--primary); font-size: 13px; cursor: pointer;
+            -webkit-appearance: none; appearance: none; touch-action: manipulation
+        }
+        .ai-btn:disabled { opacity: 0.5; cursor: not-allowed }
         .progress-text { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 4px }
         .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin: 12px 0; overflow: hidden }
         .progress-fill { height: 100%; background: var(--primary); transition: width .3s }
@@ -226,13 +215,9 @@
             font-size: 16px; font-weight: 600; cursor: pointer; border: 2px solid var(--border);
             background: var(--input-bg); color: var(--text); transition: .2s; touch-action: manipulation
         }
-        @supports (aspect-ratio: 1) {
-            .answer-cell { height: auto; padding-bottom: 0; position: static }
-        }
+        @supports (aspect-ratio: 1) { .answer-cell { height: auto; padding-bottom: 0; position: static } }
         .answer-cell span { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) }
-        @supports (aspect-ratio: 1) {
-            .answer-cell span { position: static; transform: none }
-        }
+        @supports (aspect-ratio: 1) { .answer-cell span { position: static; transform: none } }
         .answer-cell.current { border-color: var(--primary); background: var(--primary); color: #fff }
         .answer-cell.correct { border-color: #10B981; background: #10B981; color: #fff }
         .answer-cell.wrong { border-color: #EF4444; background: #EF4444; color: #fff }
@@ -283,7 +268,6 @@
             border-radius: 20px; font-size: 12px; color: var(--text2); cursor: pointer; width: 100%;
             transition: .2s; -webkit-appearance: none; appearance: none
         }
-        .setting-reset-mini:hover { color: var(--primary); border-color: var(--primary) }
         .range-container { display: flex; align-items: center; gap: 10px }
         .range-container span { font-size: 12px; color: var(--text2); white-space: nowrap }
         input[type="range"] {
@@ -340,7 +324,6 @@
             color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; opacity: 0.4; pointer-events: none; transition: .2s
         }
         .danger-confirm-box .btn-confirm.active { opacity: 1; pointer-events: auto }
-
         .exam-config-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px }
         .exam-config-row label { width: 70px; font-weight: 500 }
         .exam-config-row input { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 14px }
@@ -381,16 +364,14 @@
                 <h3 style="margin:0">答题卡</h3>
                 <button class="btn btn-nav" onclick="closeAnswerSheet()" style="padding:4px 10px;font-size:18px;line-height:1;min-height:auto">✕</button>
             </div>
-            <div class="answer-stats" id="answerStatsContainer">
+            <div class="answer-stats">
                 <span>已答:<span id="sheetAnswered">0</span></span>
                 <span>正确:<span id="sheetCorrect" style="color:#10B981">0</span></span>
                 <span>错误:<span id="sheetWrong" style="color:#EF4444">0</span></span>
                 <span>总题:<span id="sheetTotal">0</span></span>
             </div>
             <div id="answerSheetContent"></div>
-            <div style="text-align:center;margin-top:12px">
-                <button class="btn btn-nav" onclick="closeAnswerSheet()">关闭</button>
-            </div>
+            <div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="closeAnswerSheet()">关闭</button></div>
         </div>
     </div>
 
@@ -429,9 +410,7 @@
             <div class="settings-row">
                 <label>字体大小</label>
                 <div class="range-container">
-                    <span>小</span>
-                    <input type="range" id="settingsFontSize" min="13" max="22" value="15" step="1">
-                    <span>大</span>
+                    <span>小</span><input type="range" id="settingsFontSize" min="13" max="22" value="15" step="1"><span>大</span>
                 </div>
                 <div class="setting-control-row" style="margin-top:8px">
                     <button type="button" class="setting-adjust-btn" onclick="adjustFontSize(-1)">-</button>
@@ -443,9 +422,7 @@
             <div class="settings-row">
                 <label>选项间距</label>
                 <div class="range-container">
-                    <span>窄</span>
-                    <input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1">
-                    <span>宽</span>
+                    <span>窄</span><input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1"><span>宽</span>
                 </div>
                 <div class="setting-control-row" style="margin-top:8px">
                     <button type="button" class="setting-adjust-btn" onclick="adjustOptGap(-1)">-</button>
@@ -453,6 +430,15 @@
                     <button type="button" class="setting-adjust-btn" onclick="adjustOptGap(1)">+</button>
                 </div>
                 <button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button>
+            </div>
+            <div class="settings-row">
+                <label>AI解析</label>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()">
+                    <span>启用AI解析</span>
+                </div>
+                <input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none">
+                <div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥</div>
             </div>
             <div class="settings-row">
                 <button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button>
@@ -494,8 +480,7 @@
             window.addEventListener('orientationchange', function() { setTimeout(setVH, 100); });
             function setSafeArea() {
                 var style = getComputedStyle(document.documentElement);
-                var safeTop = style.getPropertyValue('--safe-top');
-                if (!safeTop || safeTop === '0px') {
+                if (!style.getPropertyValue('--safe-top') || style.getPropertyValue('--safe-top')==='0px') {
                     if (CSS.supports('padding-top', 'env(safe-area-inset-top)')) {
                         document.documentElement.style.setProperty('--safe-top', 'env(safe-area-inset-top)');
                         document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom)');
@@ -518,9 +503,7 @@
         window.closeDangerConfirm = function() {
             document.getElementById('dangerConfirmOverlay').classList.remove('show'); dangerCallback = null;
         };
-        window.executeDangerAction = function() {
-            if (dangerCallback) { dangerCallback(); } closeDangerConfirm();
-        };
+        window.executeDangerAction = function() { if (dangerCallback) { dangerCallback(); } closeDangerConfirm(); };
         document.getElementById('dangerInput').addEventListener('input', function() {
             var btn = document.getElementById('dangerConfirmBtn');
             if (this.value === '确认清空') { btn.classList.add('active'); } else { btn.classList.remove('active'); }
@@ -552,7 +535,6 @@
 
         function applyTheme(theme) { document.body.classList.remove('theme-night','theme-eye'); if (theme==='night') document.body.classList.add('theme-night'); if (theme==='eye') document.body.classList.add('theme-eye'); var btns = document.querySelectorAll('.theme-btn'); for (var i=0; i<btns.length; i++) { btns[i].classList.toggle('active', btns[i].dataset.theme===theme); } }
         window.setTheme = function(t) { theme = t; applyTheme(t); };
-
         function applyFontSize(size) { document.documentElement.style.setProperty('--fs', size+'px'); }
         function applyOptGap(gap) { document.documentElement.style.setProperty('--opt-gap', gap+'px'); document.documentElement.style.setProperty('--opt-pad', (gap+4)+'px'); }
 
@@ -562,6 +544,7 @@
         var pendingRows=null, pendingFileName='', pendingHeaders=[];
         var questionStatus=[], randomCount=50, autoSkip=true, autoRemoveWrongCount=1;
         var hideDone=false, theme='day', fontSize=15, optGap=8;
+        var aiEnabled=false, aiApiKey='', aiCache={};
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
         var examGroupInfo = null;
@@ -576,14 +559,12 @@
                     var mode = val.mode;
                     var newVal = {};
                     newVal[mode] = { questionIds: val.questionIds||[], index: val.index||0, status: val.status||[] };
-                    savedProgress[bn] = newVal;
-                    updated = true;
+                    savedProgress[bn] = newVal; updated = true;
                 }
             }
             if (updated) { localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
         }
 
-        // 确保 questionStatus 结构兼容：添加 selected 字段
         function normalizeStatus() {
             if (questionStatus && questionStatus.length) {
                 for (var i=0; i<questionStatus.length; i++) {
@@ -598,10 +579,12 @@
             try { wrongInfo = JSON.parse(localStorage.getItem('wrongInfo')||'{}'); } catch(e) {}
             try { favSet = new Set(JSON.parse(localStorage.getItem('favSet')||'[]')); } catch(e) {}
             try { savedProgress = JSON.parse(localStorage.getItem('quizProgress')||'{}'); } catch(e) {}
+            try { aiCache = JSON.parse(localStorage.getItem('aiCache')||'{}'); } catch(e) {}
             migrateProgress();
             try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}');
                 randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1;
                 hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8;
+                aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||'';
             } catch(e) {}
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             var names = Object.keys(banks);
@@ -615,47 +598,35 @@
             localStorage.setItem('quizBanks', JSON.stringify(banks));
             localStorage.setItem('wrongInfo', JSON.stringify(wrongInfo));
             localStorage.setItem('favSet', JSON.stringify(setToArray(favSet)));
+            localStorage.setItem('aiCache', JSON.stringify(aiCache));
             saveProgress();
         }
 
         function saveProgress() {
             if (currentBankName && currentMode && currentQuestions.length>0) {
                 if (!savedProgress[currentBankName]) { savedProgress[currentBankName] = {}; }
-                // 复制状态时保留 selected
                 var statusCopy = questionStatus.map(function(s){ return { answered: s.answered, correct: s.correct, selected: s.selected ? s.selected.slice() : [] }; });
-                savedProgress[currentBankName][currentMode] = {
-                    questionIds: currentQuestions.map(function(q){ return q.id; }),
-                    index: currentIndex,
-                    status: statusCopy
-                };
+                savedProgress[currentBankName][currentMode] = { questionIds: currentQuestions.map(function(q){ return q.id; }), index: currentIndex, status: statusCopy };
             }
             localStorage.setItem('quizProgress', JSON.stringify(savedProgress));
         }
 
         function restoreProgress(bn, mode) {
-            var bankProgress = savedProgress[bn];
-            if (!bankProgress) return false;
-            var p = bankProgress[mode];
-            if (!p || !p.questionIds || p.questionIds.length===0) return false;
+            var bankProgress = savedProgress[bn]; if (!bankProgress) return false;
+            var p = bankProgress[mode]; if (!p || !p.questionIds || p.questionIds.length===0) return false;
             var pool = banks[bn] ? banks[bn].questions : [], qm={};
             for (var i=0; i<pool.length; i++) { qm[pool[i].id] = pool[i]; }
             currentQuestions = p.questionIds.map(function(id){ return qm[id]; }).filter(Boolean);
             if (currentQuestions.length===0) { delete bankProgress[mode]; saveProgress(); return false; }
             currentIndex = Math.min(p.index, currentQuestions.length-1);
             questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
-            normalizeStatus();
-            selectedOptions.clear(); feedbackInfo = null;
-            return true;
+            normalizeStatus(); selectedOptions.clear(); feedbackInfo = null; return true;
         }
 
         function findQ(id) { for (var bn in banks) { var qs = banks[bn].questions; for (var i=0; i<qs.length; i++) { if (qs[i].id==id) return qs[i]; } } return null; }
 
         function getModeLabel(mode) {
-            var labels = { 'sequence':'顺序练习','random':'随机练习','exam':'考试模式','wrong':'错题练习','fav':'收藏练习',
-                'judge_true':'判断·对','judge_false':'判断·错','single_choice':'单选题','multi_choice':'多选题',
-                'judge':'判断题','multi_not_all':'多选·不全选','memorize_seq':'顺序背题','memorize_random':'随机背题',
-                'memorize_single':'只背单选','memorize_multi':'只背多选','memorize_judge':'只背判断',
-                'memorize_judge_true':'背题·判断对','memorize_judge_false':'背题·判断错','memorize_multi_not_all':'背题·多选不全选' };
+            var labels = { 'sequence':'顺序练习','random':'随机练习','exam':'考试模式','wrong':'错题练习','fav':'收藏练习','judge_true':'判断·对','judge_false':'判断·错','single_choice':'单选题','multi_choice':'多选题','judge':'判断题','multi_not_all':'多选·不全选','memorize_seq':'顺序背题','memorize_random':'随机背题','memorize_single':'只背单选','memorize_multi':'只背多选','memorize_judge':'只背判断','memorize_judge_true':'背题·判断对','memorize_judge_false':'背题·判断错','memorize_multi_not_all':'背题·多选不全选' };
             return labels[mode] || mode;
         }
 
@@ -663,6 +634,12 @@
         window.resetFontSize = function() { var input=document.getElementById('settingsFontSize'); var display=document.getElementById('fontSizeDisplay'); if (!input||!display) return; input.value=15; display.textContent='15px'; applyFontSize(15); };
         window.adjustOptGap = function(delta) { var input=document.getElementById('settingsOptGap'); var display=document.getElementById('optGapDisplay'); if (!input||!display) return; var val=parseInt(input.value)+delta; val=Math.max(4,Math.min(20,val)); input.value=val; display.textContent=val+'px'; applyOptGap(val); };
         window.resetOptGap = function() { var input=document.getElementById('settingsOptGap'); var display=document.getElementById('optGapDisplay'); if (!input||!display) return; input.value=8; display.textContent='8px'; applyOptGap(8); };
+
+        window.toggleAIKeyInput = function() {
+            var keyInput = document.getElementById('settingsAIKey');
+            var enabled = document.getElementById('settingsAIEnabled').checked;
+            keyInput.style.display = enabled ? 'block' : 'none';
+        };
 
         window.restartCurrentMode = function() {
             if (!currentBankName || !currentMode) return;
@@ -673,8 +650,7 @@
             }
             var mode = currentMode;
             currentMode = null; currentQuestions = []; selectedOptions.clear(); feedbackInfo = null;
-            saveProgress();
-            startMode(mode);
+            saveProgress(); startMode(mode);
         };
 
         (function bindSliderEvents() {
@@ -694,11 +670,13 @@
             hideDone = document.getElementById('settingsHideDone').checked;
             fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15;
             optGap = optGapInput ? parseInt(optGapInput.value) : 8;
+            aiEnabled = document.getElementById('settingsAIEnabled').checked;
+            aiApiKey = document.getElementById('settingsAIKey').value.trim();
             if (isNaN(randomCount)||randomCount<1) randomCount=50;
             if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1;
             if (isNaN(fontSize)||fontSize<13) fontSize=15;
             if (isNaN(optGap)||optGap<4) optGap=8;
-            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap }));
+            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey }));
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = '';
             showToast('设置已保存');
@@ -712,6 +690,9 @@
             document.getElementById('settingsHideDone').checked = hideDone;
             document.getElementById('settingsFontSize').value = fontSize;
             document.getElementById('settingsOptGap').value = optGap;
+            document.getElementById('settingsAIEnabled').checked = aiEnabled;
+            document.getElementById('settingsAIKey').value = aiApiKey;
+            document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none';
             var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px';
             var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px';
             applyTheme(theme);
@@ -725,7 +706,7 @@
         window.importFile = function(file) {
             if (!file) return;
             var reader = new FileReader();
-            reader.onload = function(e) { setTimeout(function() { try { var data = new Uint8Array(e.target.result); var wb = XLSX.read(data,{type:'array'}); var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1}); if (rows.length<2) { alert('文件内容太少'); return; } pendingRows = rows; pendingFileName = file.name; showHeaderSelection(); } catch(err) { alert('文件读取失败，请检查文件格式'); } }, 50); };
+            reader.onload = function(e) { setTimeout(function() { try { var data = new Uint8Array(e.target.result); var wb = XLSX.read(data,{type:'array'}); var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1}); if (rows.length<2) { alert('文件内容太少'); return; } pendingRows = rows; pendingFileName = file.name; showHeaderSelection(); } catch(err) { alert('文件读取失败'); } }, 50); };
             reader.onerror = function() { alert('文件读取失败'); };
             reader.readAsArrayBuffer(file);
         };
@@ -735,17 +716,11 @@
             h += '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th>行号</th><th>内容预览</th></tr>';
             for (var r=0; r<Math.min(10,pendingRows.length); r++) { h += '<tr><td style="font-weight:bold;color:var(--primary)">第'+(r+1)+'行</td><td>'; var cells = pendingRows[r]||[]; for (var c2=0; c2<Math.min(8,cells.length); c2++) { h += '<span style="background:var(--input-bg);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block;font-size:11px">'+(cells[c2]||'').toString().substring(0,15)+'</span>'; } h += '</td></tr>'; }
             h += '</table><label style="display:block;margin-top:12px;color:var(--text2)">表头在第几行？</label><input type="number" id="headerRowNum" min="1" value="1" step="1" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px">';
-            c.innerHTML = h;
-            document.getElementById('modalConfirmBtn').textContent = '下一步：列映射';
+            c.innerHTML = h; document.getElementById('modalConfirmBtn').textContent = '下一步：列映射';
             document.getElementById('modalConfirmBtn').onclick = confirmHeaderAndShowMapping;
             document.getElementById('mappingModal').classList.add('show');
         }
-        window.confirmHeaderAndShowMapping = function() {
-            var n = parseInt(document.getElementById('headerRowNum').value); if (isNaN(n)||n<1||n>pendingRows.length) { alert('请输入有效行号'); return; }
-            pendingHeaders = pendingRows[n-1].map(function(h){ return String(h||'').trim(); });
-            pendingRows = pendingRows.slice(n);
-            showMappingUI();
-        };
+        window.confirmHeaderAndShowMapping = function() { var n = parseInt(document.getElementById('headerRowNum').value); if (isNaN(n)||n<1||n>pendingRows.length) { alert('请输入有效行号'); return; } pendingHeaders = pendingRows[n-1].map(function(h){ return String(h||'').trim(); }); pendingRows = pendingRows.slice(n); showMappingUI(); };
 
         function autoGuess(col) { var t = col.trim(), l = t.toLowerCase(); if (/^[a-g]$/i.test(t)) return '选项'+t.toUpperCase(); var m = l.match(/^选项\s*([a-g])$/); if (m) return '选项'+m[1].toUpperCase(); m = l.match(/^([a-g])\s*选项$/); if (m) return '选项'+m[1].toUpperCase(); if (/知识|类别|章|节|模块|分类|标签/.test(l)) return '知识类型（题目标签）'; if (/题型|类型/.test(l)) return '题型'; if (/题干|题目|问题|内容/.test(l)) return '题干'; if (/答案|正确/.test(l)) return '答案'; if (/解析|解释/.test(l)) return '解析'; return '忽略'; }
 
@@ -753,8 +728,7 @@
             var c = document.getElementById('mappingList'), h = '<div class="import-help"><strong>导入说明：</strong><br>必须映射：题型、题干、知识类型（题目标签）、答案<br>选项A-G建议映射，其他列选"忽略"<br>确认无误后点"确认导入"</div>';
             h += '<p style="color:var(--text2);margin-bottom:10px">请为每列选择对应含义：</p>';
             for (var i=0; i<pendingHeaders.length; i++) { var col = pendingHeaders[i], g = autoGuess(col); h += '<div class="mapping-row"><span style="flex:1;word-break:break-all">'+col+'</span><select id="mapSelect_'+i+'" style="width:130px;font-size:16px">'; for (var j=0; j<FIELDS.length; j++) { h += '<option value="'+FIELDS[j]+'"'+(FIELDS[j]===g?' selected':'')+'>'+FIELDS[j]+'</option>'; } h += '</select></div>'; }
-            c.innerHTML = h;
-            document.getElementById('modalConfirmBtn').textContent = '确认导入';
+            c.innerHTML = h; document.getElementById('modalConfirmBtn').textContent = '确认导入';
             document.getElementById('modalConfirmBtn').onclick = applyMapping;
         }
         window.applyMapping = function() {
@@ -807,9 +781,23 @@
                 h += '<div class="btn-row" style="justify-content:center"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:16px 24px;font-size:18px">上一题</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:16px 24px;font-size:18px">下一题</button></div>';
                 h += '<div style="text-align:center;margin-top:8px"><button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'已收藏':'收藏')+'</button></div>';
                 if (q['解析']) h += '<div class="analysis info" style="display:block">解析：'+q['解析']+'</div>';
+                if (aiEnabled && aiApiKey && currentMode !== 'exam') {
+                    var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey];
+                    h += '<div style="text-align:center;margin-top:4px">';
+                    h += '<button class="ai-btn" id="aiBtn" onclick="requestAI()">AI解析</button>';
+                    h += '<div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div>';
+                    h += '</div>';
+                }
             } else {
                 h += '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:14px 18px;font-size:16px">◀</button><button class="btn btn-submit" onclick="submitAnswer()" style="padding:14px 18px;font-size:16px">提交</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:14px 18px;font-size:16px">▶</button><button class="btn btn-nav" onclick="toggleFav()" style="padding:14px 18px;font-size:16px">'+(favSet.has(q.id)?'★':'☆')+'</button></div>';
                 if (feedbackInfo) h += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
+                if (aiEnabled && aiApiKey && currentMode !== 'exam' && feedbackInfo) {
+                    var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey];
+                    h += '<div style="text-align:center;margin-top:4px">';
+                    h += '<button class="ai-btn" id="aiBtn" onclick="requestAI()">AI解析</button>';
+                    h += '<div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div>';
+                    h += '</div>';
+                }
             }
             if (currentMode === 'exam' && questionStatus.every(function(s){ return s.answered; })) {
                 h += '<div style="text-align:center;margin-top:12px"><button class="btn btn-submit" onclick="showExamSummary()">提交考试</button></div>';
@@ -818,6 +806,49 @@
             return h;
         }
 
+        window.requestAI = function() {
+            var q = currentQuestions[currentIndex];
+            if (!q) return;
+            var capturedId = q.id;
+            var capturedIndex = currentIndex;
+            var cacheKey = 'q_' + capturedId;
+            
+            if (aiCache[cacheKey]) {
+                var el = document.getElementById('aiContent');
+                if (el) { el.textContent = aiCache[cacheKey]; el.classList.add('show'); }
+                return;
+            }
+            
+            var btn = document.getElementById('aiBtn');
+            var content = document.getElementById('aiContent');
+            if (btn) { btn.disabled = true; btn.textContent = '请求中...'; }
+            if (content) { content.classList.add('show'); content.textContent = 'AI分析中...'; }
+
+            var prompt = '题目：' + q['题干'] + '\n';
+            var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; });
+            for (var i = 0; i < labels.length; i++) {
+                prompt += labels[i] + '. ' + q['选项'][labels[i]] + '\n';
+            }
+            prompt += '正确答案：' + q['答案'] + '\n请简要解析这道题，说明为什么选这个答案，并分析其他选项为什么错。';
+
+            fetch('https://api.siliconflow.cn/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + aiApiKey },
+                body: JSON.stringify({ model: 'deepseek-ai/DeepSeek-V3', messages: [{ role: 'user', content: prompt }], max_tokens: 400 })
+            }).then(function(res) { return res.json(); }).then(function(data) {
+                if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return;
+                var result = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '解析失败，请检查API密钥或网络';
+                aiCache[cacheKey] = result;
+                localStorage.setItem('aiCache', JSON.stringify(aiCache));
+                if (content) { content.textContent = result; }
+                if (btn) { btn.disabled = false; btn.textContent = 'AI解析'; }
+            }).catch(function() {
+                if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return;
+                if (content) { content.textContent = '请求失败，请检查网络连接'; }
+                if (btn) { btn.disabled = false; btn.textContent = '重试'; }
+            });
+        };
+
         function renderExamSummary() {
             var total = currentQuestions.length;
             var ac = 0; var cc = 0; var wc = 0;
@@ -825,14 +856,7 @@
             for (var i=0; i<total; i++) {
                 var s = questionStatus[i] || { answered: false, correct: false };
                 var q = currentQuestions[i];
-                if (s.answered) {
-                    ac++;
-                    if (s.correct) cc++; else wc++;
-                    if (typeStats[q['题型']]) {
-                        typeStats[q['题型']].total++;
-                        if (s.correct) typeStats[q['题型']].correct++;
-                    }
-                }
+                if (s.answered) { ac++; if (s.correct) cc++; else wc++; if (typeStats[q['题型']]) { typeStats[q['题型']].total++; if (s.correct) typeStats[q['题型']].correct++; } }
             }
             var accuracy = total>0 ? (cc/total*100).toFixed(1) : 0;
             var h = '<div class="card"><div class="card-title">考试汇总</div>';
@@ -840,13 +864,7 @@
             h += '<p>已答：<strong>'+ac+'</strong> 正确：<strong style="color:#10B981">'+cc+'</strong> 错误：<strong style="color:#EF4444">'+wc+'</strong></p>';
             h += '<p>正确率：<strong>'+accuracy+'%</strong></p>';
             h += '<div style="margin-top:12px"><strong>按题型：</strong></div>';
-            for (var type in typeStats) {
-                var ts = typeStats[type];
-                if (ts.total > 0) {
-                    var tacc = (ts.correct/ts.total*100).toFixed(1);
-                    h += '<div style="font-size:13px; margin:4px 0">'+type+'：'+ts.total+'题 / 正确'+ts.correct+' ('+tacc+'%)</div>';
-                }
-            }
+            for (var type in typeStats) { var ts = typeStats[type]; if (ts.total > 0) { h += '<div style="font-size:13px; margin:4px 0">'+type+'：'+ts.total+'题 / 正确'+ts.correct+' ('+(ts.correct/ts.total*100).toFixed(1)+'%)</div>'; } }
             h += '<div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-nav" onclick="goHome()">返回主页</button><button class="btn btn-submit" onclick="restartCurrentMode()">重新考试</button></div></div>';
             return h;
         }
@@ -877,22 +895,12 @@
             h += '<div class="exam-config-row"><label>判断题</label><input type="number" id="examJudgeCount" min="0" max="'+judgeCount+'" value="'+Math.min(10, judgeCount)+'"><span style="font-size:12px;color:var(--text2)">题库'+judgeCount+'题 / 错题'+wrongJudge+'题</span></div>';
             h += '<div class="exam-config-hint">选题优先级</div>';
             h += '<div class="exam-priority-row"><button class="exam-priority-btn active" id="examPriorityNone" onclick="setExamPriority(\'none\')">无优先</button><button class="exam-priority-btn" id="examPriorityWrong" onclick="setExamPriority(\'wrong\')">错题优先</button><button class="exam-priority-btn" id="examPriorityUndone" onclick="setExamPriority(\'undone\')">未做优先</button></div>';
-            document.getElementById('examConfigContent').innerHTML = h;
-            window._examPriority = 'none';
-            document.getElementById('examConfigModal').classList.add('show');
-            document.body.style.overflow = 'hidden';
+            document.getElementById('examConfigContent').innerHTML = h; window._examPriority = 'none';
+            document.getElementById('examConfigModal').classList.add('show'); document.body.style.overflow = 'hidden';
         }
 
-        window.setExamPriority = function(pri) {
-            window._examPriority = pri;
-            var btns = document.querySelectorAll('.exam-priority-btn');
-            for (var i=0; i<btns.length; i++) { btns[i].classList.toggle('active', btns[i].id === 'examPriority'+pri.charAt(0).toUpperCase()+pri.slice(1)); }
-        };
-
-        window.closeExamConfig = function() {
-            document.getElementById('examConfigModal').classList.remove('show');
-            document.body.style.overflow = '';
-        };
+        window.setExamPriority = function(pri) { window._examPriority = pri; var btns = document.querySelectorAll('.exam-priority-btn'); for (var i=0; i<btns.length; i++) { btns[i].classList.toggle('active', btns[i].id === 'examPriority'+pri.charAt(0).toUpperCase()+pri.slice(1)); } };
+        window.closeExamConfig = function() { document.getElementById('examConfigModal').classList.remove('show'); document.body.style.overflow = ''; };
 
         window.startExamWithConfig = function() {
             var singleCnt = parseInt(document.getElementById('examSingleCount').value)||0;
@@ -903,61 +911,36 @@
             var singles = pool.filter(function(q){ return q['题型']==='单选题'; });
             var multis = pool.filter(function(q){ return q['题型']==='多选题'; });
             var judges = pool.filter(function(q){ return q['题型']==='判断题'; });
-
             function applyPriority(arr, count) {
                 if (count <= 0 || arr.length === 0) return [];
-                var selected = [];
                 var remaining = arr.slice();
                 if (window._examPriority === 'wrong') {
                     var wrongIds = Object.keys(wrongInfo);
                     var wrongQs = remaining.filter(function(q){ return wrongIds.indexOf(String(q.id))!==-1; });
                     var normalQs = remaining.filter(function(q){ return wrongIds.indexOf(String(q.id))===-1; });
-                    wrongQs.sort(function(){ return Math.random()-0.5; });
-                    normalQs.sort(function(){ return Math.random()-0.5; });
-                    selected = wrongQs.concat(normalQs).slice(0, count);
+                    wrongQs.sort(function(){ return Math.random()-0.5; }); normalQs.sort(function(){ return Math.random()-0.5; });
+                    return wrongQs.concat(normalQs).slice(0, count);
                 } else if (window._examPriority === 'undone') {
-                    var doneMap = {};
-                    var bankProgress = savedProgress[currentBankName];
-                    if (bankProgress) {
-                        for (var m in bankProgress) {
-                            if (bankProgress[m] && bankProgress[m].status) {
-                                bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } });
-                            }
-                        }
-                    }
+                    var doneMap = {}; var bankProgress = savedProgress[currentBankName];
+                    if (bankProgress) { for (var m in bankProgress) { if (bankProgress[m] && bankProgress[m].status) { bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } }); } } }
                     var undone = remaining.filter(function(q){ return !doneMap[q.id]; });
                     var done = remaining.filter(function(q){ return doneMap[q.id]; });
-                    undone.sort(function(){ return Math.random()-0.5; });
-                    done.sort(function(){ return Math.random()-0.5; });
-                    selected = undone.concat(done).slice(0, count);
-                } else {
-                    remaining.sort(function(){ return Math.random()-0.5; });
-                    selected = remaining.slice(0, count);
-                }
-                return selected;
+                    undone.sort(function(){ return Math.random()-0.5; }); done.sort(function(){ return Math.random()-0.5; });
+                    return undone.concat(done).slice(0, count);
+                } else { remaining.sort(function(){ return Math.random()-0.5; }); return remaining.slice(0, count); }
             }
-
             var selectedSingle = applyPriority(singles, Math.min(singleCnt, singles.length));
             var selectedMulti = applyPriority(multis, Math.min(multiCnt, multis.length));
             var selectedJudge = applyPriority(judges, Math.min(judgeCnt, judges.length));
-
             currentQuestions = selectedSingle.concat(selectedMulti, selectedJudge);
             if (currentQuestions.length === 0) { alert('没有符合条件的题目'); return; }
             examGroupInfo = { single: selectedSingle, multi: selectedMulti, judge: selectedJudge };
-            currentMode = 'exam';
-            currentIndex = 0;
-            selectedOptions.clear();
-            feedbackInfo = null;
+            currentMode = 'exam'; currentIndex = 0; selectedOptions.clear(); feedbackInfo = null;
             questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
-            currentPage = 'quiz';
-            closeExamConfig();
-            render();
+            currentPage = 'quiz'; closeExamConfig(); render();
         };
 
-        window.showExamSummary = function() {
-            currentPage = 'examSummary';
-            render();
-        };
+        window.showExamSummary = function() { currentPage = 'examSummary'; render(); };
 
         window.startMode = function(mode) {
             if (!currentBankName || !banks[currentBankName]) return;
@@ -986,15 +969,7 @@
             else if (mode==='memorize_multi_not_all') { currentQuestions = pool.filter(function(q){ if (q['题型']!=='多选题') return false; var allKeys = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); return q['答案'].split('').length < allKeys.length; }); }
             if (hideDone && (mode==='sequence'||mode==='random')) {
                 var bankProgress = savedProgress[currentBankName];
-                if (bankProgress) {
-                    var doneMap = {};
-                    for (var m in bankProgress) {
-                        if (bankProgress[m] && bankProgress[m].status) {
-                            bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } });
-                        }
-                    }
-                    currentQuestions = currentQuestions.filter(function(q){ return !doneMap[q.id]; });
-                }
+                if (bankProgress) { var doneMap = {}; for (var m in bankProgress) { if (bankProgress[m] && bankProgress[m].status) { bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } }); } } currentQuestions = currentQuestions.filter(function(q){ return !doneMap[q.id]; }); }
             }
             if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; return; }
             questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
@@ -1006,14 +981,8 @@
             if (status && status.selected && status.selected.length) {
                 selectedOptions.clear();
                 status.selected.forEach(function(v){ selectedOptions.add(v); });
-                feedbackInfo = {
-                    correct: status.correct,
-                    message: status.correct ? '正确！' : '错误！正确答案：' + currentQuestions[currentIndex]['答案'] + (currentQuestions[currentIndex]['解析'] ? '<br>解析：' + currentQuestions[currentIndex]['解析'] : '')
-                };
-            } else {
-                selectedOptions.clear();
-                feedbackInfo = null;
-            }
+                feedbackInfo = { correct: status.correct, message: status.correct ? '正确！' : '错误！正确答案：' + currentQuestions[currentIndex]['答案'] + (currentQuestions[currentIndex]['解析'] ? '<br>解析：' + currentQuestions[currentIndex]['解析'] : '') };
+            } else { selectedOptions.clear(); feedbackInfo = null; }
         }
 
         window.submitAnswer = function() { if (!currentQuestions.length||currentIndex>=currentQuestions.length) return; var q = currentQuestions[currentIndex]; var selectedArr = setToArray(selectedOptions); var ua = q['题型']==='多选题'?selectedArr.sort().join(''):(selectedArr[0]||''); if (!ua) { alert('请选择答案'); return; } var ok; if (q['题型']==='判断题') { var uaText = ua==='A'?'正确':(ua==='B'?'错误':''); ok = uaText===q['答案']; } else { ok = ua.toUpperCase()===q['答案'].toUpperCase(); } feedbackInfo = { correct:ok, message:ok?'正确！':'错误！正确答案：'+q['答案']+(q['解析']?'<br>解析：'+q['解析']:'') }; if (!ok) { var info = wrongInfo[q.id]||{count:0,lastDate:'',dates:[],correctStreak:0}; info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate); if (info.dates.length>20) info.dates = info.dates.slice(-20); info.correctStreak=0; wrongInfo[q.id]=info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak||0)+1; if (autoRemoveWrongCount>0 && wrongInfo[q.id].correctStreak>=autoRemoveWrongCount) delete wrongInfo[q.id]; } } if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered=true; questionStatus[currentIndex].correct=ok; questionStatus[currentIndex].selected = selectedArr.slice(); } saveAll(); render(); if (ok && autoSkip && currentIndex<currentQuestions.length-1) setTimeout(function(){ currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); },800); };
@@ -1025,54 +994,28 @@
         window.showAnswerSheet = function() {
             var modal = document.getElementById('answerSheetModal');
             var container = document.getElementById('answerSheetContent');
-            var total = currentQuestions.length;
-            document.getElementById('sheetTotal').textContent = total;
+            var total = currentQuestions.length; document.getElementById('sheetTotal').textContent = total;
             var ac=0, cc=0;
             for (var i=0; i<total; i++) { var s = questionStatus[i]||{answered:false,correct:false}; if (s.answered) ac++; if (s.correct) cc++; }
             document.getElementById('sheetAnswered').textContent = ac;
             document.getElementById('sheetCorrect').textContent = cc;
             document.getElementById('sheetWrong').textContent = ac-cc;
-
             if (currentMode === 'exam' && examGroupInfo) {
                 var html = '';
-                var types = [
-                    { label: '单选题', key: 'single', color: '#3B82F6' },
-                    { label: '多选题', key: 'multi', color: '#10B981' },
-                    { label: '判断题', key: 'judge', color: '#F59E0B' }
-                ];
+                var types = [{ label: '单选题', key: 'single', color: '#3B82F6' },{ label: '多选题', key: 'multi', color: '#10B981' },{ label: '判断题', key: 'judge', color: '#F59E0B' }];
                 for (var t=0; t<types.length; t++) {
-                    var group = examGroupInfo[types[t].key];
-                    if (!group || group.length === 0) continue;
-                    var groupAc = 0, groupCc = 0;
-                    var cellsHtml = '';
-                    for (var j=0; j<group.length; j++) {
-                        var q = group[j];
-                        var globalIdx = currentQuestions.indexOf(q);
-                        if (globalIdx === -1) continue;
-                        var status = questionStatus[globalIdx] || {answered:false, correct:false};
-                        if (status.answered) groupAc++;
-                        if (status.correct) groupCc++;
-                        var cls = 'answer-cell';
-                        if (globalIdx === currentIndex) cls += ' current';
-                        else if (status.answered) cls += status.correct ? ' correct' : ' wrong';
-                        cellsHtml += '<div class="'+cls+'" onclick="answerSheetJump('+globalIdx+')"><span>'+(globalIdx+1)+'</span></div>';
-                    }
+                    var group = examGroupInfo[types[t].key]; if (!group || group.length === 0) continue;
+                    var groupAc = 0, groupCc = 0, cellsHtml = '';
+                    for (var j=0; j<group.length; j++) { var q = group[j]; var globalIdx = currentQuestions.indexOf(q); if (globalIdx === -1) continue; var status = questionStatus[globalIdx] || {answered:false, correct:false}; if (status.answered) groupAc++; if (status.correct) groupCc++; var cls = 'answer-cell'; if (globalIdx === currentIndex) cls += ' current'; else if (status.answered) cls += status.correct ? ' correct' : ' wrong'; cellsHtml += '<div class="'+cls+'" onclick="answerSheetJump('+globalIdx+')"><span>'+(globalIdx+1)+'</span></div>'; }
                     html += '<div style="margin-bottom:16px"><div style="font-weight:600; font-size:14px; margin-bottom:8px; color:'+types[t].color+'">'+types[t].label+' ('+groupAc+'/'+groupCc+' 对)</div><div class="answer-grid">'+cellsHtml+'</div></div>';
                 }
                 container.innerHTML = html;
             } else {
                 var gridHtml = '';
-                for (var i=0; i<total; i++) {
-                    var s = questionStatus[i]||{answered:false,correct:false};
-                    var cls = 'answer-cell';
-                    if (i === currentIndex) cls += ' current';
-                    else if (s.answered) cls += s.correct ? ' correct' : ' wrong';
-                    gridHtml += '<div class="'+cls+'" onclick="answerSheetJump('+i+')"><span>'+(i+1)+'</span></div>';
-                }
+                for (var i=0; i<total; i++) { var s = questionStatus[i]||{answered:false,correct:false}; var cls = 'answer-cell'; if (i === currentIndex) cls += ' current'; else if (s.answered) cls += s.correct ? ' correct' : ' wrong'; gridHtml += '<div class="'+cls+'" onclick="answerSheetJump('+i+')"><span>'+(i+1)+'</span></div>'; }
                 container.innerHTML = '<div class="answer-grid">'+gridHtml+'</div>';
             }
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
+            modal.classList.add('show'); document.body.style.overflow = 'hidden';
         };
         window.answerSheetJump = function(idx) { currentIndex = idx; restoreCurrentSelection(); closeAnswerSheet(); render(); };
         window.closeAnswerSheet = function() { document.getElementById('answerSheetModal').classList.remove('show'); document.body.style.overflow=''; };
