@@ -237,7 +237,7 @@
                 <h3 style="margin:0">答题卡</h3>
                 <button class="btn btn-nav" onclick="closeAnswerSheet()" style="padding:4px 10px;font-size:18px;line-height:1;min-height:auto">✕</button>
             </div>
-            <div class="answer-stats" id="answerStatsContainer">
+            <div class="answer-stats">
                 <span>已答:<span id="sheetAnswered">0</span></span>
                 <span>正确:<span id="sheetCorrect" style="color:#10B981">0</span></span>
                 <span>错误:<span id="sheetWrong" style="color:#EF4444">0</span></span>
@@ -387,9 +387,7 @@
             h += '<div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:12px">';
             h += '<button class="back-btn" onclick="goHome()">←返回</button>';
             h += '<div style="display:flex; gap:8px;">';
-            if (currentMode !== 'exam') {
-                h += '<button class="restart-btn" onclick="restartCurrentMode()" style="margin-left:0">重新开始</button>';
-            }
+            if (currentMode !== 'exam') { h += '<button class="restart-btn" onclick="restartCurrentMode()" style="margin-left:0">重新开始</button>'; }
             h += '<button class="btn btn-nav" onclick="showAnswerSheet()" style="padding:8px 14px;font-size:13px;min-height:auto">答题卡</button>';
             h += '</div></div>';
 
@@ -407,20 +405,14 @@
                 if (q['解析']) h += '<div class="analysis info" style="display:block">解析：'+q['解析']+'</div>';
                 if (aiEnabled && aiApiKey && currentMode !== 'exam') {
                     var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey];
-                    h += '<div style="text-align:center;margin-top:4px">';
-                    h += '<button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button>';
-                    h += '<div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div>';
-                    h += '</div>';
+                    h += '<div style="text-align:center;margin-top:4px"><button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button><div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div></div>';
                 }
             } else {
                 h += '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:14px 18px;font-size:16px">◀</button><button class="btn btn-submit" onclick="submitAnswer()" style="padding:14px 18px;font-size:16px">提交</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:14px 18px;font-size:16px">▶</button><button class="btn btn-nav" onclick="toggleFav()" style="padding:14px 18px;font-size:16px">'+(favSet.has(q.id)?'★':'☆')+'</button></div>';
                 if (feedbackInfo) h += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
                 if (aiEnabled && aiApiKey && currentMode !== 'exam' && feedbackInfo) {
                     var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey];
-                    h += '<div style="text-align:center;margin-top:4px">';
-                    h += '<button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button>';
-                    h += '<div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div>';
-                    h += '</div>';
+                    h += '<div style="text-align:center;margin-top:4px"><button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button><div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div></div>';
                 }
             }
             if (currentMode === 'exam' && questionStatus.every(function(s){ return s.answered; })) {
@@ -438,8 +430,13 @@
                 else { var el = document.getElementById('aiContent'); if (el) { el.innerHTML = aiCache[cacheKey]; el.classList.add('show'); } return; }
             }
             var btn = document.getElementById('aiBtn'); var content = document.getElementById('aiContent'); if (btn) { btn.disabled = true; btn.textContent = '请求中...'; } if (content) { content.classList.add('show'); content.innerHTML = 'AI分析中...'; }
-            var prompt = '题目：' + q['题干'] + '\n'; var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); for (var i = 0; i < labels.length; i++) { prompt += labels[i] + '. ' + q['选项'][labels[i]] + '\n'; } prompt += '正确答案：' + q['答案'] + '\n请简要解析这道题，用分点形式说明（1.考点 2.解题思路），简明扼要。';
-            fetch('https://api.siliconflow.cn/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + aiApiKey }, body: JSON.stringify({ model: 'deepseek-ai/DeepSeek-V3', messages: [{ role: 'user', content: prompt }], max_tokens: 300 }) })
+            var prompt = '你是一位精通金融法规和银行制度的考试辅导专家。请针对以下金融考试题目进行解析：\n';
+            prompt += '题目：' + q['题干'] + '\n';
+            var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; });
+            for (var i = 0; i < labels.length; i++) { prompt += labels[i] + '. ' + q['选项'][labels[i]] + '\n'; }
+            prompt += '正确答案：' + q['答案'] + '\n';
+            prompt += '1. 指出本题考查的具体制度或法规名称\n2. 引用相关制度条文说明正确选项的依据\n3. 简要说明其他选项与制度不符的原因\n4. 注意：如无法确定具体制度依据，请说明"此为推理判断"，不要编造条文\n5. 请用简洁的分点形式回答，重点突出制度依据';
+            fetch('https://api.siliconflow.cn/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + aiApiKey }, body: JSON.stringify({ model: 'Qwen/Qwen2.5-7B-Instruct', messages: [{ role: 'user', content: prompt }], max_tokens: 400, temperature: 0.3, top_p: 0.8 }) })
             .then(function(res) { return res.json(); }).then(function(data) {
                 if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return;
                 var result = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '解析失败，请检查API密钥或网络';
