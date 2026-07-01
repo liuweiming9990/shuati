@@ -140,7 +140,8 @@
         .analysis.info { background: #f0fdf4; color: #166534 }
         .ai-analysis {
             margin-top: 8px; padding: 12px; border-radius: var(--r); background: #eff6ff; color: #1e40af;
-            font-size: 14px; line-height: 1.6; border: 1px solid #bfdbfe; display: none; word-break: break-word
+            font-size: 14px; line-height: 1.6; border: 1px solid #bfdbfe; display: none; word-break: break-word;
+            text-align: left
         }
         .ai-analysis.show { display: block }
         .ai-btn {
@@ -815,21 +816,21 @@
             
             if (aiCache[cacheKey]) {
                 var el = document.getElementById('aiContent');
-                if (el) { el.textContent = aiCache[cacheKey]; el.classList.add('show'); }
+                if (el) { el.innerHTML = aiCache[cacheKey]; el.classList.add('show'); }
                 return;
             }
             
             var btn = document.getElementById('aiBtn');
             var content = document.getElementById('aiContent');
             if (btn) { btn.disabled = true; btn.textContent = '请求中...'; }
-            if (content) { content.classList.add('show'); content.textContent = 'AI分析中...'; }
+            if (content) { content.classList.add('show'); content.innerHTML = 'AI分析中...'; }
 
             var prompt = '题目：' + q['题干'] + '\n';
             var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; });
             for (var i = 0; i < labels.length; i++) {
                 prompt += labels[i] + '. ' + q['选项'][labels[i]] + '\n';
             }
-            prompt += '正确答案：' + q['答案'] + '\n请简要解析这道题，说明为什么选这个答案，并分析其他选项为什么错。';
+            prompt += '正确答案：' + q['答案'] + '\n请简要解析这道题，用分点形式说明（1.考点 2.解题思路），简明扼要。';
 
             fetch('https://api.siliconflow.cn/v1/chat/completions', {
                 method: 'POST',
@@ -838,13 +839,14 @@
             }).then(function(res) { return res.json(); }).then(function(data) {
                 if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return;
                 var result = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '解析失败，请检查API密钥或网络';
+                result = result.replace(/\n/g, '<br>');
                 aiCache[cacheKey] = result;
                 localStorage.setItem('aiCache', JSON.stringify(aiCache));
-                if (content) { content.textContent = result; }
+                if (content) { content.innerHTML = result; }
                 if (btn) { btn.disabled = false; btn.textContent = 'AI解析'; }
             }).catch(function() {
                 if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return;
-                if (content) { content.textContent = '请求失败，请检查网络连接'; }
+                if (content) { content.innerHTML = '请求失败，请检查网络连接'; }
                 if (btn) { btn.disabled = false; btn.textContent = '重试'; }
             });
         };
