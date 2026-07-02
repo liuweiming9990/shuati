@@ -207,17 +207,17 @@
             <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('ai')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
             <div class="settings-row">
                 <label style="display:flex;justify-content:space-between;align-items:center;">
-                    <span>云端同步 (JSONBin)</span>
+                    <span>云端同步 (GitHub Gist)</span>
                     <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
                         <input type="checkbox" id="settingsAutoBackup" style="width:18px;height:18px;accent-color:var(--primary)"> 自动备份
                     </label>
                 </label>
-                <input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px">
+                <input type="password" id="settingsGithubToken" placeholder="输入 GitHub Token (需要 gist 权限)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px">
                 <div style="display:flex;gap:8px;margin-bottom:8px">
-                    <button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button>
-                    <button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button>
+                    <button class="btn btn-nav" onclick="backupToCloud()" style="flex:1">备份到云端</button>
+                    <button class="btn btn-nav" onclick="restoreFromCloud()" style="flex:1">从云端恢复</button>
                 </div>
-                <div class="hint">勾选“自动备份”后，每次答题将自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div>
+                <div class="hint">注册 <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--primary)">GitHub</a> 生成 Token (勾选 gist 权限)  <button class="setting-reset-mini" onclick="showTutorial('github')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取Token？</button></div>
             </div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div class="settings-row">
@@ -300,19 +300,6 @@
         function applyFontSize(size) { document.documentElement.style.setProperty('--fs', size+'px'); }
         function applyOptGap(gap) { document.documentElement.style.setProperty('--opt-gap', gap+'px'); document.documentElement.style.setProperty('--opt-pad', (gap+4)+'px'); }
 
-        // Base64 编码/解码（支持中文）
-        function uint8ToBase64(bytes) {
-            var binary = '';
-            for (var i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
-            return btoa(binary);
-        }
-        function base64ToUint8(base64) {
-            var binary = atob(base64);
-            var bytes = new Uint8Array(binary.length);
-            for (var i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); }
-            return bytes;
-        }
-
         var banks={}, currentBankName='', wrongInfo={}, favSet=new Set();
         var currentTab='practice', currentPage='home', currentMode=null, currentQuestions=[], currentIndex=0;
         var selectedOptions=new Set(), feedbackInfo=null, savedProgress={};
@@ -321,7 +308,7 @@
         var hideDone=false, theme='day', fontSize=15, optGap=8;
         var aiEnabled=false, aiApiKey='', aiCache={};
         var voiceEnabled = true;
-        var jsonbinApiKey = '', jsonbinBinId = '', autoBackup = false;
+        var githubToken = '', githubGistId = '', autoBackup = false;
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
         var examGroupInfo = null;
@@ -337,7 +324,7 @@
             try { savedProgress = JSON.parse(localStorage.getItem('quizProgress')||'{}'); } catch(e) {}
             try { aiCache = JSON.parse(localStorage.getItem('aiCache')||'{}'); } catch(e) {}
             migrateProgress();
-            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; jsonbinApiKey = s.jsonbinApiKey||''; jsonbinBinId = s.jsonbinBinId||''; autoBackup = s.autoBackup || false; } catch(e) {}
+            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; githubToken = s.githubToken||''; githubGistId = s.githubGistId||''; autoBackup = s.autoBackup || false; } catch(e) {}
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             var names = Object.keys(banks); if (names.length>0) { var lastName = localStorage.getItem('lastBankName'); if (lastName && banks[lastName]) { currentBankName = lastName; } else { currentBankName = names[0]; } }
         }
@@ -347,7 +334,7 @@
             localStorage.setItem('favSet', JSON.stringify(setToArray(favSet))); 
             localStorage.setItem('aiCache', JSON.stringify(aiCache)); 
             saveProgress(); 
-            if (autoBackup && jsonbinApiKey) { backupToJsonbin(true); }
+            if (autoBackup && githubToken) { backupToCloud(true); }
         }
         function saveProgress() { if (currentBankName && currentMode && currentQuestions.length>0) { if (!savedProgress[currentBankName]) { savedProgress[currentBankName] = {}; } var statusCopy = questionStatus.map(function(s){ return { answered: s.answered, correct: s.correct, selected: s.selected ? s.selected.slice() : [] }; }); savedProgress[currentBankName][currentMode] = { questionIds: currentQuestions.map(function(q){ return q.id; }), index: currentIndex, status: statusCopy }; } localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
         function restoreProgress(bn, mode) { var bankProgress = savedProgress[bn]; if (!bankProgress) return false; var p = bankProgress[mode]; if (!p || !p.questionIds || p.questionIds.length===0) return false; var pool = banks[bn] ? banks[bn].questions : [], qm={}; for (var i=0; i<pool.length; i++) { qm[pool[i].id] = pool[i]; } currentQuestions = p.questionIds.map(function(id){ return qm[id]; }).filter(Boolean); if (currentQuestions.length===0) { delete bankProgress[mode]; saveProgress(); return false; } currentIndex = Math.min(p.index, currentQuestions.length-1); questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; }); normalizeStatus(); selectedOptions.clear(); feedbackInfo = null; return true; }
@@ -370,11 +357,11 @@
             hideDone = document.getElementById('settingsHideDone').checked; fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15; optGap = optGapInput ? parseInt(optGapInput.value) : 8;
             aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim();
             voiceEnabled = document.getElementById('settingsVoiceEnabled').checked;
-            jsonbinApiKey = document.getElementById('settingsJsonbinKey').value.trim();
+            githubToken = document.getElementById('settingsGithubToken').value.trim();
             autoBackup = document.getElementById('settingsAutoBackup').checked;
             if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1;
             if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8;
-            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled, jsonbinApiKey:jsonbinApiKey, jsonbinBinId:jsonbinBinId, autoBackup:autoBackup }));
+            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled, githubToken:githubToken, githubGistId:githubGistId, autoBackup:autoBackup }));
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = '';
             showToast('设置已保存');
@@ -385,7 +372,7 @@
             document.getElementById('settingsHideDone').checked = hideDone; document.getElementById('settingsFontSize').value = fontSize; document.getElementById('settingsOptGap').value = optGap;
             document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none';
             document.getElementById('settingsVoiceEnabled').checked = voiceEnabled;
-            document.getElementById('settingsJsonbinKey').value = jsonbinApiKey;
+            document.getElementById('settingsGithubToken').value = githubToken;
             document.getElementById('settingsAutoBackup').checked = autoBackup;
             var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px';
             var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px';
@@ -406,13 +393,14 @@
                     '<p>3. 点击「创建新的 API 密钥」，输入名称（如"刷题吧"），点击创建。</p>' +
                     '<p>4. 复制生成的密钥（以 sk- 开头），粘贴到上方的输入框中。</p>' +
                     '<p><strong>提示：</strong>注册即送 2000 万 tokens，个人使用足够。</p>';
-            } else if (type === 'sync') {
-                title.textContent = '如何获取 JSONBin API 密钥';
-                content.innerHTML = '<p>1. 打开 <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> 并注册/登录。</p>' +
-                    '<p>2. 进入 Dashboard，点击「API Keys」。</p>' +
-                    '<p>3. 在 Master Key 区域即可看到你的超级密钥。</p>' +
-                    '<p>4. 复制该密钥，粘贴到上方的输入框中。</p>' +
-                    '<p><strong>提示：</strong>首次备份时会自动创建存储桶，无需手动创建。</p>';
+            } else if (type === 'github') {
+                title.textContent = '如何获取 GitHub Token';
+                content.innerHTML = '<p>1. 打开 <a href="https://github.com/settings/tokens" target="_blank">GitHub Token 设置</a> 并登录。</p>' +
+                    '<p>2. 点击「Generate new token (classic)」。</p>' +
+                    '<p>3. 在 Note 中输入任意名称，勾选「gist」权限。</p>' +
+                    '<p>4. 点击底部「Generate token」，复制生成的 Token。</p>' +
+                    '<p>5. 将 Token 粘贴到上方的输入框中。</p>' +
+                    '<p><strong>提示：</strong>Token 只显示一次，请妥善保存。</p>';
             }
             document.getElementById('tutorialModal').classList.add('show');
             document.body.style.overflow = 'hidden';
@@ -422,9 +410,9 @@
             document.body.style.overflow = '';
         };
 
-        // ====== XHR 备份（绕过 Service Worker） ======
-        window.backupToJsonbin = function(isAuto) {
-            if (!jsonbinApiKey) { if (!isAuto) showToast('请先设置 JSONBin API Key'); return; }
+        // 备份函数 (GitHub Gist)
+        window.backupToCloud = function(isAuto) {
+            if (!githubToken) { if (!isAuto) showToast('请先设置 GitHub Token'); return; }
             const data = {
                 quizBanks: banks,
                 wrongInfo: wrongInfo,
@@ -433,66 +421,68 @@
                 appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
                 aiCache: aiCache
             };
-            const jsonStr = JSON.stringify(data);
-            const bytes = new TextEncoder().encode(jsonStr);
-            const payload = uint8ToBase64(bytes);
+            const payload = JSON.stringify(data);
             const xhr = new XMLHttpRequest();
-            const url = jsonbinBinId
-                ? 'https://api.jsonbin.io/v3/b/' + jsonbinBinId
-                : 'https://api.jsonbin.io/v3/b';
-            xhr.open(jsonbinBinId ? 'PUT' : 'POST', url, true);
-            xhr.setRequestHeader('X-Master-Key', jsonbinApiKey);
+            const isUpdate = !!githubGistId;
+            const method = isUpdate ? 'PATCH' : 'POST';
+            const url = isUpdate
+                ? 'https://api.github.com/gists/' + githubGistId
+                : 'https://api.github.com/gists';
+            
+            xhr.open(method, url, true);
+            xhr.setRequestHeader('Authorization', 'token ' + githubToken);
             xhr.setRequestHeader('Content-Type', 'application/json');
             
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     const response = JSON.parse(xhr.responseText);
-                    if (!jsonbinBinId) {
-                        jsonbinBinId = response.metadata.id;
-                        localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { jsonbinBinId: jsonbinBinId })));
+                    if (!isUpdate) {
+                        githubGistId = response.id;
+                        localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { githubGistId: githubGistId })));
                     }
                     if (!isAuto) showToast('备份成功');
                 } else {
-                    let errMsg = '备份失败';
-                    if (xhr.status === 401) errMsg = 'API Key 无效';
-                    else if (xhr.status === 403) errMsg = '无权限，请检查 Key 权限';
-                    else if (xhr.status === 404) errMsg = '接口不存在，请检查网络';
-                    else if (xhr.status === 429) errMsg = '请求太频繁，请稍后重试';
-                    else errMsg = '备份失败：状态码 ' + xhr.status + ' ' + (xhr.statusText || '');
-                    if (!isAuto) showToast(errMsg);
+                    const err = JSON.parse(xhr.responseText);
+                    if (!isAuto) showToast('备份失败: ' + (err.message || xhr.status));
                     else showToast('自动备份失败');
                 }
             };
-            
             xhr.onerror = function() {
-                if (!isAuto) showToast('网络错误：无法连接服务器，请检查网络或稍后重试');
+                if (!isAuto) showToast('网络错误，请检查网络');
                 else showToast('自动备份失败：网络错误');
             };
-            
+            xhr.timeout = 15000;
             xhr.ontimeout = function() {
-                if (!isAuto) showToast('请求超时，请检查网络');
+                if (!isAuto) showToast('请求超时');
                 else showToast('自动备份失败：超时');
             };
-            
-            xhr.timeout = 15000; // 15秒超时
-            xhr.send(JSON.stringify({ data: payload }));
+
+            const body = {
+                description: '刷题吧备份',
+                public: false,
+                files: {
+                    'backup.json': {
+                        content: payload
+                    }
+                }
+            };
+            xhr.send(JSON.stringify(body));
         };
 
-        // ====== XHR 恢复（绕过 Service Worker） ======
-        window.restoreFromJsonbin = function() {
-            if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
-            if (!jsonbinBinId) { showToast('未找到云端数据，请先备份一次'); return; }
+        // 恢复函数 (GitHub Gist)
+        window.restoreFromCloud = function() {
+            if (!githubToken) { showToast('请先设置 GitHub Token'); return; }
+            if (!githubGistId) { showToast('未找到云端数据，请先备份一次'); return; }
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'https://api.jsonbin.io/v3/b/' + jsonbinBinId, true);
-            xhr.setRequestHeader('X-Master-Key', jsonbinApiKey);
+            xhr.open('GET', 'https://api.github.com/gists/' + githubGistId, true);
+            xhr.setRequestHeader('Authorization', 'token ' + githubToken);
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
                         const response = JSON.parse(xhr.responseText);
-                        const payload = response.record && response.record.data;
-                        if (!payload) { showToast('恢复失败: 无数据'); return; }
-                        const bytes = base64ToUint8(payload);
-                        const data = JSON.parse(new TextDecoder().decode(bytes));
+                        const file = response.files && response.files['backup.json'];
+                        if (!file || !file.content) { showToast('恢复失败: 无数据'); return; }
+                        const data = JSON.parse(file.content);
                         banks = data.quizBanks || {};
                         wrongInfo = data.wrongInfo || {};
                         favSet = new Set(data.favSet || []);
@@ -503,7 +493,7 @@
                         showToast('恢复成功');
                     } catch(e) { showToast('恢复失败: 数据解析错误'); }
                 } else {
-                    showToast('恢复失败: ' + (xhr.statusText || '状态码 ' + xhr.status));
+                    showToast('恢复失败: ' + xhr.status);
                 }
             };
             xhr.onerror = function() { showToast('恢复失败: 网络错误'); };
