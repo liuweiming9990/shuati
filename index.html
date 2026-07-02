@@ -484,40 +484,79 @@
 
         // ========== 云端恢复 (已修复敏感信息丢失问题) ==========
         window.restoreFromCloud = function() {
-            if (!githubToken) { showToast('请先设置 GitHub Token'); return; }
-            if (!githubGistId) { showToast('未找到云端数据，请先备份一次'); return; }
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'https://api.github.com/gists/' + githubGistId, true);
-            xhr.setRequestHeader('Authorization', 'token ' + githubToken);
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        const file = response.files && response.files['backup.json'];
-                        if (!file || !file.content) { showToast('恢复失败: 无数据'); return; }
-                        const data = JSON.parse(file.content);
-                        banks = data.quizBanks || {};
-                        wrongInfo = data.wrongInfo || {};
-                        favSet = new Set(data.favSet || []);
-                        savedProgress = data.quizProgress || {};
-                        aiCache = data.aiCache || {};
-                        if (data.appSettings) {
-                            // 恢复设置时，保留本地已有的 Token 和 AI Key
-                            var localSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
-                            data.appSettings.githubToken = localSettings.githubToken || '';
-                            data.appSettings.aiApiKey = localSettings.aiApiKey || '';
-                            localStorage.setItem('appSettings', JSON.stringify(data.appSettings));
-                        }
-                        saveAll(); loadData(); render();
-                        showToast('恢复成功');
-                    } catch(e) { showToast('恢复失败: 数据解析错误'); }
-                } else {
-                    showToast('恢复失败: ' + xhr.status);
+    if (!githubToken) { showToast('请先设置 GitHub Token'); return; }
+
+    // 如果已有 Gist ID，直接获取
+    if (githubGistId) {
+        fetchGistAndRestore(githubGistId);
+        return;
+    }
+
+    // 没有 Gist ID，尝试自动从 Gist 列表中找到备份
+    showToast('正在搜索云端备份...');
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://api.github.com/gists', true);
+    xhr.setRequestHeader('Authorization', 'token ' + githubToken);
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            const gists = JSON.parse(xhr.responseText);
+            // 查找第一个包含 backup.json 的 Gist
+            const backupGist = gists.find(g => g.files && g.files['backup.json']);
+            if (backupGist) {
+                githubGistId = backupGist.id;
+                // 保存到本地
+                var currentSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
+                currentSettings.githubGistId = githubGistId;
+                localStorage.setItem('appSettings', JSON.stringify(currentSettings));
+                fetchGistAndRestore(githubGistId);
+            } else {
+                showToast('未找到云端备份文件，请先在旧手机上备份一次');
+            }
+        } else {
+            showToast('获取备份列表失败: ' + xhr.status);
+        }
+    };
+    xhr.onerror = function() { showToast('网络错误，请检查网络'); };
+    xhr.timeout = 15000;
+    xhr.ontimeout = function() { showToast('搜索超时，请检查网络'); };
+    xhr.send();
+};
+
+// 实际获取 Gist 并恢复数据的函数
+function fetchGistAndRestore(gistId) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://api.github.com/gists/' + gistId, true);
+    xhr.setRequestHeader('Authorization', 'token ' + githubToken);
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                const file = response.files && response.files['backup.json'];
+                if (!file || !file.content) { showToast('恢复失败: 无数据'); return; }
+                const data = JSON.parse(file.content);
+                banks = data.quizBanks || {};
+                wrongInfo = data.wrongInfo || {};
+                favSet = new Set(data.favSet || []);
+                savedProgress = data.quizProgress || {};
+                aiCache = data.aiCache || {};
+                if (data.appSettings) {
+                    var localSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
+                    data.appSettings.githubToken = localSettings.githubToken || '';
+                    data.appSettings.aiApiKey = localSettings.aiApiKey || '';
+                    localStorage.setItem('appSettings', JSON.stringify(data.appSettings));
                 }
-            };
-            xhr.onerror = function() { showToast('恢复失败: 网络错误'); };
-            xhr.send();
-        };
+                saveAll(); loadData(); render();
+                showToast('恢复成功');
+            } catch(e) { showToast('恢复失败: 数据解析错误'); }
+        } else {
+            showToast('恢复失败: ' + xhr.status);
+        }
+    };
+    xhr.onerror = function() { showToast('恢复失败: 网络错误'); };
+    xhr.timeout = 30000;
+    xhr.ontimeout = function() { showToast('恢复超时，请检查网络'); };
+    xhr.send();
+}
 
         window.importFile = function(file) {
             if (!file) return;
