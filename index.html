@@ -281,12 +281,19 @@
             setSafeArea();
         })();
 
-        // 语音引擎
+        // 语音引擎（修复AudioContext暂停问题）
         var audioCtx = null;
-        function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } }
+        function initAudio() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
         function playTone(type) {
-            if (!audioCtx) initAudio();
-            if (!audioCtx) return;
+            initAudio();
+            if (!audioCtx || audioCtx.state === 'closed') return;
             var osc = audioCtx.createOscillator(); var gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.value = 0.15;
             var now = audioCtx.currentTime;
