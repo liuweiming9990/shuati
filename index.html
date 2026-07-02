@@ -258,6 +258,7 @@
             <div class="settings-row"><label>字体大小</label><div class="range-container"><span>小</span><input type="range" id="settingsFontSize" min="13" max="22" value="15" step="1"><span>大</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustFontSize(-1)">-</button><span class="setting-value-display" id="fontSizeDisplay">15px</span><button type="button" class="setting-adjust-btn" onclick="adjustFontSize(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetFontSize()">恢复默认 (15px)</button></div>
             <div class="settings-row"><label>选项间距</label><div class="range-container"><span>窄</span><input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1"><span>宽</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(-1)">-</button><span class="setting-value-display" id="optGapDisplay">8px</span><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button></div>
             <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥</div></div>
+            <div class="settings-row"><label>语音反馈</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsVoiceEnabled" style="width:20px;height:20px;accent-color:var(--primary)"><span>启用答题音效</span></div><div class="hint">提交答案后播放正确或错误提示音</div></div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
         </div>
@@ -272,7 +273,6 @@
     </div>
 
     <script>
-        // ===== 初始化 =====
         (function() {
             function setVH() { var vh = window.innerHeight*0.01; document.documentElement.style.setProperty('--vh', vh+'px'); }
             setVH(); window.addEventListener('resize', setVH);
@@ -280,6 +280,28 @@
             function setSafeArea() { var style = getComputedStyle(document.documentElement); if (!style.getPropertyValue('--safe-top') || style.getPropertyValue('--safe-top')==='0px') { if (CSS.supports('padding-top', 'env(safe-area-inset-top)')) { document.documentElement.style.setProperty('--safe-top', 'env(safe-area-inset-top)'); document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom)'); } } }
             setSafeArea();
         })();
+
+        // 语音引擎
+        var audioCtx = null;
+        function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } }
+        function playTone(type) {
+            if (!audioCtx) initAudio();
+            if (!audioCtx) return;
+            var osc = audioCtx.createOscillator(); var gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.value = 0.15;
+            var now = audioCtx.currentTime;
+            if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'wrong') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(200, now + 0.15);
+                gain.gain.linearRampToValueAtTime(0, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            }
+        }
 
         var dangerCallback = null;
         window.showDangerConfirm = function(title, desc, callback) {
@@ -318,6 +340,7 @@
         var questionStatus=[], randomCount=50, autoSkip=true, autoRemoveWrongCount=1;
         var hideDone=false, theme='day', fontSize=15, optGap=8;
         var aiEnabled=false, aiApiKey='', aiCache={};
+        var voiceEnabled = true;
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
         var examGroupInfo = null;
@@ -333,7 +356,7 @@
             try { savedProgress = JSON.parse(localStorage.getItem('quizProgress')||'{}'); } catch(e) {}
             try { aiCache = JSON.parse(localStorage.getItem('aiCache')||'{}'); } catch(e) {}
             migrateProgress();
-            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; } catch(e) {}
+            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; } catch(e) {}
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             var names = Object.keys(banks); if (names.length>0) { var lastName = localStorage.getItem('lastBankName'); if (lastName && banks[lastName]) { currentBankName = lastName; } else { currentBankName = names[0]; } }
         }
@@ -353,9 +376,9 @@
 
         (function bindSliderEvents() { function bind() { var fontSizeSlider = document.getElementById('settingsFontSize'); if (fontSizeSlider) { fontSizeSlider.addEventListener('input', function() { var display=document.getElementById('fontSizeDisplay'); if (display) display.textContent = this.value+'px'; applyFontSize(parseInt(this.value)); }); } var optGapSlider = document.getElementById('settingsOptGap'); if (optGapSlider) { optGapSlider.addEventListener('input', function() { var display=document.getElementById('optGapDisplay'); if (display) display.textContent = this.value+'px'; applyOptGap(parseInt(this.value)); }); } } if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded', bind); } else { bind(); } })();
 
-        function saveSettings() { var fontSizeInput = document.getElementById('settingsFontSize'); var optGapInput = document.getElementById('settingsOptGap'); randomCount = parseInt(document.getElementById('settingsRandomCount').value); autoRemoveWrongCount = parseInt(document.getElementById('settingsAutoRemoveCount').value); hideDone = document.getElementById('settingsHideDone').checked; fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15; optGap = optGapInput ? parseInt(optGapInput.value) : 8; aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim(); if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1; if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8; localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey })); applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap); document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = ''; showToast('设置已保存'); }
+        function saveSettings() { var fontSizeInput = document.getElementById('settingsFontSize'); var optGapInput = document.getElementById('settingsOptGap'); randomCount = parseInt(document.getElementById('settingsRandomCount').value); autoRemoveWrongCount = parseInt(document.getElementById('settingsAutoRemoveCount').value); hideDone = document.getElementById('settingsHideDone').checked; fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15; optGap = optGapInput ? parseInt(optGapInput.value) : 8; aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim(); voiceEnabled = document.getElementById('settingsVoiceEnabled').checked; if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1; if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8; localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled })); applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap); document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = ''; showToast('设置已保存'); }
         function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = ''; }
-        window.openSettings = function() { document.getElementById('settingsRandomCount').value = randomCount; document.getElementById('settingsAutoRemoveCount').value = autoRemoveWrongCount; document.getElementById('settingsHideDone').checked = hideDone; document.getElementById('settingsFontSize').value = fontSize; document.getElementById('settingsOptGap').value = optGap; document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none'; var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px'; var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px'; applyTheme(theme); document.getElementById('settingsModal').classList.add('show'); document.body.style.overflow = 'hidden'; };
+        window.openSettings = function() { document.getElementById('settingsRandomCount').value = randomCount; document.getElementById('settingsAutoRemoveCount').value = autoRemoveWrongCount; document.getElementById('settingsHideDone').checked = hideDone; document.getElementById('settingsFontSize').value = fontSize; document.getElementById('settingsOptGap').value = optGap; document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none'; document.getElementById('settingsVoiceEnabled').checked = voiceEnabled; var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px'; var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px'; applyTheme(theme); document.getElementById('settingsModal').classList.add('show'); document.body.style.overflow = 'hidden'; };
         window.switchTab = function(tab) { currentTab = tab; if (tab==='practice') currentPage='home'; else currentPage='manage'; document.getElementById('tabPracticeBtn').classList.toggle('active', tab==='practice'); document.getElementById('tabManageBtn').classList.toggle('active', tab==='manage'); render(); };
         window.goHome = function() { currentPage='home'; render(); };
         window.goPage = function(page) { currentPage = page; window.scrollTo(0,0); render(); };
@@ -368,17 +391,10 @@
                 setTimeout(function() {
                     try {
                         var data = new Uint8Array(e.target.result);
-                        // 启用日期解析并强制中文格式
                         var wb = XLSX.read(data, { type: 'array', cellDates: true });
-                        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
-                            raw: false,
-                            header: 1,
-                            dateNF: 'yyyy"年"m"月"d"日'
-                        });
+                        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false, header: 1, dateNF: 'yyyy"年"m"月"d"日' });
                         if (rows.length < 2) { alert('文件内容太少'); return; }
-                        pendingRows = rows;
-                        pendingFileName = file.name;
-                        showHeaderSelection();
+                        pendingRows = rows; pendingFileName = file.name; showHeaderSelection();
                     } catch(err) { alert('文件读取失败'); }
                 }, 50);
             };
@@ -494,7 +510,20 @@
 
         function restoreCurrentSelection() { var status = questionStatus[currentIndex]; if (status && status.selected && status.selected.length) { selectedOptions.clear(); status.selected.forEach(function(v){ selectedOptions.add(v); }); feedbackInfo = { correct: status.correct, message: status.correct ? '正确！' : '错误！正确答案：' + currentQuestions[currentIndex]['答案'] + (currentQuestions[currentIndex]['解析'] ? '<br>解析：' + currentQuestions[currentIndex]['解析'] : '') }; } else { selectedOptions.clear(); feedbackInfo = null; } }
 
-        window.submitAnswer = function() { if (!currentQuestions.length||currentIndex>=currentQuestions.length) return; var q = currentQuestions[currentIndex]; var selectedArr = setToArray(selectedOptions); var ua = q['题型']==='多选题'?selectedArr.sort().join(''):(selectedArr[0]||''); if (!ua) { alert('请选择答案'); return; } var ok; if (q['题型']==='判断题') { var uaText = ua==='A'?'正确':(ua==='B'?'错误':''); ok = uaText===q['答案']; } else { ok = ua.toUpperCase()===q['答案'].toUpperCase(); } feedbackInfo = { correct:ok, message:ok?'正确！':'错误！正确答案：'+q['答案']+(q['解析']?'<br>解析：'+q['解析']:'') }; if (!ok) { var info = wrongInfo[q.id]||{count:0,lastDate:'',dates:[],correctStreak:0}; info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate); if (info.dates.length>20) info.dates = info.dates.slice(-20); info.correctStreak=0; wrongInfo[q.id]=info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak||0)+1; if (autoRemoveWrongCount>0 && wrongInfo[q.id].correctStreak>=autoRemoveWrongCount) delete wrongInfo[q.id]; } } if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered=true; questionStatus[currentIndex].correct=ok; questionStatus[currentIndex].selected = selectedArr.slice(); } saveAll(); render(); if (ok && autoSkip && currentIndex<currentQuestions.length-1) setTimeout(function(){ currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); },800); };
+        window.submitAnswer = function() {
+            if (!currentQuestions.length||currentIndex>=currentQuestions.length) return;
+            var q = currentQuestions[currentIndex]; var selectedArr = setToArray(selectedOptions);
+            var ua = q['题型']==='多选题'?selectedArr.sort().join(''):(selectedArr[0]||'');
+            if (!ua) { alert('请选择答案'); return; }
+            var ok; if (q['题型']==='判断题') { var uaText = ua==='A'?'正确':(ua==='B'?'错误':''); ok = uaText===q['答案']; } else { ok = ua.toUpperCase()===q['答案'].toUpperCase(); }
+            feedbackInfo = { correct:ok, message:ok?'正确！':'错误！正确答案：'+q['答案']+(q['解析']?'<br>解析：'+q['解析']:'') };
+            if (!ok) { var info = wrongInfo[q.id]||{count:0,lastDate:'',dates:[],correctStreak:0}; info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate); if (info.dates.length>20) info.dates = info.dates.slice(-20); info.correctStreak=0; wrongInfo[q.id]=info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak||0)+1; if (autoRemoveWrongCount>0 && wrongInfo[q.id].correctStreak>=autoRemoveWrongCount) delete wrongInfo[q.id]; } }
+            if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered=true; questionStatus[currentIndex].correct=ok; questionStatus[currentIndex].selected = selectedArr.slice(); }
+            saveAll(); render();
+            // 播放语音反馈
+            if (voiceEnabled) { initAudio(); playTone(ok ? 'correct' : 'wrong'); }
+            if (ok && autoSkip && currentIndex<currentQuestions.length-1) setTimeout(function(){ currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); },800);
+        };
         window.nextQuestion = function() { if (currentIndex<currentQuestions.length-1) { currentIndex++; restoreCurrentSelection(); saveProgress(); render(); } else alert('已是最后一题'); };
         window.prevQuestion = function() { if (currentIndex>0) { currentIndex--; restoreCurrentSelection(); saveProgress(); render(); } };
         window.toggleOption = function(l,t) { if (t==='single') { selectedOptions.clear(); selectedOptions.add(l); } else selectedOptions.has(l)?selectedOptions.delete(l):selectedOptions.add(l); render(); };
