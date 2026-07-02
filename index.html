@@ -147,7 +147,6 @@
         <div class="nav-title">刷题吧</div>
         <div class="nav-right">
             <button class="nav-btn" onclick="hardUpdate()">更新</button>
-            <button class="nav-btn" onclick="forceRefresh()">强制刷新</button>
             <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
             <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
         </div>
@@ -221,6 +220,10 @@
                 <div class="hint">勾选“自动备份”后，每次答题将自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div>
             </div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
+            <div class="settings-row">
+                <button class="settings-reset-btn" onclick="forceRefresh()">强制刷新</button>
+                <div class="hint">注销缓存并重新加载页面，不影响题库数据</div>
+            </div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
         </div>
     </div>
@@ -256,6 +259,7 @@
 
         // 强制刷新（注销所有 SW 并重新加载）
         function forceRefresh() {
+            if (!confirm('确定要强制刷新吗？这将重新加载页面，不影响题库数据。')) return;
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for (let registration of registrations) { registration.unregister(); }
@@ -439,6 +443,7 @@
             xhr.open(jsonbinBinId ? 'PUT' : 'POST', url, true);
             xhr.setRequestHeader('X-Master-Key', jsonbinApiKey);
             xhr.setRequestHeader('Content-Type', 'application/json');
+            
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     const response = JSON.parse(xhr.responseText);
@@ -448,14 +453,28 @@
                     }
                     if (!isAuto) showToast('备份成功');
                 } else {
-                    if (!isAuto) showToast('备份失败: ' + (xhr.statusText || '状态码 ' + xhr.status));
+                    let errMsg = '备份失败';
+                    if (xhr.status === 401) errMsg = 'API Key 无效';
+                    else if (xhr.status === 403) errMsg = '无权限，请检查 Key 权限';
+                    else if (xhr.status === 404) errMsg = '接口不存在，请检查网络';
+                    else if (xhr.status === 429) errMsg = '请求太频繁，请稍后重试';
+                    else errMsg = '备份失败：状态码 ' + xhr.status + ' ' + (xhr.statusText || '');
+                    if (!isAuto) showToast(errMsg);
                     else showToast('自动备份失败');
                 }
             };
+            
             xhr.onerror = function() {
-                if (!isAuto) showToast('备份失败: 网络错误');
-                else showToast('自动备份失败: 网络错误');
+                if (!isAuto) showToast('网络错误：无法连接服务器，请检查网络或稍后重试');
+                else showToast('自动备份失败：网络错误');
             };
+            
+            xhr.ontimeout = function() {
+                if (!isAuto) showToast('请求超时，请检查网络');
+                else showToast('自动备份失败：超时');
+            };
+            
+            xhr.timeout = 15000; // 15秒超时
             xhr.send(JSON.stringify({ data: payload }));
         };
 
