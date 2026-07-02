@@ -464,7 +464,7 @@
                 if (!isAuto) showToast('网络错误，请检查网络');
                 else showToast('自动备份失败：网络错误');
             };
-            xhr.timeout = 15000;
+            xhr.timeout = 30000;
             xhr.ontimeout = function() {
                 if (!isAuto) showToast('请求超时');
                 else showToast('自动备份失败：超时');
