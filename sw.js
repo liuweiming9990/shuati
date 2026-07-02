@@ -1,12 +1,18 @@
-const CACHE_NAME = 'shuati-v2';
+const CACHE_NAME = 'shuati-v3';
 
-// 安装时缓存首页
+// 需要预缓存的文件列表
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json',
+  './tubiao.PNG'
+];
+
+// 安装时缓存首页及关键配置
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(['./', './index.html']);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
 });
 
@@ -25,7 +31,6 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cached => {
-      // 先用缓存，同时后台更新
       const fetchPromise = fetch(event.request).then(response => {
         const cloned = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
