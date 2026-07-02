@@ -409,6 +409,7 @@
             document.body.style.overflow = '';
         };
 
+        // ========= 修复后的备份函数 =========
         window.backupToJsonbin = async function(isAuto) {
             if (!jsonbinApiKey) { if (!isAuto) showToast('请先设置 JSONBin API Key'); return; }
             const data = {
@@ -419,7 +420,9 @@
                 appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
                 aiCache: aiCache
             };
-            const payload = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+            // 安全支持中文的 Base64 编码
+            const bytes = new TextEncoder().encode(JSON.stringify(data));
+            const payload = btoa(String.fromCharCode(...bytes));
             const headers = { 'X-Master-Key': jsonbinApiKey, 'Content-Type': 'application/json' };
             try {
                 if (!jsonbinBinId) {
@@ -435,6 +438,8 @@
                 if (!isAuto) showToast('备份成功');
             } catch(e) { if (!isAuto) showToast('备份失败: ' + e.message); else showToast('自动备份失败: ' + e.message); }
         };
+
+        // ========= 修复后的恢复函数 =========
         window.restoreFromJsonbin = async function() {
             if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
             if (!jsonbinBinId) { showToast('未找到云端数据，请先备份一次'); return; }
@@ -444,7 +449,10 @@
                 if (!res.ok) throw new Error(j.message || '读取失败');
                 const payload = j.record && j.record.data;
                 if (!payload) throw new Error('无数据');
-                const data = JSON.parse(decodeURIComponent(escape(atob(payload))));
+                // 安全解码
+                const binary = atob(payload);
+                const bytes = new Uint8Array([...binary].map(c => c.charCodeAt(0)));
+                const data = JSON.parse(new TextDecoder().decode(bytes));
                 banks = data.quizBanks || {};
                 wrongInfo = data.wrongInfo || {};
                 favSet = new Set(data.favSet || []);
