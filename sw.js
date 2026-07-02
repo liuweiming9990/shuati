@@ -9,7 +9,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// 激活时清理旧缓存
+// 激活时清理旧缓存并立即接管所有页面
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
