@@ -450,15 +450,30 @@
                     }
                     if (!isAuto) showToast('备份成功');
                 } else {
-                    try {
-                        var err = JSON.parse(xhr.responseText);
-                        if (!isAuto) showToast('备份失败: ' + (err.message || xhr.status));
-                        else showToast('自动备份失败');
-                    } catch(e) {
-                        if (!isAuto) showToast('备份失败: ' + xhr.status);
-                        else showToast('自动备份失败');
+                // 如果是 404，说明 Gist 已被删除，清除本地 ID 并自动重试
+                if (xhr.status === 404) {
+                    githubGistId = '';
+                    var currentSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
+                    currentSettings.githubGistId = '';
+                    localStorage.setItem('appSettings', JSON.stringify(currentSettings));
+                    if (!isAuto) {
+                        showToast('云端记录已丢失，正在重新创建...');
+                        backupToCloud(false);  // 自动重试，这次会用 POST 创建新 Gist
+                    } else {
+                        showToast('自动备份失败：云端记录丢失，请手动备份一次');
                     }
+                    return;
                 }
+                // 其他错误处理（原来的逻辑）
+                try {
+                    var err = JSON.parse(xhr.responseText);
+                    if (!isAuto) showToast('备份失败: ' + (err.message || xhr.status));
+                    else showToast('自动备份失败');
+                } catch(e) {
+                    if (!isAuto) showToast('备份失败: ' + xhr.status);
+                    else showToast('自动备份失败');
+                }
+            }
             };
             xhr.onerror = function() {
                 if (!isAuto) showToast('网络错误，请检查网络');
