@@ -138,8 +138,7 @@
         .tutorial-content ol { padding-left: 20px; margin-bottom: 12px; }
         .tutorial-content ol li { margin-bottom: 4px; }
         .tutorial-content a { color: var(--primary); }
-        /* 教程弹窗提高层级 */
-        #tutorialModal { z-index: 250; }
+        #tutorialModal { z-index: 300; }
     </style>
 </head>
 <body>
@@ -206,7 +205,7 @@
             <div class="settings-row"><label>选项间距</label><div class="range-container"><span>窄</span><input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1"><span>宽</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(-1)">-</button><span class="setting-value-display" id="optGapDisplay">8px</span><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button></div>
             <div class="settings-row"><label>语音反馈</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsVoiceEnabled" style="width:20px;height:20px;accent-color:var(--primary)"><span>启用答题音效</span></div><div class="hint">提交答案后播放正确或错误提示音</div></div>
             <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('ai')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
-            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button></div><div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="settingsAutoBackup" style="width:20px;height:20px;accent-color:var(--primary)"><span>自动备份</span></div><div class="hint">开启后每次答题自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
+            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button><label style="display:flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap;"><input type="checkbox" id="settingsAutoBackup" style="width:18px;height:18px;accent-color:var(--primary)">自动备份</label></div><div class="hint">开启后每次答题自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
         </div>
@@ -229,7 +228,6 @@
             setSafeArea();
         })();
 
-        // 语音引擎
         var audioCtx = null;
         function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); } }
         function playTone(type) {
@@ -305,10 +303,7 @@
             localStorage.setItem('favSet', JSON.stringify(setToArray(favSet))); 
             localStorage.setItem('aiCache', JSON.stringify(aiCache)); 
             saveProgress(); 
-            // 自动备份
-            if (autoBackup && jsonbinApiKey) {
-                backupToJsonbin(true);
-            }
+            if (autoBackup && jsonbinApiKey) { backupToJsonbin(true); }
         }
         function saveProgress() { if (currentBankName && currentMode && currentQuestions.length>0) { if (!savedProgress[currentBankName]) { savedProgress[currentBankName] = {}; } var statusCopy = questionStatus.map(function(s){ return { answered: s.answered, correct: s.correct, selected: s.selected ? s.selected.slice() : [] }; }); savedProgress[currentBankName][currentMode] = { questionIds: currentQuestions.map(function(q){ return q.id; }), index: currentIndex, status: statusCopy }; } localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
         function restoreProgress(bn, mode) { var bankProgress = savedProgress[bn]; if (!bankProgress) return false; var p = bankProgress[mode]; if (!p || !p.questionIds || p.questionIds.length===0) return false; var pool = banks[bn] ? banks[bn].questions : [], qm={}; for (var i=0; i<pool.length; i++) { qm[pool[i].id] = pool[i]; } currentQuestions = p.questionIds.map(function(id){ return qm[id]; }).filter(Boolean); if (currentQuestions.length===0) { delete bankProgress[mode]; saveProgress(); return false; } currentIndex = Math.min(p.index, currentQuestions.length-1); questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; }); normalizeStatus(); selectedOptions.clear(); feedbackInfo = null; return true; }
