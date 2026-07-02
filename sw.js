@@ -1,12 +1,5 @@
 const CACHE_NAME = 'shuati-v3';
-
-// 需要预缓存的文件列表
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './tubiao.PNG'
-];
+const urlsToCache = ['./', './index.html', './manifest.json', './tubiao.PNG'];
 
 // 安装时缓存首页及关键配置
 self.addEventListener('install', event => {
@@ -27,8 +20,15 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 缓存优先策略（秒开）
+// 缓存优先策略，但排除 API 请求
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  // 对于外部 API，直接走网络，不缓存
+  if (url.hostname.includes('api.siliconflow.cn') || url.hostname.includes('api.jsonbin.io')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  // 其他请求：缓存优先，同时后台更新
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetchPromise = fetch(event.request).then(response => {
