@@ -53,7 +53,7 @@
         .analysis.correct { background: #f0fdf4; color: #166534 }
         .analysis.wrong { background: #fee2e2; color: #b91c1c }
         .analysis.info { background: #f0fdf4; color: #166534 }
-        .ai-analysis { margin-top: 8px; padding: 12px; border-radius: var(--r); background: #eff6ff; color: #1e40af; font-size: 14px; line-height: 1.6; border: 1px solid #bfdbfe; display: none; word-break: break-word; text-align: left }
+        .ai-analysis { margin-top: 8px; padding: 12px; border-radius: var(--r); background: var(--input-bg); color: var(--text); font-size: 14px; line-height: 1.6; border: 1px solid var(--primary); display: none; word-break: break-word; text-align: left }
         .ai-analysis.show { display: block }
         .ai-btn { margin-top: 8px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); font-size: 13px; cursor: pointer; -webkit-appearance: none; appearance: none; touch-action: manipulation }
         .ai-btn:disabled { opacity: 0.5; cursor: not-allowed }
@@ -133,6 +133,12 @@
         .exam-priority-row { display: flex; gap: 8px; margin-bottom: 12px }
         .exam-priority-btn { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 13px; cursor: pointer; text-align: center }
         .exam-priority-btn.active { background: var(--primary); color: #fff; border-color: var(--primary) }
+        /* 教程弹窗 */
+        .tutorial-content { text-align: left; font-size: 14px; line-height: 1.6; }
+        .tutorial-content p { margin-bottom: 8px; }
+        .tutorial-content ol { padding-left: 20px; margin-bottom: 12px; }
+        .tutorial-content ol li { margin-bottom: 4px; }
+        .tutorial-content a { color: var(--primary); }
     </style>
 </head>
 <body>
@@ -177,6 +183,17 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="tutorialModal">
+        <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h3 style="margin:0" id="tutorialTitle">获取API密钥教程</h3>
+                <button class="btn btn-nav" onclick="closeTutorial()" style="padding:4px 10px;font-size:18px;line-height:1;min-height:auto">✕</button>
+            </div>
+            <div class="tutorial-content" id="tutorialContent"></div>
+            <div style="text-align:center;margin-top:12px"><button class="btn btn-nav" onclick="closeTutorial()">关闭</button></div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-box">
             <h3>设置</h3>
@@ -186,9 +203,10 @@
             <div class="settings-row"><label>主题模式</label><div class="theme-btn-group"><div class="theme-btn active" data-theme="day" onclick="setTheme('day')">日间</div><div class="theme-btn" data-theme="night" onclick="setTheme('night')">夜间</div><div class="theme-btn" data-theme="eye" onclick="setTheme('eye')">护眼</div></div></div>
             <div class="settings-row"><label>字体大小</label><div class="range-container"><span>小</span><input type="range" id="settingsFontSize" min="13" max="22" value="15" step="1"><span>大</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustFontSize(-1)">-</button><span class="setting-value-display" id="fontSizeDisplay">15px</span><button type="button" class="setting-adjust-btn" onclick="adjustFontSize(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetFontSize()">恢复默认 (15px)</button></div>
             <div class="settings-row"><label>选项间距</label><div class="range-container"><span>窄</span><input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1"><span>宽</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(-1)">-</button><span class="setting-value-display" id="optGapDisplay">8px</span><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button></div>
-            <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥</div></div>
+            <!-- 语音反馈移到AI解析上方 -->
             <div class="settings-row"><label>语音反馈</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsVoiceEnabled" style="width:20px;height:20px;accent-color:var(--primary)"><span>启用答题音效</span></div><div class="hint">提交答案后播放正确或错误提示音</div></div>
-            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button></div><div class="hint">注册 <a href="https://jsonbin.io" target="_blank" style="color:var(--primary)">jsonbin.io</a> 获取免费API密钥</div></div>
+            <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('ai')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
+            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button></div><div class="hint">注册 <a href="https://jsonbin.io" target="_blank" style="color:var(--primary)">jsonbin.io</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
         </div>
@@ -327,7 +345,34 @@
         window.goPage = function(page) { currentPage = page; window.scrollTo(0,0); render(); };
         window.toggleAutoSkip = function(cb) { autoSkip = cb.checked; saveAll(); };
 
-        // ===== JSONBin 同步 =====
+        // 教程弹窗
+        window.showTutorial = function(type) {
+            var title = document.getElementById('tutorialTitle');
+            var content = document.getElementById('tutorialContent');
+            if (type === 'ai') {
+                title.textContent = '如何获取 SiliconFlow API 密钥';
+                content.innerHTML = '<p>1. 打开 <a href="https://siliconflow.cn" target="_blank">siliconflow.cn</a> 并注册/登录。</p>' +
+                    '<p>2. 进入控制台，点击左侧菜单「API 密钥」。</p>' +
+                    '<p>3. 点击「创建新的 API 密钥」，输入名称（如"刷题吧"），点击创建。</p>' +
+                    '<p>4. 复制生成的密钥（以 sk- 开头），粘贴到上方的输入框中。</p>' +
+                    '<p><strong>提示：</strong>注册即送 2000 万 tokens，个人使用足够。</p>';
+            } else if (type === 'sync') {
+                title.textContent = '如何获取 JSONBin API 密钥';
+                content.innerHTML = '<p>1. 打开 <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> 并注册/登录。</p>' +
+                    '<p>2. 进入 Dashboard，点击「API Keys」。</p>' +
+                    '<p>3. 在 Master Key 区域即可看到你的超级密钥。</p>' +
+                    '<p>4. 复制该密钥，粘贴到上方的输入框中。</p>' +
+                    '<p><strong>提示：</strong>首次备份时会自动创建存储桶，无需手动创建。</p>';
+            }
+            document.getElementById('tutorialModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        };
+        window.closeTutorial = function() {
+            document.getElementById('tutorialModal').classList.remove('show');
+            document.body.style.overflow = '';
+        };
+
+        // JSONBin 同步
         window.backupToJsonbin = async function() {
             if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
             const data = {
@@ -338,26 +383,22 @@
                 appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
                 aiCache: aiCache
             };
-            const payload = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); // Base64 编码避免暴露原始数据
+            const payload = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
             const headers = { 'X-Master-Key': jsonbinApiKey, 'Content-Type': 'application/json' };
-
             try {
                 if (!jsonbinBinId) {
-                    // 首次创建 Bin
                     const res = await fetch('https://api.jsonbin.io/v3/b', { method: 'POST', headers, body: JSON.stringify({ data: payload }) });
                     const j = await res.json();
                     if (!res.ok) throw new Error(j.message || '创建失败');
                     jsonbinBinId = j.metadata.id;
                     localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { jsonbinBinId: jsonbinBinId })));
                 } else {
-                    // 更新现有 Bin
                     const res = await fetch('https://api.jsonbin.io/v3/b/' + jsonbinBinId, { method: 'PUT', headers, body: JSON.stringify({ data: payload }) });
                     if (!res.ok) throw new Error('更新失败');
                 }
                 showToast('备份成功');
             } catch(e) { showToast('备份失败: ' + e.message); }
         };
-
         window.restoreFromJsonbin = async function() {
             if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
             if (!jsonbinBinId) { showToast('未找到云端数据，请先备份一次'); return; }
@@ -368,17 +409,13 @@
                 const payload = j.record && j.record.data;
                 if (!payload) throw new Error('无数据');
                 const data = JSON.parse(decodeURIComponent(escape(atob(payload))));
-
-                // 恢复本地数据
                 banks = data.quizBanks || {};
                 wrongInfo = data.wrongInfo || {};
                 favSet = new Set(data.favSet || []);
                 savedProgress = data.quizProgress || {};
                 aiCache = data.aiCache || {};
                 if (data.appSettings) { localStorage.setItem('appSettings', JSON.stringify(data.appSettings)); }
-                saveAll(); // 保存到 localStorage
-                loadData(); // 重新加载
-                render();
+                saveAll(); loadData(); render();
                 showToast('恢复成功');
             } catch(e) { showToast('恢复失败: ' + e.message); }
         };
