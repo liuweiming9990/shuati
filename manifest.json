@@ -1,0 +1,11 @@
+{
+  "name": "刷题吧",
+  "short_name": "刷题吧",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#3B82F6",
+  "icons": [
+    { "src": "tubiao.PNG", "sizes": "180x180", "type": "image/png" }
+  ]
+}
