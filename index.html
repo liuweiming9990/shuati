@@ -410,15 +410,20 @@
             document.body.style.overflow = '';
         };
 
-        // 备份函数 (GitHub Gist)
+        // ========== 云端备份 (已修复泄露 Token 问题) ==========
         window.backupToCloud = function(isAuto) {
             if (!githubToken) { if (!isAuto) showToast('请先设置 GitHub Token'); return; }
+            // 过滤敏感字段：复制 appSettings 并删除 token 和 apiKey
+            var appSettingsCopy = JSON.parse(localStorage.getItem('appSettings')||'{}');
+            delete appSettingsCopy.githubToken;
+            delete appSettingsCopy.aiApiKey;
+
             const data = {
                 quizBanks: banks,
                 wrongInfo: wrongInfo,
                 favSet: setToArray(favSet),
                 quizProgress: savedProgress,
-                appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
+                appSettings: appSettingsCopy,
                 aiCache: aiCache
             };
             const payload = JSON.stringify(data);
@@ -438,13 +443,21 @@
                     const response = JSON.parse(xhr.responseText);
                     if (!isUpdate) {
                         githubGistId = response.id;
-                        localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { githubGistId: githubGistId })));
+                        // 更新本地 appSettings 中的 gistId
+                        var currentSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
+                        currentSettings.githubGistId = githubGistId;
+                        localStorage.setItem('appSettings', JSON.stringify(currentSettings));
                     }
                     if (!isAuto) showToast('备份成功');
                 } else {
-                    const err = JSON.parse(xhr.responseText);
-                    if (!isAuto) showToast('备份失败: ' + (err.message || xhr.status));
-                    else showToast('自动备份失败');
+                    try {
+                        var err = JSON.parse(xhr.responseText);
+                        if (!isAuto) showToast('备份失败: ' + (err.message || xhr.status));
+                        else showToast('自动备份失败');
+                    } catch(e) {
+                        if (!isAuto) showToast('备份失败: ' + xhr.status);
+                        else showToast('自动备份失败');
+                    }
                 }
             };
             xhr.onerror = function() {
@@ -469,7 +482,7 @@
             xhr.send(JSON.stringify(body));
         };
 
-        // 恢复函数 (GitHub Gist)
+        // ========== 云端恢复 (已修复敏感信息丢失问题) ==========
         window.restoreFromCloud = function() {
             if (!githubToken) { showToast('请先设置 GitHub Token'); return; }
             if (!githubGistId) { showToast('未找到云端数据，请先备份一次'); return; }
@@ -488,7 +501,13 @@
                         favSet = new Set(data.favSet || []);
                         savedProgress = data.quizProgress || {};
                         aiCache = data.aiCache || {};
-                        if (data.appSettings) { localStorage.setItem('appSettings', JSON.stringify(data.appSettings)); }
+                        if (data.appSettings) {
+                            // 恢复设置时，保留本地已有的 Token 和 AI Key
+                            var localSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
+                            data.appSettings.githubToken = localSettings.githubToken || '';
+                            data.appSettings.aiApiKey = localSettings.aiApiKey || '';
+                            localStorage.setItem('appSettings', JSON.stringify(data.appSettings));
+                        }
                         saveAll(); loadData(); render();
                         showToast('恢复成功');
                     } catch(e) { showToast('恢复失败: 数据解析错误'); }
