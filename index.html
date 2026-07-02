@@ -25,53 +25,25 @@
         .theme-eye { --bg: #f5f0e8; --card: #fffaf0; --primary: #5a8a6a; --text: #3e3e3e; --text2: #8a8a8a; --border: #d5c9b5; --input-bg: #faf5eb }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none }
         input,textarea,select,.option-item,.mode-btn,.btn,.nav-btn,.answer-cell,.setting-adjust-btn { -webkit-user-select:auto; user-select:auto; -webkit-touch-callout:default }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            background: var(--bg); color: var(--text); min-height: 100vh; min-height: -webkit-fill-available;
-            padding-top: var(--safe-top); padding-bottom: calc(1rem + var(--safe-bottom));
-            -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow-x: hidden
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: -webkit-fill-available; padding-top: var(--safe-top); padding-bottom: calc(1rem + var(--safe-bottom)); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow-x: hidden }
         html { height: -webkit-fill-available }
-        .nav {
-            background: var(--card); padding: 12px 16px; display: flex; justify-content: space-between;
-            align-items: center; border-bottom: 1px solid var(--border); position: -webkit-sticky; position: sticky;
-            top: 0; z-index: 100; padding-top: calc(12px + var(--safe-top));
-            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px)
-        }
+        .nav { background: var(--card); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: -webkit-sticky; position: sticky; top: 0; z-index: 100; padding-top: calc(12px + var(--safe-top)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px) }
         .nav-title { font-size: 18px; font-weight: 700; color: var(--primary) }
         .nav-right { display: flex; gap: 6px; align-items: center }
-        .nav-btn {
-            background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
-            padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500;
-            white-space: nowrap; -webkit-appearance: none; appearance: none
-        }
+        .nav-btn { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500; white-space: nowrap; -webkit-appearance: none; appearance: none }
         .nav-btn.active { background: var(--primary); color: #fff; border-color: var(--primary) }
         .main { padding: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 24px }
-        .card {
-            background: var(--card); border-radius: var(--r); padding: 16px; margin-bottom: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,.05); -webkit-transform: translateZ(0); transform: translateZ(0)
-        }
+        .card { background: var(--card); border-radius: var(--r); padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.05); -webkit-transform: translateZ(0); transform: translateZ(0) }
         .card-title { font-size: 14px; color: var(--text2); margin-bottom: 8px; font-weight: 500; word-break: break-word }
         .question-text { font-size: var(--fs); line-height: 1.6; margin-bottom: 16px; font-weight: 500; word-break: break-word }
-        .option-item {
-            display: flex; align-items: center; padding: var(--opt-pad); margin-bottom: var(--opt-gap);
-            background: var(--input-bg); border-radius: var(--r); cursor: pointer; border: 1.5px solid var(--border);
-            font-size: var(--fs); transition: .2s; touch-action: manipulation
-        }
+        .option-item { display: flex; align-items: center; padding: var(--opt-pad); margin-bottom: var(--opt-gap); background: var(--input-bg); border-radius: var(--r); cursor: pointer; border: 1.5px solid var(--border); font-size: var(--fs); transition: .2s; touch-action: manipulation }
         .option-item:active { opacity: 0.8; transform: scale(0.98) }
         .option-item.selected { border-color: var(--primary); background: rgba(59,130,246,.05) }
         .option-item.correct-highlight { border-color: #10B981; background: rgba(16,185,129,.08) }
-        .option-item .letter {
-            width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: rgba(59,130,246,.1);
-            display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;
-            font-size: 13px; flex-shrink: 0; color: var(--primary)
-        }
+        .option-item .letter { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: rgba(59,130,246,.1); display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700; font-size: 13px; flex-shrink: 0; color: var(--primary) }
         .option-item.selected .letter { background: var(--primary); color: #fff }
         .option-item.correct-highlight .letter { background: #10B981; color: #fff }
-        .btn {
-            padding: 14px; border: none; border-radius: var(--r); font-size: 15px; font-weight: 600; cursor: pointer;
-            -webkit-appearance: none; appearance: none; touch-action: manipulation; min-height: 48px
-        }
+        .btn { padding: 14px; border: none; border-radius: var(--r); font-size: 15px; font-weight: 600; cursor: pointer; -webkit-appearance: none; appearance: none; touch-action: manipulation; min-height: 48px }
         .btn:active { opacity: 0.8; transform: scale(0.97) }
         .btn-submit { background: var(--primary); color: #fff }
         .btn-nav { background: var(--input-bg); color: var(--text); border: 1px solid var(--border) }
@@ -81,74 +53,31 @@
         .analysis.correct { background: #f0fdf4; color: #166534 }
         .analysis.wrong { background: #fee2e2; color: #b91c1c }
         .analysis.info { background: #f0fdf4; color: #166534 }
-        .ai-analysis {
-            margin-top: 8px; padding: 12px; border-radius: var(--r); background: #eff6ff; color: #1e40af;
-            font-size: 14px; line-height: 1.6; border: 1px solid #bfdbfe; display: none; word-break: break-word;
-            text-align: left
-        }
+        .ai-analysis { margin-top: 8px; padding: 12px; border-radius: var(--r); background: #eff6ff; color: #1e40af; font-size: 14px; line-height: 1.6; border: 1px solid #bfdbfe; display: none; word-break: break-word; text-align: left }
         .ai-analysis.show { display: block }
-        .ai-btn {
-            margin-top: 8px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--primary);
-            background: var(--card); color: var(--primary); font-size: 13px; cursor: pointer;
-            -webkit-appearance: none; appearance: none; touch-action: manipulation
-        }
+        .ai-btn { margin-top: 8px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); font-size: 13px; cursor: pointer; -webkit-appearance: none; appearance: none; touch-action: manipulation }
         .ai-btn:disabled { opacity: 0.5; cursor: not-allowed }
         .progress-text { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 4px }
         .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin: 12px 0; overflow: hidden }
         .progress-fill { height: 100%; background: var(--primary); transition: width .3s }
         .mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px }
-        .mode-btn {
-            padding: 12px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: var(--r);
-            color: var(--text); font-size: 14px; cursor: pointer; text-align: center;
-            -webkit-appearance: none; appearance: none; touch-action: manipulation; min-height: 44px;
-            display: flex; align-items: center; justify-content: center
-        }
+        .mode-btn { padding: 12px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: var(--r); color: var(--text); font-size: 14px; cursor: pointer; text-align: center; -webkit-appearance: none; appearance: none; touch-action: manipulation; min-height: 44px; display: flex; align-items: center; justify-content: center }
         .mode-btn:active { opacity: 0.8; transform: scale(0.97) }
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            height: -webkit-fill-available; background: rgba(0,0,0,.5); z-index: 200;
-            justify-content: center; align-items: center; -webkit-overflow-scrolling: touch;
-            overflow-y: auto; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px)
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: -webkit-fill-available; background: rgba(0,0,0,.5); z-index: 200; justify-content: center; align-items: center; -webkit-overflow-scrolling: touch; overflow-y: auto; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px) }
         .modal-overlay.show { display: flex }
-        .modal-box {
-            background: var(--card); border-radius: var(--r); padding: 20px; width: 92%; max-width: 600px;
-            max-height: 85vh; max-height: calc(var(--vh,1vh)*85); overflow-y: auto; color: var(--text);
-            -webkit-overflow-scrolling: touch; -webkit-transform: translateZ(0); transform: translateZ(0)
-        }
+        .modal-box { background: var(--card); border-radius: var(--r); padding: 20px; width: 92%; max-width: 600px; max-height: 85vh; max-height: calc(var(--vh,1vh)*85); overflow-y: auto; color: var(--text); -webkit-overflow-scrolling: touch; -webkit-transform: translateZ(0); transform: translateZ(0) }
         .modal-box h3 { margin-bottom: 12px; color: var(--primary); text-align: center }
         .footer { text-align: center; padding: 20px 12px; color: var(--text2); font-size: 13px; border-top: 1px solid var(--border); margin-top: 24px }
         .import-help { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: #166534; line-height: 1.6 }
         .import-help strong { color: #15803d }
         .format-hint { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 12px; color: var(--text2); line-height: 1.6 }
         .format-hint strong { color: var(--text) }
-        .toast {
-            position: fixed; top: 20px; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%);
-            background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 2000;
-            opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; font-size: 14px
-        }
+        .toast { position: fixed; top: 20px; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 2000; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; font-size: 14px }
         .toast.show { opacity: 1 }
-        .back-btn {
-            display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg);
-            border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px;
-            cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none
-        }
-        .restart-btn {
-            display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg);
-            border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px;
-            cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none
-        }
-        .answer-grid {
-            display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin: 16px 0;
-            max-height: 55vh; max-height: calc(var(--vh,1vh)*55); overflow-y: auto; padding-right: 4px;
-            -webkit-overflow-scrolling: touch
-        }
-        .answer-cell {
-            width: 100%; aspect-ratio: 1; height: 0; padding-bottom: 100%; position: relative;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; font-weight: 600; cursor: pointer; border: 2px solid var(--border);
-            background: var(--input-bg); color: var(--text); transition: .2s; touch-action: manipulation
-        }
+        .back-btn { display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg); border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none }
+        .restart-btn { display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg); border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none }
+        .answer-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin: 16px 0; max-height: 55vh; max-height: calc(var(--vh,1vh)*55); overflow-y: auto; padding-right: 4px; -webkit-overflow-scrolling: touch }
+        .answer-cell { width: 100%; aspect-ratio: 1; height: 0; padding-bottom: 100%; position: relative; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; cursor: pointer; border: 2px solid var(--border); background: var(--input-bg); color: var(--text); transition: .2s; touch-action: manipulation }
         @supports (aspect-ratio: 1) { .answer-cell { height: auto; padding-bottom: 0; position: static } }
         .answer-cell span { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) }
         @supports (aspect-ratio: 1) { .answer-cell span { position: static; transform: none } }
@@ -259,6 +188,7 @@
             <div class="settings-row"><label>选项间距</label><div class="range-container"><span>窄</span><input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1"><span>宽</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(-1)">-</button><span class="setting-value-display" id="optGapDisplay">8px</span><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button></div>
             <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥</div></div>
             <div class="settings-row"><label>语音反馈</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsVoiceEnabled" style="width:20px;height:20px;accent-color:var(--primary)"><span>启用答题音效</span></div><div class="hint">提交答案后播放正确或错误提示音</div></div>
+            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button></div><div class="hint">注册 <a href="https://jsonbin.io" target="_blank" style="color:var(--primary)">jsonbin.io</a> 获取免费API密钥</div></div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
         </div>
@@ -281,33 +211,16 @@
             setSafeArea();
         })();
 
-        // 语音引擎（修复AudioContext暂停问题）
+        // 语音引擎
         var audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-            }
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
+        function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); } }
         function playTone(type) {
-            initAudio();
-            if (!audioCtx || audioCtx.state === 'closed') return;
+            initAudio(); if (!audioCtx || audioCtx.state === 'closed') return;
             var osc = audioCtx.createOscillator(); var gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.value = 0.15;
             var now = audioCtx.currentTime;
-            if (type === 'correct') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
-                osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
-            } else if (type === 'wrong') {
-                osc.type = 'square'; osc.frequency.setValueAtTime(400, now);
-                osc.frequency.linearRampToValueAtTime(200, now + 0.15);
-                gain.gain.linearRampToValueAtTime(0, now + 0.25);
-                osc.start(now); osc.stop(now + 0.25);
-            }
+            if (type === 'correct') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.1); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
+            else if (type === 'wrong') { osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now + 0.15); gain.gain.linearRampToValueAtTime(0, now + 0.25); osc.start(now); osc.stop(now + 0.25); }
         }
 
         var dangerCallback = null;
@@ -348,6 +261,7 @@
         var hideDone=false, theme='day', fontSize=15, optGap=8;
         var aiEnabled=false, aiApiKey='', aiCache={};
         var voiceEnabled = true;
+        var jsonbinApiKey = '', jsonbinBinId = '';
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
         var examGroupInfo = null;
@@ -363,7 +277,7 @@
             try { savedProgress = JSON.parse(localStorage.getItem('quizProgress')||'{}'); } catch(e) {}
             try { aiCache = JSON.parse(localStorage.getItem('aiCache')||'{}'); } catch(e) {}
             migrateProgress();
-            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; } catch(e) {}
+            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; jsonbinApiKey = s.jsonbinApiKey||''; jsonbinBinId = s.jsonbinBinId||''; } catch(e) {}
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             var names = Object.keys(banks); if (names.length>0) { var lastName = localStorage.getItem('lastBankName'); if (lastName && banks[lastName]) { currentBankName = lastName; } else { currentBankName = names[0]; } }
         }
@@ -383,13 +297,91 @@
 
         (function bindSliderEvents() { function bind() { var fontSizeSlider = document.getElementById('settingsFontSize'); if (fontSizeSlider) { fontSizeSlider.addEventListener('input', function() { var display=document.getElementById('fontSizeDisplay'); if (display) display.textContent = this.value+'px'; applyFontSize(parseInt(this.value)); }); } var optGapSlider = document.getElementById('settingsOptGap'); if (optGapSlider) { optGapSlider.addEventListener('input', function() { var display=document.getElementById('optGapDisplay'); if (display) display.textContent = this.value+'px'; applyOptGap(parseInt(this.value)); }); } } if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded', bind); } else { bind(); } })();
 
-        function saveSettings() { var fontSizeInput = document.getElementById('settingsFontSize'); var optGapInput = document.getElementById('settingsOptGap'); randomCount = parseInt(document.getElementById('settingsRandomCount').value); autoRemoveWrongCount = parseInt(document.getElementById('settingsAutoRemoveCount').value); hideDone = document.getElementById('settingsHideDone').checked; fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15; optGap = optGapInput ? parseInt(optGapInput.value) : 8; aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim(); voiceEnabled = document.getElementById('settingsVoiceEnabled').checked; if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1; if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8; localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled })); applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap); document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = ''; showToast('设置已保存'); }
+        function saveSettings() {
+            var fontSizeInput = document.getElementById('settingsFontSize'); var optGapInput = document.getElementById('settingsOptGap');
+            randomCount = parseInt(document.getElementById('settingsRandomCount').value); autoRemoveWrongCount = parseInt(document.getElementById('settingsAutoRemoveCount').value);
+            hideDone = document.getElementById('settingsHideDone').checked; fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15; optGap = optGapInput ? parseInt(optGapInput.value) : 8;
+            aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim();
+            voiceEnabled = document.getElementById('settingsVoiceEnabled').checked;
+            jsonbinApiKey = document.getElementById('settingsJsonbinKey').value.trim();
+            if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1;
+            if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8;
+            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled, jsonbinApiKey:jsonbinApiKey, jsonbinBinId:jsonbinBinId }));
+            applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
+            document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = '';
+            showToast('设置已保存');
+        }
         function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = ''; }
-        window.openSettings = function() { document.getElementById('settingsRandomCount').value = randomCount; document.getElementById('settingsAutoRemoveCount').value = autoRemoveWrongCount; document.getElementById('settingsHideDone').checked = hideDone; document.getElementById('settingsFontSize').value = fontSize; document.getElementById('settingsOptGap').value = optGap; document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none'; document.getElementById('settingsVoiceEnabled').checked = voiceEnabled; var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px'; var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px'; applyTheme(theme); document.getElementById('settingsModal').classList.add('show'); document.body.style.overflow = 'hidden'; };
+        window.openSettings = function() {
+            document.getElementById('settingsRandomCount').value = randomCount; document.getElementById('settingsAutoRemoveCount').value = autoRemoveWrongCount;
+            document.getElementById('settingsHideDone').checked = hideDone; document.getElementById('settingsFontSize').value = fontSize; document.getElementById('settingsOptGap').value = optGap;
+            document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none';
+            document.getElementById('settingsVoiceEnabled').checked = voiceEnabled;
+            document.getElementById('settingsJsonbinKey').value = jsonbinApiKey;
+            var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px';
+            var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px';
+            applyTheme(theme); document.getElementById('settingsModal').classList.add('show'); document.body.style.overflow = 'hidden';
+        };
         window.switchTab = function(tab) { currentTab = tab; if (tab==='practice') currentPage='home'; else currentPage='manage'; document.getElementById('tabPracticeBtn').classList.toggle('active', tab==='practice'); document.getElementById('tabManageBtn').classList.toggle('active', tab==='manage'); render(); };
         window.goHome = function() { currentPage='home'; render(); };
         window.goPage = function(page) { currentPage = page; window.scrollTo(0,0); render(); };
         window.toggleAutoSkip = function(cb) { autoSkip = cb.checked; saveAll(); };
+
+        // ===== JSONBin 同步 =====
+        window.backupToJsonbin = async function() {
+            if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
+            const data = {
+                quizBanks: banks,
+                wrongInfo: wrongInfo,
+                favSet: setToArray(favSet),
+                quizProgress: savedProgress,
+                appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
+                aiCache: aiCache
+            };
+            const payload = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); // Base64 编码避免暴露原始数据
+            const headers = { 'X-Master-Key': jsonbinApiKey, 'Content-Type': 'application/json' };
+
+            try {
+                if (!jsonbinBinId) {
+                    // 首次创建 Bin
+                    const res = await fetch('https://api.jsonbin.io/v3/b', { method: 'POST', headers, body: JSON.stringify({ data: payload }) });
+                    const j = await res.json();
+                    if (!res.ok) throw new Error(j.message || '创建失败');
+                    jsonbinBinId = j.metadata.id;
+                    localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { jsonbinBinId: jsonbinBinId })));
+                } else {
+                    // 更新现有 Bin
+                    const res = await fetch('https://api.jsonbin.io/v3/b/' + jsonbinBinId, { method: 'PUT', headers, body: JSON.stringify({ data: payload }) });
+                    if (!res.ok) throw new Error('更新失败');
+                }
+                showToast('备份成功');
+            } catch(e) { showToast('备份失败: ' + e.message); }
+        };
+
+        window.restoreFromJsonbin = async function() {
+            if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
+            if (!jsonbinBinId) { showToast('未找到云端数据，请先备份一次'); return; }
+            try {
+                const res = await fetch('https://api.jsonbin.io/v3/b/' + jsonbinBinId, { headers: { 'X-Master-Key': jsonbinApiKey } });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.message || '读取失败');
+                const payload = j.record && j.record.data;
+                if (!payload) throw new Error('无数据');
+                const data = JSON.parse(decodeURIComponent(escape(atob(payload))));
+
+                // 恢复本地数据
+                banks = data.quizBanks || {};
+                wrongInfo = data.wrongInfo || {};
+                favSet = new Set(data.favSet || []);
+                savedProgress = data.quizProgress || {};
+                aiCache = data.aiCache || {};
+                if (data.appSettings) { localStorage.setItem('appSettings', JSON.stringify(data.appSettings)); }
+                saveAll(); // 保存到 localStorage
+                loadData(); // 重新加载
+                render();
+                showToast('恢复成功');
+            } catch(e) { showToast('恢复失败: ' + e.message); }
+        };
 
         window.importFile = function(file) {
             if (!file) return;
@@ -527,7 +519,6 @@
             if (!ok) { var info = wrongInfo[q.id]||{count:0,lastDate:'',dates:[],correctStreak:0}; info.count = (info.count||0)+1; info.lastDate = new Date().toISOString().slice(0,10); info.dates.push(info.lastDate); if (info.dates.length>20) info.dates = info.dates.slice(-20); info.correctStreak=0; wrongInfo[q.id]=info; } else { if (wrongInfo[q.id]) { wrongInfo[q.id].correctStreak = (wrongInfo[q.id].correctStreak||0)+1; if (autoRemoveWrongCount>0 && wrongInfo[q.id].correctStreak>=autoRemoveWrongCount) delete wrongInfo[q.id]; } }
             if (questionStatus[currentIndex]) { questionStatus[currentIndex].answered=true; questionStatus[currentIndex].correct=ok; questionStatus[currentIndex].selected = selectedArr.slice(); }
             saveAll(); render();
-            // 播放语音反馈
             if (voiceEnabled) { initAudio(); playTone(ok ? 'correct' : 'wrong'); }
             if (ok && autoSkip && currentIndex<currentQuestions.length-1) setTimeout(function(){ currentIndex++; selectedOptions.clear(); feedbackInfo=null; saveProgress(); render(); },800);
         };
