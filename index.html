@@ -237,7 +237,7 @@
                 <h3 style="margin:0">答题卡</h3>
                 <button class="btn btn-nav" onclick="closeAnswerSheet()" style="padding:4px 10px;font-size:18px;line-height:1;min-height:auto">✕</button>
             </div>
-            <div class="answer-stats">
+            <div class="answer-stats" id="answerStatsContainer">
                 <span>已答:<span id="sheetAnswered">0</span></span>
                 <span>正确:<span id="sheetCorrect" style="color:#10B981">0</span></span>
                 <span>错误:<span id="sheetWrong" style="color:#EF4444">0</span></span>
@@ -272,7 +272,7 @@
     </div>
 
     <script>
-        // ===== 初始化安全区域和视口高度 =====
+        // ===== 初始化 =====
         (function() {
             function setVH() { var vh = window.innerHeight*0.01; document.documentElement.style.setProperty('--vh', vh+'px'); }
             setVH(); window.addEventListener('resize', setVH);
@@ -281,7 +281,6 @@
             setSafeArea();
         })();
 
-        // ===== 危险操作确认弹窗 =====
         var dangerCallback = null;
         window.showDangerConfirm = function(title, desc, callback) {
             document.getElementById('dangerTitle').textContent = title; document.getElementById('dangerDesc').textContent = desc;
@@ -293,7 +292,6 @@
         window.executeDangerAction = function() { if (dangerCallback) { dangerCallback(); } closeDangerConfirm(); };
         document.getElementById('dangerInput').addEventListener('input', function() { var btn = document.getElementById('dangerConfirmBtn'); if (this.value === '确认清空') { btn.classList.add('active'); } else { btn.classList.remove('active'); } });
 
-        // ===== Service Worker =====
         if ('serviceWorker' in navigator) { window.addEventListener('load', function() { var swPath = 'sw.js'; var path = window.location.pathname; if (path.lastIndexOf('/') > 0) { swPath = path.substring(0, path.lastIndexOf('/')+1) + 'sw.js'; } navigator.serviceWorker.register(swPath, { scope: './' }).catch(function() {}); }); }
 
         function hardUpdate() {
@@ -370,9 +368,13 @@
                 setTimeout(function() {
                     try {
                         var data = new Uint8Array(e.target.result);
-                        // 修复日期导入：启用日期解析，并让日期以字符串形式导出
+                        // 启用日期解析并强制中文格式
                         var wb = XLSX.read(data, { type: 'array', cellDates: true });
-                        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false, header: 1 });
+                        var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
+                            raw: false,
+                            header: 1,
+                            dateNF: 'yyyy"年"m"月"d"日'
+                        });
                         if (rows.length < 2) { alert('文件内容太少'); return; }
                         pendingRows = rows;
                         pendingFileName = file.name;
@@ -422,50 +424,25 @@
                 h += '<div class="btn-row" style="justify-content:center"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:16px 24px;font-size:18px">上一题</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:16px 24px;font-size:18px">下一题</button></div>';
                 h += '<div style="text-align:center;margin-top:8px"><button class="btn btn-nav" onclick="toggleFav()">'+(favSet.has(q.id)?'已收藏':'收藏')+'</button></div>';
                 if (q['解析']) h += '<div class="analysis info" style="display:block">解析：'+q['解析']+'</div>';
-                if (aiEnabled && aiApiKey && currentMode !== 'exam') {
-                    var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey];
-                    h += '<div style="text-align:center;margin-top:4px"><button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button><div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div></div>';
-                }
+                if (aiEnabled && aiApiKey && currentMode !== 'exam') { var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey]; h += '<div style="text-align:center;margin-top:4px"><button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button><div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div></div>'; }
             } else {
                 h += '<div class="btn-row"><button class="btn btn-nav" onclick="prevQuestion()" style="padding:14px 18px;font-size:16px">◀</button><button class="btn btn-submit" onclick="submitAnswer()" style="padding:14px 18px;font-size:16px">提交</button><button class="btn btn-nav" onclick="nextQuestion()" style="padding:14px 18px;font-size:16px">▶</button><button class="btn btn-nav" onclick="toggleFav()" style="padding:14px 18px;font-size:16px">'+(favSet.has(q.id)?'★':'☆')+'</button></div>';
                 if (feedbackInfo) h += '<div class="analysis '+(feedbackInfo.correct?'correct':'wrong')+'">'+feedbackInfo.message+'</div>';
-                if (aiEnabled && aiApiKey && currentMode !== 'exam' && feedbackInfo) {
-                    var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey];
-                    h += '<div style="text-align:center;margin-top:4px"><button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button><div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div></div>';
-                }
+                if (aiEnabled && aiApiKey && currentMode !== 'exam' && feedbackInfo) { var cacheKey = 'q_'+q.id; var cached = aiCache[cacheKey]; h += '<div style="text-align:center;margin-top:4px"><button class="ai-btn" id="aiBtn" onclick="requestAI()">'+(cached?'重新解析':'AI解析')+'</button><div class="ai-analysis'+(cached?' show':'')+'" id="aiContent">'+(cached||'')+'</div></div>'; }
             }
-            if (currentMode === 'exam' && questionStatus.every(function(s){ return s.answered; })) {
-                h += '<div style="text-align:center;margin-top:12px"><button class="btn btn-submit" onclick="showExamSummary()">提交考试</button></div>';
-            }
+            if (currentMode === 'exam' && questionStatus.every(function(s){ return s.answered; })) { h += '<div style="text-align:center;margin-top:12px"><button class="btn btn-submit" onclick="showExamSummary()">提交考试</button></div>'; }
             h += '</div>';
             return h;
         }
 
         window.requestAI = function() {
             var q = currentQuestions[currentIndex]; if (!q) return; var capturedId = q.id; var capturedIndex = currentIndex; var cacheKey = 'q_' + capturedId;
-            if (aiCache[cacheKey]) {
-                var btn = document.getElementById('aiBtn');
-                if (btn && btn.textContent === '重新解析') { if (!confirm('已有解析记录，确定重新解析吗？')) return; delete aiCache[cacheKey]; localStorage.setItem('aiCache', JSON.stringify(aiCache)); var content = document.getElementById('aiContent'); if (content) { content.innerHTML = ''; content.classList.remove('show'); } btn.textContent = 'AI解析'; }
-                else { var el = document.getElementById('aiContent'); if (el) { el.innerHTML = aiCache[cacheKey]; el.classList.add('show'); } return; }
-            }
+            if (aiCache[cacheKey]) { var btn = document.getElementById('aiBtn'); if (btn && btn.textContent === '重新解析') { if (!confirm('已有解析记录，确定重新解析吗？')) return; delete aiCache[cacheKey]; localStorage.setItem('aiCache', JSON.stringify(aiCache)); var content = document.getElementById('aiContent'); if (content) { content.innerHTML = ''; content.classList.remove('show'); } btn.textContent = 'AI解析'; } else { var el = document.getElementById('aiContent'); if (el) { el.innerHTML = aiCache[cacheKey]; el.classList.add('show'); } return; } }
             var btn = document.getElementById('aiBtn'); var content = document.getElementById('aiContent'); if (btn) { btn.disabled = true; btn.textContent = '请求中...'; } if (content) { content.classList.add('show'); content.innerHTML = 'AI分析中...'; }
-
-            var prompt = '你是一位金融考试辅导专家。请基于以下题目信息进行解析：\n';
-            prompt += '题目：' + q['题干'] + '\n';
-            var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; });
-            for (var i = 0; i < labels.length; i++) { prompt += labels[i] + '. ' + q['选项'][labels[i]] + '\n'; }
-            prompt += '正确答案：' + q['答案'] + '\n请简要解析这道题，用分点形式说明（1.考点 2.解题思路），简明扼要。';
-
-            fetch('https://api.siliconflow.cn/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + aiApiKey },
-                body: JSON.stringify({ model: 'deepseek-ai/DeepSeek-V3', messages: [{ role: 'user', content: prompt }], max_tokens: 400, temperature: 0.3, top_p: 0.8 })
-            }).then(function(res) { return res.json(); }).then(function(data) {
-                if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return;
-                var result = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '解析失败，请检查API密钥或网络';
-                result = result.replace(/\n/g, '<br>'); aiCache[cacheKey] = result; localStorage.setItem('aiCache', JSON.stringify(aiCache));
-                if (content) { content.innerHTML = result; } if (btn) { btn.disabled = false; btn.textContent = '重新解析'; }
-            }).catch(function() { if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return; if (content) { content.innerHTML = '请求失败，请检查网络连接'; } if (btn) { btn.disabled = false; btn.textContent = '重试'; } });
+            var prompt = '你是一位金融考试辅导专家。请基于以下题目信息进行解析：\n'; prompt += '题目：' + q['题干'] + '\n'; var labels = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); for (var i = 0; i < labels.length; i++) { prompt += labels[i] + '. ' + q['选项'][labels[i]] + '\n'; } prompt += '正确答案：' + q['答案'] + '\n请简要解析这道题，用分点形式说明（1.考点 2.解题思路），简明扼要。';
+            fetch('https://api.siliconflow.cn/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + aiApiKey }, body: JSON.stringify({ model: 'deepseek-ai/DeepSeek-V3', messages: [{ role: 'user', content: prompt }], max_tokens: 400, temperature: 0.3, top_p: 0.8 }) })
+            .then(function(res) { return res.json(); }).then(function(data) { if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return; var result = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '解析失败，请检查API密钥或网络'; result = result.replace(/\n/g, '<br>'); aiCache[cacheKey] = result; localStorage.setItem('aiCache', JSON.stringify(aiCache)); if (content) { content.innerHTML = result; } if (btn) { btn.disabled = false; btn.textContent = '重新解析'; } })
+            .catch(function() { if (currentIndex !== capturedIndex || currentQuestions[currentIndex].id !== capturedId) return; if (content) { content.innerHTML = '请求失败，请检查网络连接'; } if (btn) { btn.disabled = false; btn.textContent = '重试'; } });
         };
 
         function renderExamSummary() { var total = currentQuestions.length; var ac = 0; var cc = 0; var wc = 0; var typeStats = { '单选题': { total:0, correct:0 }, '多选题': { total:0, correct:0 }, '判断题': { total:0, correct:0 } }; for (var i=0; i<total; i++) { var s = questionStatus[i] || { answered: false, correct: false }; var q = currentQuestions[i]; if (s.answered) { ac++; if (s.correct) cc++; else wc++; if (typeStats[q['题型']]) { typeStats[q['题型']].total++; if (s.correct) typeStats[q['题型']].correct++; } } } var accuracy = total>0 ? (cc/total*100).toFixed(1) : 0; var h = '<div class="card"><div class="card-title">考试汇总</div>'; h += '<p>总题数：<strong>'+total+'</strong></p>'; h += '<p>已答：<strong>'+ac+'</strong> 正确：<strong style="color:#10B981">'+cc+'</strong> 错误：<strong style="color:#EF4444">'+wc+'</strong></p>'; h += '<p>正确率：<strong>'+accuracy+'%</strong></p>'; h += '<div style="margin-top:12px"><strong>按题型：</strong></div>'; for (var type in typeStats) { var ts = typeStats[type]; if (ts.total > 0) { h += '<div style="font-size:13px; margin:4px 0">'+type+'：'+ts.total+'题 / 正确'+ts.correct+' ('+(ts.correct/ts.total*100).toFixed(1)+'%)</div>'; } } h += '<div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-nav" onclick="goHome()">返回主页</button><button class="btn btn-submit" onclick="restartCurrentMode()">重新考试</button></div></div>'; return h; }
@@ -484,7 +461,36 @@
         window.startExamWithConfig = function() { var singleCnt = parseInt(document.getElementById('examSingleCount').value)||0; var multiCnt = parseInt(document.getElementById('examMultiCount').value)||0; var judgeCnt = parseInt(document.getElementById('examJudgeCount').value)||0; if (singleCnt+multiCnt+judgeCnt === 0) { alert('请至少选择一个题型'); return; } var pool = banks[currentBankName].questions; var singles = pool.filter(function(q){ return q['题型']==='单选题'; }); var multis = pool.filter(function(q){ return q['题型']==='多选题'; }); var judges = pool.filter(function(q){ return q['题型']==='判断题'; }); function applyPriority(arr, count) { if (count <= 0 || arr.length === 0) return []; var remaining = arr.slice(); if (window._examPriority === 'wrong') { var wrongIds = Object.keys(wrongInfo); var wrongQs = remaining.filter(function(q){ return wrongIds.indexOf(String(q.id))!==-1; }); var normalQs = remaining.filter(function(q){ return wrongIds.indexOf(String(q.id))===-1; }); wrongQs.sort(function(){ return Math.random()-0.5; }); normalQs.sort(function(){ return Math.random()-0.5; }); return wrongQs.concat(normalQs).slice(0, count); } else if (window._examPriority === 'undone') { var doneMap = {}; var bankProgress = savedProgress[currentBankName]; if (bankProgress) { for (var m in bankProgress) { if (bankProgress[m] && bankProgress[m].status) { bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } }); } } } var undone = remaining.filter(function(q){ return !doneMap[q.id]; }); var done = remaining.filter(function(q){ return doneMap[q.id]; }); undone.sort(function(){ return Math.random()-0.5; }); done.sort(function(){ return Math.random()-0.5; }); return undone.concat(done).slice(0, count); } else { remaining.sort(function(){ return Math.random()-0.5; }); return remaining.slice(0, count); } } var selectedSingle = applyPriority(singles, Math.min(singleCnt, singles.length)); var selectedMulti = applyPriority(multis, Math.min(multiCnt, multis.length)); var selectedJudge = applyPriority(judges, Math.min(judgeCnt, judges.length)); currentQuestions = selectedSingle.concat(selectedMulti, selectedJudge); if (currentQuestions.length === 0) { alert('没有符合条件的题目'); return; } examGroupInfo = { single: selectedSingle, multi: selectedMulti, judge: selectedJudge }; currentMode = 'exam'; currentIndex = 0; selectedOptions.clear(); feedbackInfo = null; questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; }); currentPage = 'quiz'; closeExamConfig(); render(); };
         window.showExamSummary = function() { currentPage = 'examSummary'; render(); };
 
-        window.startMode = function(mode) { if (!currentBankName || !banks[currentBankName]) return; if (mode === 'exam') { showExamConfig(); return; } var pool = banks[currentBankName].questions; if (currentMode && currentQuestions.length>0) { saveProgress(); } currentMode = mode; selectedOptions.clear(); feedbackInfo = null; currentIndex = 0; questionStatus = []; if (restoreProgress(currentBankName, mode)) { examGroupInfo = null; normalizeStatus(); restoreCurrentSelection(); currentPage='quiz'; render(); return; } examGroupInfo = null; if (mode==='wrong') currentQuestions = Object.keys(wrongInfo).filter(function(id){ return wrongInfo[id]; }).map(function(id){ return findQ(id); }).filter(Boolean); else if (mode==='fav') currentQuestions = setToArray(favSet).map(function(id){ return findQ(id); }).filter(Boolean); else if (mode==='judge_true') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='正确'; }); else if (mode==='judge_false') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='错误'; }); else if (mode==='multi_not_all') { currentQuestions = pool.filter(function(q){ if (q['题型']!=='多选题') return false; var allKeys = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); return q['答案'].split('').length < allKeys.length; }); } else if (mode==='random' || mode==='memorize_random') { var cnt = Math.min(randomCount, pool.length); currentQuestions = [].concat(pool).sort(function(){ return Math.random()-0.5; }).slice(0,cnt); } else if (mode==='sequence') currentQuestions = [].concat(pool); else if (mode==='single_choice') currentQuestions = pool.filter(function(q){ return q['题型']==='单选题'; }); else if (mode==='multi_choice') currentQuestions = pool.filter(function(q){ return q['题型']==='多选题'; }); else if (mode==='judge') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题'; }); else if (mode==='memorize_seq') currentQuestions = [].concat(pool); else if (mode==='memorize_single') currentQuestions = pool.filter(function(q){ return q['题型']==='单选题'; }); else if (mode==='memorize_multi') currentQuestions = pool.filter(function(q){ return q['题型']==='多选题'; }); else if (mode==='memorize_judge') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题'; }); else if (mode==='memorize_judge_true') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='正确'; }); else if (mode==='memorize_judge_false') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='错误'; }); else if (mode==='memorize_multi_not_all') { currentQuestions = pool.filter(function(q){ if (q['题型']!=='多选题') return false; var allKeys = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); return q['答案'].split('').length < allKeys.length; }); } if (hideDone && (mode==='sequence'||mode==='random')) { var bankProgress = savedProgress[currentBankName]; if (bankProgress) { var doneMap = {}; for (var m in bankProgress) { if (bankProgress[m] && bankProgress[m].status) { bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } }); } } currentQuestions = currentQuestions.filter(function(q){ return !doneMap[q.id]; }); } } if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; return; } questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; }); saveProgress(); currentPage='quiz'; render(); };
+        window.startMode = function(mode) {
+            if (!currentBankName || !banks[currentBankName]) return;
+            if (mode === 'exam') { showExamConfig(); return; }
+            var pool = banks[currentBankName].questions;
+            if (currentMode && currentQuestions.length>0) { saveProgress(); }
+            currentMode = mode; selectedOptions.clear(); feedbackInfo = null; currentIndex = 0; questionStatus = [];
+            if (restoreProgress(currentBankName, mode)) { examGroupInfo = null; normalizeStatus(); restoreCurrentSelection(); currentPage='quiz'; render(); return; }
+            examGroupInfo = null;
+            if (mode==='wrong') currentQuestions = Object.keys(wrongInfo).filter(function(id){ return wrongInfo[id]; }).map(function(id){ return findQ(id); }).filter(Boolean);
+            else if (mode==='fav') currentQuestions = setToArray(favSet).map(function(id){ return findQ(id); }).filter(Boolean);
+            else if (mode==='judge_true') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='正确'; });
+            else if (mode==='judge_false') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='错误'; });
+            else if (mode==='multi_not_all') { currentQuestions = pool.filter(function(q){ if (q['题型']!=='多选题') return false; var allKeys = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); return q['答案'].split('').length < allKeys.length; }); }
+            else if (mode==='random' || mode==='memorize_random') { var cnt = Math.min(randomCount, pool.length); currentQuestions = [].concat(pool).sort(function(){ return Math.random()-0.5; }).slice(0,cnt); }
+            else if (mode==='sequence') currentQuestions = [].concat(pool);
+            else if (mode==='single_choice') currentQuestions = pool.filter(function(q){ return q['题型']==='单选题'; });
+            else if (mode==='multi_choice') currentQuestions = pool.filter(function(q){ return q['题型']==='多选题'; });
+            else if (mode==='judge') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题'; });
+            else if (mode==='memorize_seq') currentQuestions = [].concat(pool);
+            else if (mode==='memorize_single') currentQuestions = pool.filter(function(q){ return q['题型']==='单选题'; });
+            else if (mode==='memorize_multi') currentQuestions = pool.filter(function(q){ return q['题型']==='多选题'; });
+            else if (mode==='memorize_judge') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题'; });
+            else if (mode==='memorize_judge_true') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='正确'; });
+            else if (mode==='memorize_judge_false') currentQuestions = pool.filter(function(q){ return q['题型']==='判断题' && q['答案']==='错误'; });
+            else if (mode==='memorize_multi_not_all') { currentQuestions = pool.filter(function(q){ if (q['题型']!=='多选题') return false; var allKeys = Object.keys(q['选项']).filter(function(k){ return q['选项'][k]; }); return q['答案'].split('').length < allKeys.length; }); }
+            if (hideDone && (mode==='sequence'||mode==='random')) { var bankProgress = savedProgress[currentBankName]; if (bankProgress) { var doneMap = {}; for (var m in bankProgress) { if (bankProgress[m] && bankProgress[m].status) { bankProgress[m].status.forEach(function(s, i){ if (s && s.answered && s.correct) { var qid = bankProgress[m].questionIds[i]; if (qid) doneMap[qid]=true; } }); } } currentQuestions = currentQuestions.filter(function(q){ return !doneMap[q.id]; }); } }
+            if (currentQuestions.length===0) { alert('没有符合条件的题目'); currentMode=null; return; }
+            questionStatus = currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; });
+            saveProgress(); currentPage='quiz'; render();
+        };
 
         function restoreCurrentSelection() { var status = questionStatus[currentIndex]; if (status && status.selected && status.selected.length) { selectedOptions.clear(); status.selected.forEach(function(v){ selectedOptions.add(v); }); feedbackInfo = { correct: status.correct, message: status.correct ? '正确！' : '错误！正确答案：' + currentQuestions[currentIndex]['答案'] + (currentQuestions[currentIndex]['解析'] ? '<br>解析：' + currentQuestions[currentIndex]['解析'] : '') }; } else { selectedOptions.clear(); feedbackInfo = null; } }
 
