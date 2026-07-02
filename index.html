@@ -217,7 +217,7 @@
                     <button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button>
                     <button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button>
                 </div>
-                <div class="hint">勾选自动备份后每次答题自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div>
+                <div class="hint">勾选“自动备份”后，每次答题将自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div>
             </div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
@@ -409,7 +409,7 @@
             document.body.style.overflow = '';
         };
 
-        // ========= 修复后的备份函数 =========
+        // 修复后的备份函数（安全支持中文）
         window.backupToJsonbin = async function(isAuto) {
             if (!jsonbinApiKey) { if (!isAuto) showToast('请先设置 JSONBin API Key'); return; }
             const data = {
@@ -420,7 +420,6 @@
                 appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
                 aiCache: aiCache
             };
-            // 安全支持中文的 Base64 编码
             const bytes = new TextEncoder().encode(JSON.stringify(data));
             const payload = btoa(String.fromCharCode(...bytes));
             const headers = { 'X-Master-Key': jsonbinApiKey, 'Content-Type': 'application/json' };
@@ -439,7 +438,7 @@
             } catch(e) { if (!isAuto) showToast('备份失败: ' + e.message); else showToast('自动备份失败: ' + e.message); }
         };
 
-        // ========= 修复后的恢复函数 =========
+        // 修复后的恢复函数（安全解码中文）
         window.restoreFromJsonbin = async function() {
             if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
             if (!jsonbinBinId) { showToast('未找到云端数据，请先备份一次'); return; }
@@ -449,7 +448,6 @@
                 if (!res.ok) throw new Error(j.message || '读取失败');
                 const payload = j.record && j.record.data;
                 if (!payload) throw new Error('无数据');
-                // 安全解码
                 const binary = atob(payload);
                 const bytes = new Uint8Array([...binary].map(c => c.charCodeAt(0)));
                 const data = JSON.parse(new TextDecoder().decode(bytes));
