@@ -72,7 +72,7 @@
         .import-help strong { color: #15803d }
         .format-hint { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 12px; color: var(--text2); line-height: 1.6 }
         .format-hint strong { color: var(--text) }
-        .toast { position: fixed; top: 20px; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 2000; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; font-size: 14px }
+        .toast { position: fixed; top: 20px; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 2000; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: normal; max-width: 90%; word-break: break-all; font-size: 14px; text-align: center; }
         .toast.show { opacity: 1 }
         .back-btn { display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg); border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none }
         .restart-btn { display: inline-flex; align-items: center; gap: 4px; background: var(--input-bg); border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500; color: var(--text); -webkit-appearance: none; appearance: none }
@@ -133,12 +133,13 @@
         .exam-priority-row { display: flex; gap: 8px; margin-bottom: 12px }
         .exam-priority-btn { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 13px; cursor: pointer; text-align: center }
         .exam-priority-btn.active { background: var(--primary); color: #fff; border-color: var(--primary) }
-        /* 教程弹窗 */
         .tutorial-content { text-align: left; font-size: 14px; line-height: 1.6; }
         .tutorial-content p { margin-bottom: 8px; }
         .tutorial-content ol { padding-left: 20px; margin-bottom: 12px; }
         .tutorial-content ol li { margin-bottom: 4px; }
         .tutorial-content a { color: var(--primary); }
+        /* 教程弹窗提高层级 */
+        #tutorialModal { z-index: 250; }
     </style>
 </head>
 <body>
@@ -203,10 +204,9 @@
             <div class="settings-row"><label>主题模式</label><div class="theme-btn-group"><div class="theme-btn active" data-theme="day" onclick="setTheme('day')">日间</div><div class="theme-btn" data-theme="night" onclick="setTheme('night')">夜间</div><div class="theme-btn" data-theme="eye" onclick="setTheme('eye')">护眼</div></div></div>
             <div class="settings-row"><label>字体大小</label><div class="range-container"><span>小</span><input type="range" id="settingsFontSize" min="13" max="22" value="15" step="1"><span>大</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustFontSize(-1)">-</button><span class="setting-value-display" id="fontSizeDisplay">15px</span><button type="button" class="setting-adjust-btn" onclick="adjustFontSize(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetFontSize()">恢复默认 (15px)</button></div>
             <div class="settings-row"><label>选项间距</label><div class="range-container"><span>窄</span><input type="range" id="settingsOptGap" min="4" max="20" value="8" step="1"><span>宽</span></div><div class="setting-control-row" style="margin-top:8px"><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(-1)">-</button><span class="setting-value-display" id="optGapDisplay">8px</span><button type="button" class="setting-adjust-btn" onclick="adjustOptGap(1)">+</button></div><button type="button" class="setting-reset-mini" onclick="resetOptGap()">恢复默认 (8px)</button></div>
-            <!-- 语音反馈移到AI解析上方 -->
             <div class="settings-row"><label>语音反馈</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsVoiceEnabled" style="width:20px;height:20px;accent-color:var(--primary)"><span>启用答题音效</span></div><div class="hint">提交答案后播放正确或错误提示音</div></div>
             <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('ai')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
-            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button></div><div class="hint">注册 <a href="https://jsonbin.io" target="_blank" style="color:var(--primary)">jsonbin.io</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
+            <div class="settings-row"><label>云端同步 (JSONBin)</label><input type="password" id="settingsJsonbinKey" placeholder="输入JSONBin Master Key" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px"><div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-nav" onclick="backupToJsonbin()" style="flex:1">备份到云端</button><button class="btn btn-nav" onclick="restoreFromJsonbin()" style="flex:1">从云端恢复</button></div><div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="settingsAutoBackup" style="width:20px;height:20px;accent-color:var(--primary)"><span>自动备份</span></div><div class="hint">开启后每次答题自动备份到云端  <button class="setting-reset-mini" onclick="showTutorial('sync')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div style="text-align:center;margin-top:16px"><button class="btn btn-nav" onclick="closeSettings()">取消</button><button class="btn btn-submit" onclick="saveSettings()">保存</button></div>
         </div>
@@ -279,7 +279,7 @@
         var hideDone=false, theme='day', fontSize=15, optGap=8;
         var aiEnabled=false, aiApiKey='', aiCache={};
         var voiceEnabled = true;
-        var jsonbinApiKey = '', jsonbinBinId = '';
+        var jsonbinApiKey = '', jsonbinBinId = '', autoBackup = false;
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
         var examGroupInfo = null;
@@ -295,11 +295,21 @@
             try { savedProgress = JSON.parse(localStorage.getItem('quizProgress')||'{}'); } catch(e) {}
             try { aiCache = JSON.parse(localStorage.getItem('aiCache')||'{}'); } catch(e) {}
             migrateProgress();
-            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; jsonbinApiKey = s.jsonbinApiKey||''; jsonbinBinId = s.jsonbinBinId||''; } catch(e) {}
+            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; jsonbinApiKey = s.jsonbinApiKey||''; jsonbinBinId = s.jsonbinBinId||''; autoBackup = s.autoBackup || false; } catch(e) {}
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             var names = Object.keys(banks); if (names.length>0) { var lastName = localStorage.getItem('lastBankName'); if (lastName && banks[lastName]) { currentBankName = lastName; } else { currentBankName = names[0]; } }
         }
-        function saveAll() { localStorage.setItem('quizBanks', JSON.stringify(banks)); localStorage.setItem('wrongInfo', JSON.stringify(wrongInfo)); localStorage.setItem('favSet', JSON.stringify(setToArray(favSet))); localStorage.setItem('aiCache', JSON.stringify(aiCache)); saveProgress(); }
+        function saveAll() { 
+            localStorage.setItem('quizBanks', JSON.stringify(banks)); 
+            localStorage.setItem('wrongInfo', JSON.stringify(wrongInfo)); 
+            localStorage.setItem('favSet', JSON.stringify(setToArray(favSet))); 
+            localStorage.setItem('aiCache', JSON.stringify(aiCache)); 
+            saveProgress(); 
+            // 自动备份
+            if (autoBackup && jsonbinApiKey) {
+                backupToJsonbin(true);
+            }
+        }
         function saveProgress() { if (currentBankName && currentMode && currentQuestions.length>0) { if (!savedProgress[currentBankName]) { savedProgress[currentBankName] = {}; } var statusCopy = questionStatus.map(function(s){ return { answered: s.answered, correct: s.correct, selected: s.selected ? s.selected.slice() : [] }; }); savedProgress[currentBankName][currentMode] = { questionIds: currentQuestions.map(function(q){ return q.id; }), index: currentIndex, status: statusCopy }; } localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
         function restoreProgress(bn, mode) { var bankProgress = savedProgress[bn]; if (!bankProgress) return false; var p = bankProgress[mode]; if (!p || !p.questionIds || p.questionIds.length===0) return false; var pool = banks[bn] ? banks[bn].questions : [], qm={}; for (var i=0; i<pool.length; i++) { qm[pool[i].id] = pool[i]; } currentQuestions = p.questionIds.map(function(id){ return qm[id]; }).filter(Boolean); if (currentQuestions.length===0) { delete bankProgress[mode]; saveProgress(); return false; } currentIndex = Math.min(p.index, currentQuestions.length-1); questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; }); normalizeStatus(); selectedOptions.clear(); feedbackInfo = null; return true; }
         function findQ(id) { for (var bn in banks) { var qs = banks[bn].questions; for (var i=0; i<qs.length; i++) { if (qs[i].id==id) return qs[i]; } } return null; }
@@ -322,9 +332,10 @@
             aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim();
             voiceEnabled = document.getElementById('settingsVoiceEnabled').checked;
             jsonbinApiKey = document.getElementById('settingsJsonbinKey').value.trim();
+            autoBackup = document.getElementById('settingsAutoBackup').checked;
             if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1;
             if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8;
-            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled, jsonbinApiKey:jsonbinApiKey, jsonbinBinId:jsonbinBinId }));
+            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled, jsonbinApiKey:jsonbinApiKey, jsonbinBinId:jsonbinBinId, autoBackup:autoBackup }));
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = '';
             showToast('设置已保存');
@@ -336,6 +347,7 @@
             document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none';
             document.getElementById('settingsVoiceEnabled').checked = voiceEnabled;
             document.getElementById('settingsJsonbinKey').value = jsonbinApiKey;
+            document.getElementById('settingsAutoBackup').checked = autoBackup;
             var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px';
             var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px';
             applyTheme(theme); document.getElementById('settingsModal').classList.add('show'); document.body.style.overflow = 'hidden';
@@ -345,7 +357,6 @@
         window.goPage = function(page) { currentPage = page; window.scrollTo(0,0); render(); };
         window.toggleAutoSkip = function(cb) { autoSkip = cb.checked; saveAll(); };
 
-        // 教程弹窗
         window.showTutorial = function(type) {
             var title = document.getElementById('tutorialTitle');
             var content = document.getElementById('tutorialContent');
@@ -372,9 +383,8 @@
             document.body.style.overflow = '';
         };
 
-        // JSONBin 同步
-        window.backupToJsonbin = async function() {
-            if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
+        window.backupToJsonbin = async function(isAuto) {
+            if (!jsonbinApiKey) { if (!isAuto) showToast('请先设置 JSONBin API Key'); return; }
             const data = {
                 quizBanks: banks,
                 wrongInfo: wrongInfo,
@@ -396,8 +406,8 @@
                     const res = await fetch('https://api.jsonbin.io/v3/b/' + jsonbinBinId, { method: 'PUT', headers, body: JSON.stringify({ data: payload }) });
                     if (!res.ok) throw new Error('更新失败');
                 }
-                showToast('备份成功');
-            } catch(e) { showToast('备份失败: ' + e.message); }
+                if (!isAuto) showToast('备份成功');
+            } catch(e) { if (!isAuto) showToast('备份失败: ' + e.message); else showToast('自动备份失败: ' + e.message); }
         };
         window.restoreFromJsonbin = async function() {
             if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
