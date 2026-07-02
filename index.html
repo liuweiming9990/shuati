@@ -147,6 +147,7 @@
         <div class="nav-title">刷题吧</div>
         <div class="nav-right">
             <button class="nav-btn" onclick="hardUpdate()">更新</button>
+            <button class="nav-btn" onclick="forceRefresh()">强制刷新</button>
             <button class="nav-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">刷题</button>
             <button class="nav-btn" id="tabManageBtn" onclick="switchTab('manage')">题库</button>
         </div>
@@ -241,6 +242,7 @@
             setSafeArea();
         })();
 
+        // 语音引擎
         var audioCtx = null;
         function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); } }
         function playTone(type) {
@@ -250,6 +252,16 @@
             var now = audioCtx.currentTime;
             if (type === 'correct') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.1); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
             else if (type === 'wrong') { osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now + 0.15); gain.gain.linearRampToValueAtTime(0, now + 0.25); osc.start(now); osc.stop(now + 0.25); }
+        }
+
+        // 强制刷新（注销所有 SW 并重新加载）
+        function forceRefresh() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (let registration of registrations) { registration.unregister(); }
+                    location.reload(true);
+                });
+            } else { location.reload(true); }
         }
 
         var dangerCallback = null;
@@ -266,35 +278,13 @@
         if ('serviceWorker' in navigator) { window.addEventListener('load', function() { var swPath = 'sw.js'; var path = window.location.pathname; if (path.lastIndexOf('/') > 0) { swPath = path.substring(0, path.lastIndexOf('/')+1) + 'sw.js'; } navigator.serviceWorker.register(swPath, { scope: './' }).catch(function() {}); }); }
 
         function hardUpdate() {
-            var toast = document.getElementById('updateToast');
-            toast.classList.add('show');
-            toast.textContent = '正在检查更新...';
-            var timeout = setTimeout(function() {
-                toast.textContent = '更新超时，强制刷新中...';
-                setTimeout(function() { window.location.reload(true); }, 500);
-            }, 8000);
+            var toast = document.getElementById('updateToast'); toast.classList.add('show'); toast.textContent = '正在检查更新...';
+            var timeout = setTimeout(function() { toast.textContent = '更新超时，强制刷新中...'; setTimeout(function() { window.location.reload(true); }, 500); }, 8000);
             if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.getRegistration().then(function(reg) {
                     if (!reg) { clearTimeout(timeout); window.location.reload(true); return; }
-                    if (reg.waiting) {
-                        clearTimeout(timeout);
-                        toast.textContent = '正在激活新版本...';
-                        reg.waiting.postMessage('skip-waiting');
-                        navigator.serviceWorker.addEventListener('message', function handler(e) {
-                            if (e.data === 'reload') { navigator.serviceWorker.removeEventListener('message', handler); window.location.reload(); }
-                        });
-                        setTimeout(function() { window.location.reload(); }, 2000);
-                        return;
-                    }
-                    toast.textContent = '正在下载更新...';
-                    reg.update().then(function() {
-                        clearTimeout(timeout);
-                        if (reg.waiting) {
-                            toast.textContent = '正在激活新版本...';
-                            reg.waiting.postMessage('skip-waiting');
-                        }
-                        setTimeout(function() { window.location.reload(); }, 1000);
-                    }).catch(function() { clearTimeout(timeout); window.location.reload(true); });
+                    if (reg.waiting) { clearTimeout(timeout); toast.textContent = '正在激活新版本...'; reg.waiting.postMessage('skip-waiting'); navigator.serviceWorker.addEventListener('message', function handler(e) { if (e.data === 'reload') { navigator.serviceWorker.removeEventListener('message', handler); window.location.reload(); } }); setTimeout(function() { window.location.reload(); }, 2000); return; }
+                    toast.textContent = '正在下载更新...'; reg.update().then(function() { clearTimeout(timeout); if (reg.waiting) { toast.textContent = '正在激活新版本...'; reg.waiting.postMessage('skip-waiting'); } setTimeout(function() { window.location.reload(); }, 1000); }).catch(function() { clearTimeout(timeout); window.location.reload(true); });
                 }).catch(function() { clearTimeout(timeout); window.location.reload(true); });
             } else { clearTimeout(timeout); window.location.reload(true); }
         }
@@ -305,6 +295,19 @@
         window.setTheme = function(t) { theme = t; applyTheme(t); };
         function applyFontSize(size) { document.documentElement.style.setProperty('--fs', size+'px'); }
         function applyOptGap(gap) { document.documentElement.style.setProperty('--opt-gap', gap+'px'); document.documentElement.style.setProperty('--opt-pad', (gap+4)+'px'); }
+
+        // Base64 编码/解码（支持中文）
+        function uint8ToBase64(bytes) {
+            var binary = '';
+            for (var i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+            return btoa(binary);
+        }
+        function base64ToUint8(base64) {
+            var binary = atob(base64);
+            var bytes = new Uint8Array(binary.length);
+            for (var i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); }
+            return bytes;
+        }
 
         var banks={}, currentBankName='', wrongInfo={}, favSet=new Set();
         var currentTab='practice', currentPage='home', currentMode=null, currentQuestions=[], currentIndex=0;
@@ -415,29 +418,9 @@
             document.body.style.overflow = '';
         };
 
-        // 安全 Base64 编码（分块避免堆栈溢出）
-        function uint8ToBase64(bytes) {
-            var binary = '';
-            for (var i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return btoa(binary);
-        }
-
-        // 安全 Base64 解码
-        function base64ToUint8(base64) {
-            var binary = atob(base64);
-            var len = binary.length;
-            var bytes = new Uint8Array(len);
-            for (var i = 0; i < len; i++) {
-                bytes[i] = binary.charCodeAt(i);
-            }
-            return bytes;
-        }
-
-        window.backupToJsonbin = async function(isAuto) {
+        // ====== XHR 备份（绕过 Service Worker） ======
+        window.backupToJsonbin = function(isAuto) {
             if (!jsonbinApiKey) { if (!isAuto) showToast('请先设置 JSONBin API Key'); return; }
-            console.log('开始备份...');
             const data = {
                 quizBanks: banks,
                 wrongInfo: wrongInfo,
@@ -446,69 +429,66 @@
                 appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
                 aiCache: aiCache
             };
-            var payload;
-            try {
-                var jsonStr = JSON.stringify(data);
-                var bytes = new TextEncoder().encode(jsonStr);
-                payload = uint8ToBase64(bytes);
-            } catch(e) {
-                console.error('数据编码失败:', e);
-                showToast('备份失败：数据编码错误');
-                return;
-            }
-            const headers = { 'X-Master-Key': jsonbinApiKey, 'Content-Type': 'application/json' };
-            try {
-                if (!jsonbinBinId) {
-                    console.log('创建新 Bin...');
-                    const res = await fetch('https://api.jsonbin.io/v3/b', { method: 'POST', headers, body: JSON.stringify({ data: payload }) });
-                    const j = await res.json();
-                    console.log('创建响应:', j);
-                    if (!res.ok) throw new Error(j.message || '创建失败');
-                    jsonbinBinId = j.metadata.id;
-                    localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { jsonbinBinId: jsonbinBinId })));
-                    console.log('Bin ID 已保存:', jsonbinBinId);
+            const jsonStr = JSON.stringify(data);
+            const bytes = new TextEncoder().encode(jsonStr);
+            const payload = uint8ToBase64(bytes);
+            const xhr = new XMLHttpRequest();
+            const url = jsonbinBinId
+                ? 'https://api.jsonbin.io/v3/b/' + jsonbinBinId
+                : 'https://api.jsonbin.io/v3/b';
+            xhr.open(jsonbinBinId ? 'PUT' : 'POST', url, true);
+            xhr.setRequestHeader('X-Master-Key', jsonbinApiKey);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (!jsonbinBinId) {
+                        jsonbinBinId = response.metadata.id;
+                        localStorage.setItem('appSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('appSettings')||'{}'), { jsonbinBinId: jsonbinBinId })));
+                    }
+                    if (!isAuto) showToast('备份成功');
                 } else {
-                    console.log('更新 Bin:', jsonbinBinId);
-                    const res = await fetch('https://api.jsonbin.io/v3/b/' + jsonbinBinId, { method: 'PUT', headers, body: JSON.stringify({ data: payload }) });
-                    const j = await res.json();
-                    console.log('更新响应:', j);
-                    if (!res.ok) throw new Error('更新失败');
+                    if (!isAuto) showToast('备份失败: ' + (xhr.statusText || '状态码 ' + xhr.status));
+                    else showToast('自动备份失败');
                 }
-                if (!isAuto) showToast('备份成功');
-                console.log('备份完成');
-            } catch(e) {
-                console.error('备份请求失败:', e);
-                if (!isAuto) showToast('备份失败: ' + e.message);
-                else showToast('自动备份失败: ' + e.message);
-            }
+            };
+            xhr.onerror = function() {
+                if (!isAuto) showToast('备份失败: 网络错误');
+                else showToast('自动备份失败: 网络错误');
+            };
+            xhr.send(JSON.stringify({ data: payload }));
         };
 
-        window.restoreFromJsonbin = async function() {
+        // ====== XHR 恢复（绕过 Service Worker） ======
+        window.restoreFromJsonbin = function() {
             if (!jsonbinApiKey) { showToast('请先设置 JSONBin API Key'); return; }
             if (!jsonbinBinId) { showToast('未找到云端数据，请先备份一次'); return; }
-            console.log('开始恢复...');
-            try {
-                const res = await fetch('https://api.jsonbin.io/v3/b/' + jsonbinBinId, { headers: { 'X-Master-Key': jsonbinApiKey } });
-                const j = await res.json();
-                console.log('读取响应:', j);
-                if (!res.ok) throw new Error(j.message || '读取失败');
-                const payload = j.record && j.record.data;
-                if (!payload) throw new Error('无数据');
-                const bytes = base64ToUint8(payload);
-                const data = JSON.parse(new TextDecoder().decode(bytes));
-                banks = data.quizBanks || {};
-                wrongInfo = data.wrongInfo || {};
-                favSet = new Set(data.favSet || []);
-                savedProgress = data.quizProgress || {};
-                aiCache = data.aiCache || {};
-                if (data.appSettings) { localStorage.setItem('appSettings', JSON.stringify(data.appSettings)); }
-                saveAll(); loadData(); render();
-                showToast('恢复成功');
-                console.log('恢复完成');
-            } catch(e) {
-                console.error('恢复失败:', e);
-                showToast('恢复失败: ' + e.message);
-            }
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'https://api.jsonbin.io/v3/b/' + jsonbinBinId, true);
+            xhr.setRequestHeader('X-Master-Key', jsonbinApiKey);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        const payload = response.record && response.record.data;
+                        if (!payload) { showToast('恢复失败: 无数据'); return; }
+                        const bytes = base64ToUint8(payload);
+                        const data = JSON.parse(new TextDecoder().decode(bytes));
+                        banks = data.quizBanks || {};
+                        wrongInfo = data.wrongInfo || {};
+                        favSet = new Set(data.favSet || []);
+                        savedProgress = data.quizProgress || {};
+                        aiCache = data.aiCache || {};
+                        if (data.appSettings) { localStorage.setItem('appSettings', JSON.stringify(data.appSettings)); }
+                        saveAll(); loadData(); render();
+                        showToast('恢复成功');
+                    } catch(e) { showToast('恢复失败: 数据解析错误'); }
+                } else {
+                    showToast('恢复失败: ' + (xhr.statusText || '状态码 ' + xhr.status));
+                }
+            };
+            xhr.onerror = function() { showToast('恢复失败: 网络错误'); };
+            xhr.send();
         };
 
         window.importFile = function(file) {
@@ -529,9 +509,6 @@
             reader.readAsArrayBuffer(file);
         };
 
-        // 其他函数未改动，保持原有完整功能（与上一完整版相同）
-        // 由于代码很长，此处省略重复的渲染、答题、管理等函数，实际部署时请使用之前提供的完整版，并用上述备份/恢复函数替换。
-        // 下面为完整性保留（实际使用时请确保包含全部函数）
         function showHeaderSelection() { var c = document.getElementById('mappingList'), h = '<div class="import-help">请在下方预览中填写表头在第几行（如第1行是注意事项，表头在第2行则填2）</div>'; h += '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th>行号</th><th>内容预览</th></tr>'; for (var r=0; r<Math.min(10,pendingRows.length); r++) { h += '<tr><td style="font-weight:bold;color:var(--primary)">第'+(r+1)+'行</td><td>'; var cells = pendingRows[r]||[]; for (var c2=0; c2<Math.min(8,cells.length); c2++) { h += '<span style="background:var(--input-bg);padding:2px 6px;border-radius:4px;margin:2px;display:inline-block;font-size:11px">'+(cells[c2]||'').toString().substring(0,15)+'</span>'; } h += '</td></tr>'; } h += '</table><label style="display:block;margin-top:12px;color:var(--text2)">表头在第几行？</label><input type="number" id="headerRowNum" min="1" value="1" step="1" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px">'; c.innerHTML = h; document.getElementById('modalConfirmBtn').textContent = '下一步：列映射'; document.getElementById('modalConfirmBtn').onclick = confirmHeaderAndShowMapping; document.getElementById('mappingModal').classList.add('show'); }
         window.confirmHeaderAndShowMapping = function() { var n = parseInt(document.getElementById('headerRowNum').value); if (isNaN(n)||n<1||n>pendingRows.length) { alert('请输入有效行号'); return; } pendingHeaders = pendingRows[n-1].map(function(h){ return String(h||'').trim(); }); pendingRows = pendingRows.slice(n); showMappingUI(); };
         function autoGuess(col) { var t = col.trim(), l = t.toLowerCase(); if (/^[a-g]$/i.test(t)) return '选项'+t.toUpperCase(); var m = l.match(/^选项\s*([a-g])$/); if (m) return '选项'+m[1].toUpperCase(); m = l.match(/^([a-g])\s*选项$/); if (m) return '选项'+m[1].toUpperCase(); if (/知识|类别|章|节|模块|分类|标签/.test(l)) return '知识类型（题目标签）'; if (/题型|类型/.test(l)) return '题型'; if (/题干|题目|问题|内容/.test(l)) return '题干'; if (/答案|正确/.test(l)) return '答案'; if (/解析|解释/.test(l)) return '解析'; return '忽略'; }
