@@ -20,17 +20,8 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 缓存优先策略，但 SiliconFlow API 请求跳过缓存
+// 缓存优先策略
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // 如果是 SiliconFlow API 请求，直接请求网络，不缓存
-  if (url.hostname === 'api.siliconflow.cn') {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // 其他请求：缓存优先，网络更新
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetchPromise = fetch(event.request).then(response => {
