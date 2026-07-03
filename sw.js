@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shuati-v4';
+const CACHE_NAME = 'shuati-v5';
 const urlsToCache = ['./', './index.html', './manifest.json', './tubiao.PNG'];
 
 // 安装时缓存首页及关键配置
