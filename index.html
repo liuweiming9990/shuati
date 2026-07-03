@@ -16,7 +16,6 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        /* 所有样式保持不变，此处省略，和原版完全一样 */
         :root {
             --bg: #f3f4f6; --card: #fff; --primary: #3B82F6; --accent: #e94560; --text: #1f2937;
             --text2: #6b7280; --border: #e5e7eb; --input-bg: #f9fafb; --r: 12px; --fs: 15px;
@@ -207,25 +206,11 @@
             <div class="settings-row"><label>语音反馈</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsVoiceEnabled" style="width:20px;height:20px;accent-color:var(--primary)"><span>启用答题音效</span></div><div class="hint">提交答案后播放正确或错误提示音</div></div>
             <div class="settings-row"><label>AI解析</label><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="settingsAIEnabled" style="width:20px;height:20px;accent-color:var(--primary)" onchange="toggleAIKeyInput()"><span>启用AI解析</span></div><input type="password" id="settingsAIKey" placeholder="输入SiliconFlow API密钥 (sk-...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;display:none"><div class="hint">注册 <a href="https://siliconflow.cn" target="_blank" style="color:var(--primary)">siliconflow.cn</a> 获取免费API密钥 <button class="setting-reset-mini" onclick="showTutorial('ai')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取API？</button></div></div>
             <div class="settings-row">
-                <label style="display:flex;justify-content:space-between;align-items:center;">
-                    <span>云端同步 (Supabase)</span>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
-                        <input type="checkbox" id="settingsAutoBackup" style="width:18px;height:18px;accent-color:var(--primary)"> 自动备份
-                    </label>
-                </label>
-                <input type="text" id="settingsSupabaseUrl" placeholder="Supabase Project URL" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px">
-                <input type="password" id="settingsSupabaseKey" placeholder="Supabase anon key (publishable key)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:16px;background:var(--input-bg);color:var(--text);min-height:44px;margin-bottom:8px">
-                <div style="display:flex;gap:8px;margin-bottom:8px">
-                    <button class="btn btn-nav" onclick="backupToCloud()" style="flex:1">备份到云端</button>
-                    <button class="btn btn-nav" onclick="restoreFromCloud()" style="flex:1">从云端恢复</button>
-                </div>
-                <div class="hint">注册 <a href="https://supabase.com" target="_blank" style="color:var(--primary)">Supabase</a> 获取免费数据库，将 Project URL 和 anon key 填入上方。 <button class="setting-reset-mini" onclick="showTutorial('supabase')" style="display:inline;margin-left:8px;padding:2px 8px;font-size:11px;">如何获取？</button></div>
-            </div>
-            <div class="settings-row">
-                <button class="btn btn-nav" onclick="exportLocalBackup()">导出数据到文件</button>
+                <label>本地备份</label>
+                <button class="btn btn-nav" onclick="exportLocalBackup()" style="width:100%;margin-bottom:8px">导出数据到文件</button>
                 <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importLocalBackup(this)">
-                <button class="btn btn-nav" onclick="document.getElementById('importFileInput').click()">从文件导入数据</button>
-                <div class="hint">本地备份文件可跨设备手动迁移，永不失效</div>
+                <button class="btn btn-nav" onclick="document.getElementById('importFileInput').click()" style="width:100%;margin-bottom:8px">从文件导入数据</button>
+                <div class="hint">数据将自动保存在浏览器中，每次答题后即时保存。也可手动导出文件备份，跨设备迁移。</div>
             </div>
             <div class="settings-row"><button class="settings-reset-btn" onclick="window.open('changelog.md')">版本日志</button><div class="hint">查看迭代更新记录</div></div>
             <div class="settings-row">
@@ -315,7 +300,6 @@
         var hideDone=false, theme='day', fontSize=15, optGap=8;
         var aiEnabled=false, aiApiKey='', aiCache={};
         var voiceEnabled = true;
-        var supabaseUrl = '', supabaseKey = '', autoBackup = false;
         var FOOTER = '<div class="footer">苟富贵勿相忘，且用且珍惜。<br>作者：云映明川</div>';
         var FIELDS = ['忽略','知识类型（题目标签）','题型','题干','答案','解析','选项A','选项B','选项C','选项D','选项E','选项F','选项G'];
         var examGroupInfo = null;
@@ -331,7 +315,7 @@
             try { savedProgress = JSON.parse(localStorage.getItem('quizProgress')||'{}'); } catch(e) {}
             try { aiCache = JSON.parse(localStorage.getItem('aiCache')||'{}'); } catch(e) {}
             migrateProgress();
-            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; supabaseUrl = s.supabaseUrl||''; supabaseKey = s.supabaseKey||''; autoBackup = s.autoBackup || false; } catch(e) {}
+            try { var s = JSON.parse(localStorage.getItem('appSettings')||'{}'); randomCount = s.randomCount||50; autoSkip = s.autoSkip!==false; autoRemoveWrongCount = s.autoRemoveWrongCount||1; hideDone = s.hideDone||false; theme = s.theme||'day'; fontSize = s.fontSize||15; optGap = s.optGap||8; aiEnabled = s.aiEnabled||false; aiApiKey = s.aiApiKey||''; voiceEnabled = s.voiceEnabled !== false; } catch(e) {}
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             var names = Object.keys(banks); if (names.length>0) { var lastName = localStorage.getItem('lastBankName'); if (lastName && banks[lastName]) { currentBankName = lastName; } else { currentBankName = names[0]; } }
         }
@@ -341,7 +325,6 @@
             localStorage.setItem('favSet', JSON.stringify(setToArray(favSet))); 
             localStorage.setItem('aiCache', JSON.stringify(aiCache)); 
             saveProgress(); 
-            if (autoBackup && supabaseUrl && supabaseKey) { backupToCloud(true); }
         }
         function saveProgress() { if (currentBankName && currentMode && currentQuestions.length>0) { if (!savedProgress[currentBankName]) { savedProgress[currentBankName] = {}; } var statusCopy = questionStatus.map(function(s){ return { answered: s.answered, correct: s.correct, selected: s.selected ? s.selected.slice() : [] }; }); savedProgress[currentBankName][currentMode] = { questionIds: currentQuestions.map(function(q){ return q.id; }), index: currentIndex, status: statusCopy }; } localStorage.setItem('quizProgress', JSON.stringify(savedProgress)); }
         function restoreProgress(bn, mode) { var bankProgress = savedProgress[bn]; if (!bankProgress) return false; var p = bankProgress[mode]; if (!p || !p.questionIds || p.questionIds.length===0) return false; var pool = banks[bn] ? banks[bn].questions : [], qm={}; for (var i=0; i<pool.length; i++) { qm[pool[i].id] = pool[i]; } currentQuestions = p.questionIds.map(function(id){ return qm[id]; }).filter(Boolean); if (currentQuestions.length===0) { delete bankProgress[mode]; saveProgress(); return false; } currentIndex = Math.min(p.index, currentQuestions.length-1); questionStatus = p.status || currentQuestions.map(function(){ return {answered:false, correct:false, selected:[]}; }); normalizeStatus(); selectedOptions.clear(); feedbackInfo = null; return true; }
@@ -364,12 +347,9 @@
             hideDone = document.getElementById('settingsHideDone').checked; fontSize = fontSizeInput ? parseInt(fontSizeInput.value) : 15; optGap = optGapInput ? parseInt(optGapInput.value) : 8;
             aiEnabled = document.getElementById('settingsAIEnabled').checked; aiApiKey = document.getElementById('settingsAIKey').value.trim();
             voiceEnabled = document.getElementById('settingsVoiceEnabled').checked;
-            supabaseUrl = document.getElementById('settingsSupabaseUrl').value.trim();
-            supabaseKey = document.getElementById('settingsSupabaseKey').value.trim();
-            autoBackup = document.getElementById('settingsAutoBackup').checked;
             if (isNaN(randomCount)||randomCount<1) randomCount=50; if (isNaN(autoRemoveWrongCount)||autoRemoveWrongCount<0) autoRemoveWrongCount=1;
             if (isNaN(fontSize)||fontSize<13) fontSize=15; if (isNaN(optGap)||optGap<4) optGap=8;
-            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled, supabaseUrl:supabaseUrl, supabaseKey:supabaseKey, autoBackup:autoBackup }));
+            localStorage.setItem('appSettings', JSON.stringify({ randomCount:randomCount, autoSkip:autoSkip, autoRemoveWrongCount:autoRemoveWrongCount, hideDone:hideDone, theme:theme, fontSize:fontSize, optGap:optGap, aiEnabled:aiEnabled, aiApiKey:aiApiKey, voiceEnabled:voiceEnabled }));
             applyTheme(theme); applyFontSize(fontSize); applyOptGap(optGap);
             document.getElementById('settingsModal').classList.remove('show'); document.body.style.overflow = '';
             showToast('设置已保存');
@@ -380,9 +360,6 @@
             document.getElementById('settingsHideDone').checked = hideDone; document.getElementById('settingsFontSize').value = fontSize; document.getElementById('settingsOptGap').value = optGap;
             document.getElementById('settingsAIEnabled').checked = aiEnabled; document.getElementById('settingsAIKey').value = aiApiKey; document.getElementById('settingsAIKey').style.display = aiEnabled ? 'block' : 'none';
             document.getElementById('settingsVoiceEnabled').checked = voiceEnabled;
-            document.getElementById('settingsSupabaseUrl').value = supabaseUrl;
-            document.getElementById('settingsSupabaseKey').value = supabaseKey;
-            document.getElementById('settingsAutoBackup').checked = autoBackup;
             var fontSizeDisplay = document.getElementById('fontSizeDisplay'); if (fontSizeDisplay) fontSizeDisplay.textContent = fontSize+'px';
             var optGapDisplay = document.getElementById('optGapDisplay'); if (optGapDisplay) optGapDisplay.textContent = optGap+'px';
             applyTheme(theme); document.getElementById('settingsModal').classList.add('show'); document.body.style.overflow = 'hidden';
@@ -402,13 +379,6 @@
                     '<p>3. 点击「创建新的 API 密钥」，输入名称（如"刷题吧"），点击创建。</p>' +
                     '<p>4. 复制生成的密钥（以 sk- 开头），粘贴到上方的输入框中。</p>' +
                     '<p><strong>提示：</strong>注册即送 2000 万 tokens，个人使用足够。</p>';
-            } else if (type === 'supabase') {
-                title.textContent = '如何获取 Supabase 配置';
-                content.innerHTML = '<p>1. 打开 <a href="https://supabase.com" target="_blank">supabase.com</a> 注册并创建项目。</p>' +
-                    '<p>2. 进入项目后，点击左侧 Settings → API。</p>' +
-                    '<p>3. 复制 Project URL 和 anon public key（publishable key）。</p>' +
-                    '<p>4. 在左侧 SQL Editor 中执行建表语句（见下方说明）。</p>' +
-                    '<p>5. 粘贴到上方输入框并保存。</p>';
             }
             document.getElementById('tutorialModal').classList.add('show');
             document.body.style.overflow = 'hidden';
@@ -416,131 +386,6 @@
         window.closeTutorial = function() {
             document.getElementById('tutorialModal').classList.remove('show');
             document.body.style.overflow = '';
-        };
-
-        // ========== 云端备份 (Supabase) ==========
-        window.backupToCloud = function(isAuto) {
-            if (!supabaseUrl || !supabaseKey) {
-                if (!isAuto) showToast('请先在设置中填写 Supabase URL 和 Key');
-                else showToast('自动备份失败：未配置 Supabase');
-                return;
-            }
-
-            var appSettingsCopy = JSON.parse(localStorage.getItem('appSettings')||'{}');
-            delete appSettingsCopy.supabaseUrl;
-            delete appSettingsCopy.supabaseKey;
-
-            const backupData = {
-                quizBanks: banks,
-                wrongInfo: wrongInfo,
-                favSet: setToArray(favSet),
-                quizProgress: savedProgress,
-                appSettings: appSettingsCopy,
-                aiCache: aiCache
-            };
-
-            var deviceId = localStorage.getItem('device_id');
-            if (!deviceId) {
-                deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('device_id', deviceId);
-            }
-
-            const payload = {
-                id: deviceId,
-                data: backupData,
-                updated_at: new Date().toISOString()
-            };
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', supabaseUrl + '/rest/v1/backups', true);
-            xhr.setRequestHeader('apikey', supabaseKey);
-            xhr.setRequestHeader('Authorization', 'Bearer ' + supabaseKey);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates');  // upsert
-
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    if (!isAuto) showToast('备份成功');
-                } else {
-                    try {
-                        var err = JSON.parse(xhr.responseText);
-                        if (!isAuto) showToast('备份失败: ' + (err.message || xhr.status));
-                        else showToast('自动备份失败');
-                    } catch(e) {
-                        if (!isAuto) showToast('备份失败: ' + xhr.status);
-                        else showToast('自动备份失败');
-                    }
-                }
-            };
-            xhr.onerror = function() {
-                if (!isAuto) showToast('网络错误，请检查网络');
-                else showToast('自动备份失败：网络错误');
-            };
-            xhr.timeout = 30000;
-            xhr.ontimeout = function() {
-                if (!isAuto) showToast('请求超时，请检查网络或稍后重试');
-                else showToast('自动备份失败：超时');
-            };
-
-            xhr.send(JSON.stringify(payload));
-        };
-
-        // ========== 云端恢复 (Supabase) ==========
-        window.restoreFromCloud = function() {
-            if (!supabaseUrl || !supabaseKey) {
-                showToast('请先在设置中填写 Supabase URL 和 Key');
-                return;
-            }
-
-            var deviceId = localStorage.getItem('device_id');
-            if (!deviceId) {
-                showToast('本地没有设备记录，无法确定恢复哪个备份。请先在本机备份一次，或在其他设备上导出后再导入。');
-                return;
-            }
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', supabaseUrl + '/rest/v1/backups?id=eq.' + encodeURIComponent(deviceId), true);
-            xhr.setRequestHeader('apikey', supabaseKey);
-            xhr.setRequestHeader('Authorization', 'Bearer ' + supabaseKey);
-
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        var results = JSON.parse(xhr.responseText);
-                        if (!results || results.length === 0) {
-                            showToast('未找到云端备份，请先在原设备备份一次');
-                            return;
-                        }
-                        var backup = results[0];
-                        if (!backup.data) {
-                            showToast('备份数据为空');
-                            return;
-                        }
-                        banks = backup.data.quizBanks || {};
-                        wrongInfo = backup.data.wrongInfo || {};
-                        favSet = new Set(backup.data.favSet || []);
-                        savedProgress = backup.data.quizProgress || {};
-                        aiCache = backup.data.aiCache || {};
-                        if (backup.data.appSettings) {
-                            var localSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
-                            backup.data.appSettings.supabaseUrl = localSettings.supabaseUrl || '';
-                            backup.data.appSettings.supabaseKey = localSettings.supabaseKey || '';
-                            backup.data.appSettings.aiApiKey = localSettings.aiApiKey || '';
-                            localStorage.setItem('appSettings', JSON.stringify(backup.data.appSettings));
-                        }
-                        saveAll(); loadData(); render();
-                        showToast('恢复成功');
-                    } catch(e) {
-                        showToast('恢复失败: 数据解析错误');
-                    }
-                } else {
-                    showToast('恢复失败: ' + xhr.status);
-                }
-            };
-            xhr.onerror = function() { showToast('恢复失败: 网络错误'); };
-            xhr.timeout = 30000;
-            xhr.ontimeout = function() { showToast('恢复超时，请检查网络'); };
-            xhr.send();
         };
 
         // ========== 本地导入/导出 ==========
@@ -553,10 +398,7 @@
                 appSettings: JSON.parse(localStorage.getItem('appSettings')||'{}'),
                 aiCache: aiCache
             };
-            delete data.appSettings.supabaseUrl;
-            delete data.appSettings.supabaseKey;
-            delete data.appSettings.aiApiKey;
-
+            // 保留 AI 密钥，用户自行负责导出文件安全
             var blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
@@ -581,9 +423,10 @@
                     aiCache = data.aiCache || {};
                     if (data.appSettings) {
                         var localSettings = JSON.parse(localStorage.getItem('appSettings')||'{}');
-                        data.appSettings.supabaseUrl = localSettings.supabaseUrl || '';
-                        data.appSettings.supabaseKey = localSettings.supabaseKey || '';
-                        data.appSettings.aiApiKey = localSettings.aiApiKey || '';
+                        // 如果备份中提供了 AI key，则使用备份的，否则保留本地已有的
+                        if (!data.appSettings.aiApiKey) {
+                            data.appSettings.aiApiKey = localSettings.aiApiKey || '';
+                        }
                         localStorage.setItem('appSettings', JSON.stringify(data.appSettings));
                     }
                     saveAll(); loadData(); render();
@@ -595,7 +438,8 @@
             reader.readAsText(file);
         };
 
-         window.importFile = function(file) {
+        // 其余所有函数（导入、渲染、答题逻辑等）保持不变，从原版中复制
+        window.importFile = function(file) {
             if (!file) return;
             var reader = new FileReader();
             reader.onload = function(e) {
