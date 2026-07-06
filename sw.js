@@ -20,8 +20,19 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 缓存优先策略
+// 缓存优先策略，但 changelog.md 始终从网络获取（离线时回退缓存）
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // 版本日志文件：每次打开都尝试从网络获取最新内容
+  if (url.pathname.endsWith('changelog.md')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 其他请求：缓存优先，网络更新
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetchPromise = fetch(event.request).then(response => {
