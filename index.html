@@ -227,16 +227,28 @@
             setSafeArea();
         })();
 
-        // 语音引擎
+               // 语音引擎（修复版）
         var audioCtx = null;
-        function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); } }
+        function initAudio() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                return audioCtx.resume(); // 返回 Promise，确保恢复完成
+            }
+            return Promise.resolve(); // 已经可用或无法恢复，直接 resolve
+        }
         function playTone(type) {
-            initAudio(); if (!audioCtx || audioCtx.state === 'closed') return;
-            var osc = audioCtx.createOscillator(); var gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.value = 0.15;
-            var now = audioCtx.currentTime;
-            if (type === 'correct') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.1); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
-            else if (type === 'wrong') { osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now + 0.15); gain.gain.linearRampToValueAtTime(0, now + 0.25); osc.start(now); osc.stop(now + 0.25); }
+            initAudio().then(function() {
+                if (!audioCtx || audioCtx.state === 'closed') return;
+                var osc = audioCtx.createOscillator(); var gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.value = 0.15;
+                var now = audioCtx.currentTime;
+                if (type === 'correct') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.1); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
+                else if (type === 'wrong') { osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now + 0.15); gain.gain.linearRampToValueAtTime(0, now + 0.25); osc.start(now); osc.stop(now + 0.25); }
+            }).catch(function(e) {
+                // 静默失败，不影响刷题
+            });
         }
 
         var dangerCallback = null;
